@@ -1,0 +1,25 @@
+{
+  "project": "Sidestep Website",
+  "lastUpdated": "2026-05-17T15:29:01.864Z",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation",
+      "description": "Core infrastructure and setup"
+    },
+    {
+      "id": "phase-2",
+      "name": "Core Features",
+      "description": "Main value proposition"
+    },
+    {
+      "id": "phase-3",
+      "name": "Polish",
+      "description": "Enhancements and optimization"
+    }
+  ],
+  "nodes": [],
+  "edges": [],
+  "agents": [],
+  "log": []
+}

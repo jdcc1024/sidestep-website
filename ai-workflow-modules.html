@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Coding Workflow — Module Breakdown</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0F1729; color: #E2E8F0; line-height: 1.6; }
+
+.header { background: linear-gradient(135deg, #1E2761 0%, #2D3A8C 100%); padding: 60px 40px; text-align: center; border-bottom: 3px solid #4F7CFF; }
+.header h1 { font-size: 36px; color: #FFFFFF; margin-bottom: 10px; }
+.header p { font-size: 17px; color: #CADCFC; max-width: 700px; margin: 0 auto; }
+
+.nav-bar { background: #1A2332; padding: 16px 40px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(79, 124, 255, 0.2); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.nav-bar a { color: #94A3B8; text-decoration: none; font-size: 13px; padding: 6px 14px; border-radius: 6px; transition: all 0.2s; font-weight: 500; }
+.nav-bar a:hover, .nav-bar a.active { background: rgba(79, 124, 255, 0.15); color: #4F7CFF; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 40px 30px; }
+
+/* Module Section */
+.module { margin-bottom: 60px; scroll-margin-top: 80px; }
+.module-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(79, 124, 255, 0.2); }
+.module-num { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #4F7CFF, #2D3A8C); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: white; flex-shrink: 0; }
+.module-header h2 { font-size: 26px; color: #FFFFFF; }
+.module-header .module-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F7CFF; background: rgba(79, 124, 255, 0.1); padding: 3px 10px; border-radius: 4px; margin-left: auto; }
+
+.module-intro { font-size: 16px; color: #94A3B8; margin-bottom: 24px; padding-left: 60px; }
+
+/* Concept Cards */
+.concepts { display: flex; flex-direction: column; gap: 16px; padding-left: 60px; }
+.concept { background: #1A2332; border-radius: 10px; padding: 24px 28px; border-left: 3px solid #4F7CFF; transition: transform 0.2s, box-shadow 0.2s; }
+.concept:hover { transform: translateX(4px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.concept h3 { font-size: 17px; color: #FFFFFF; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+.concept h3 .emoji { font-size: 20px; }
+.concept p { font-size: 14px; color: #B0BEC5; margin-bottom: 8px; }
+.concept .detail { font-size: 13px; color: #78909C; padding: 10px 14px; background: rgba(0,0,0,0.25); border-radius: 6px; margin-top: 10px; }
+.concept .detail strong { color: #CADCFC; }
+
+/* Highlight boxes */
+.key-insight { background: rgba(79, 124, 255, 0.08); border: 1px solid rgba(79, 124, 255, 0.25); border-radius: 8px; padding: 16px 20px; margin-top: 12px; }
+.key-insight p { color: #CADCFC; font-size: 13px; margin: 0; }
+.key-insight strong { color: #4F7CFF; }
+
+/* Comparison blocks */
+.comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+.comp-item { padding: 14px 16px; border-radius: 8px; }
+.comp-item.do { background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); }
+.comp-item.dont { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); }
+.comp-item h4 { font-size: 13px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.comp-item.do h4 { color: #22C55E; }
+.comp-item.dont h4 { color: #EF4444; }
+.comp-item p { font-size: 13px; margin: 0; color: #B0BEC5; }
+
+/* Flow diagram */
+.flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; padding: 14px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+.flow-step { background: rgba(79, 124, 255, 0.15); border: 1px solid rgba(79, 124, 255, 0.3); padding: 6px 14px; border-radius: 6px; font-size: 13px; color: #CADCFC; font-weight: 500; }
+.flow-arrow { color: #4F7CFF; font-size: 16px; }
+
+/* Footer */
+.footer { text-align: center; padding: 40px; color: #475569; font-size: 13px; border-top: 1px solid rgba(79, 124, 255, 0.1); }
+
+@media (max-width: 768px) {
+  .module-intro, .concepts { padding-left: 0; }
+  .comparison { grid-template-columns: 1fr; }
+  .header { padding: 40px 20px; }
+  .container { padding: 24px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>AI Coding Workflow — Module Breakdown</h1>
+  <p>Matt Pocock's methodology separated into 5 core modules. Master each one before setting up your coding environment.</p>
+</div>
+
+<nav class="nav-bar">
+  <a href="#module-1">1. LLM Constraints</a>
+  <a href="#module-2">2. Requirements & Planning</a>
+  <a href="#module-3">3. Task Architecture</a>
+  <a href="#module-4">4. Implementation & Agents</a>
+  <a href="#module-5">5. Codebase Design & QA</a>
+</nav>
+
+<div class="container">
+
+<!-- MODULE 1 -->
+<section class="module" id="module-1">
+  <div class="module-header">
+    <div class="module-num">1</div>
+    <h2>Understanding LLM Constraints</h2>
+    <span class="module-tag">Foundation</span>
+  </div>
+  <p class="module-intro">Before building anything, you need to understand how LLMs actually work — their strengths and fundamental limitations. Every decision in this workflow stems from these two constraints.</p>
+
+  <div class="concepts">
+    <div class="concept">
+      <h3><span class="emoji">🧠</span> Smart Zone vs. Dumb Zone</h3>
+      <p>LLMs operate within a "smart zone" when they start fresh with minimal context. As more tokens accumulate in a session, quality degrades — complexity increases quadratically with each token added (like adding teams to a football league).</p>
+      <div class="comparison">
+        <div class="comp-item do">
+          <h4>Smart Zone</h4>
+          <p>Fresh session, focused task, clear system prompt, minimal prior context. The AI is sharp and produces its best work.</p>
+        </div>
+        <div class="comp-item dont">
+          <h4>Dumb Zone</h4>
+          <p>Long session, bloated context, multiple unrelated topics discussed. The AI starts forgetting, contradicting itself, and making errors.</p>
+        </div>
+      </div>
+      <div class="key-insight">
+        <p><strong>Practical rule:</strong> Keep every AI task small enough to complete in a fresh or near-fresh context. If a task requires too much context, it's too big — split it.</p>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🎬</span> The "Memento" Problem</h3>
+      <p>LLMs have no persistent memory between sessions. Like the character in Memento, they wake up fresh every time with no recollection of previous work. Every session follows the same lifecycle:</p>
+      <div class="flow">
+        <span class="flow-step">System Prompt</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Exploration</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Implementation</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Testing</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Session Ends</span>
+      </div>
+      <div class="detail">
+        <strong>Implication:</strong> You can't rely on AI "remembering" decisions from last session. Everything it needs must be written down in documents (PRDs, issues, CLAUDE.md files) that get fed into the next session.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🔄</span> Clearing vs. Compacting Context</h3>
+      <p>When context gets heavy, you have two options:</p>
+      <div class="comparison">
+        <div class="comp-item do">
+          <h4>Clear Context (Preferred)</h4>
+          <p>Reset completely back to system prompt. AI returns to smart zone. Decisions are preserved in external documents, not conversation history.</p>
+        </div>
+        <div class="comp-item dont">
+          <h4>Compact Context</h4>
+          <p>Summarize the conversation into fewer tokens. Retains some history but summaries lose nuance. Can still drift into the dumb zone.</p>
+        </div>
+      </div>
+      <div class="key-insight">
+        <p><strong>Matt's preference:</strong> Clear context entirely and rely on well-written documents to carry decisions forward. This keeps the AI consistently operating in its smart zone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2 -->
+<section class="module" id="module-2">
+  <div class="module-header">
+    <div class="module-num">2</div>
+    <h2>Requirements & Planning</h2>
+    <span class="module-tag">Human-in-the-Loop</span>
+  </div>
+  <p class="module-intro">Planning is ALWAYS human-in-the-loop. This module covers how to go from a vague idea to a structured, AI-ready specification. The goal: reach a "shared understanding" between you and the AI.</p>
+
+  <div class="concepts">
+    <div class="concept">
+      <h3><span class="emoji">🎯</span> The Design Concept (Shared Understanding)</h3>
+      <p>From Frederick P. Brooks: effective collaboration requires reaching a "design concept" — a shared mental model between all participants. When working with AI, you need the LLM to understand the same destination you have in mind.</p>
+      <div class="detail">
+        <strong>How to achieve it:</strong> Through structured conversation — not by dumping a spec and hoping it "gets it." The grilling process and PRD creation are tools for building this shared understanding incrementally.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🔥</span> The "Grill Me" Technique</h3>
+      <p>Before writing any code, have the AI interrogate your idea. It asks hard questions about your requirements — surfacing gaps, edge cases, and assumptions you haven't thought through.</p>
+      <div class="flow">
+        <span class="flow-step">Vague Idea</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">AI Asks Questions</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">You Answer & Decide</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Shared Understanding</span>
+      </div>
+      <p style="margin-top: 12px;">Sessions can involve up to 80 questions. This isn't wasted time — it's the fastest path to alignment. You can also feed in meeting transcripts or domain expert input to enrich the grilling.</p>
+      <div class="key-insight">
+        <p><strong>Why it works:</strong> Prevents the #1 failure mode in AI-assisted development — misalignment. The cost of answering 80 questions upfront is far less than rebuilding a feature that missed the mark.</p>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">📄</span> Product Requirements Document (PRD)</h3>
+      <p>The PRD is your "destination document" — it captures WHERE you're going, not HOW to get there. After grilling, summarize findings into a PRD that will guide all subsequent implementation.</p>
+      <p><strong>Key components:</strong></p>
+      <div class="flow">
+        <span class="flow-step">Problem Statement</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Proposed Solution</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">User Stories</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Implementation Decisions</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Testing Strategy</span>
+      </div>
+      <div class="detail">
+        <strong>Important distinction:</strong> This is NOT "specs to code" (writing a doc and blindly converting it). You still need to understand and manage the code. The PRD guides AI; it doesn't replace your judgment.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🗺️</span> Two Documents: Destination + Journey</h3>
+      <p>Matt advocates for two complementary documents:</p>
+      <div class="comparison">
+        <div class="comp-item do">
+          <h4>Destination (PRD)</h4>
+          <p>What are we building? For whom? What does success look like? What's out of scope? This document is relatively stable once written.</p>
+        </div>
+        <div class="comp-item do">
+          <h4>Journey (Multi-Phase Plan)</h4>
+          <p>How do we get there? What order? What depends on what? This is your Kanban board / issue tracker — it evolves as you learn.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🚫</span> Anti-Pattern: "Specs to Code"</h3>
+      <p>Matt explicitly critiques the movement that says "just write a specification and AI converts it to code — never look at the code." This fails because:</p>
+      <div class="detail">
+        <strong>Why it fails:</strong> Understanding and managing code is essential. You need to know what AI produced to review it, test it, debug it, and evolve it. The PRD guides AI — it doesn't replace your responsibility as an engineer.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3 -->
+<section class="module" id="module-3">
+  <div class="module-header">
+    <div class="module-num">3</div>
+    <h2>Task Architecture</h2>
+    <span class="module-tag">Structure</span>
+  </div>
+  <p class="module-intro">How you decompose work determines whether AI can execute it effectively. This module covers the art of breaking a PRD into tasks that stay in the "smart zone" and can run in parallel.</p>
+
+  <div class="concepts">
+    <div class="concept">
+      <h3><span class="emoji">🔪</span> Vertical Slices (Tracer Bullets)</h3>
+      <p>Instead of building layer-by-layer (all database, then all API, then all frontend), build thin end-to-end features that cut through every layer of the stack.</p>
+      <div class="comparison">
+        <div class="comp-item dont">
+          <h4>Horizontal (Don't)</h4>
+          <p>Build all DB schemas → all API routes → all frontend pages. No feedback until the very end. Integration issues discovered late. High risk.</p>
+        </div>
+        <div class="comp-item do">
+          <h4>Vertical (Do)</h4>
+          <p>One feature from DB → API → UI. Immediate feedback at each step. You can test and ship incrementally. Low risk.</p>
+        </div>
+      </div>
+      <div class="detail">
+        <strong>The analogy:</strong> Anti-aircraft gunners used "tracer bullets" — visible rounds that showed where shots were landing, allowing real-time course correction. Vertical slices give you the same visibility into your project's trajectory.
+      </div>
+      <div class="key-insight">
+        <p><strong>Example:</strong> Instead of "build the entire gamification system," your first slice might be: "Award points for lesson completion, visible on a dashboard" — one thin path through schema → service → API → UI.</p>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🔀</span> Directed Acyclic Graph (DAG) of Tasks</h3>
+      <p>Organize tasks into a DAG — a dependency graph where tasks flow in one direction with no circular dependencies. This enables parallelization.</p>
+      <div class="flow">
+        <span class="flow-step">Phase 1: Foundation</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Phase 2: Core Features</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Phase 3: Polish</span>
+      </div>
+      <p style="margin-top: 12px;">Within each phase, tasks should be independent of each other — multiple agents (or sessions) can work on them simultaneously without conflicts.</p>
+      <div class="detail">
+        <strong>Key properties of good tasks:</strong> Small (stays in smart zone), independent (no cross-task dependencies within a phase), clearly defined (has acceptance criteria or tests), and vertically sliced (touches all relevant layers).
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">📋</span> From PRD to Kanban Board</h3>
+      <p>The transformation pipeline from requirements to actionable work:</p>
+      <div class="flow">
+        <span class="flow-step">PRD</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">AI Generates Issues</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Human Reviews & Adjusts</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Kanban Board</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Implementation</span>
+      </div>
+      <div class="detail">
+        <strong>Human review is essential:</strong> Even though AI generates the issues, you must review the plan. AI tends to propose horizontal slices by default — you push for vertical ones. AI may miss business nuances — you add them back in.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">⚡</span> Parallelization Strategy</h3>
+      <p>Tasks within a phase run in parallel rather than sequentially. This is how you multiply throughput when using AI agents.</p>
+      <div class="detail">
+        <strong>How it works:</strong> If Phase 2 has 5 independent tasks (each a vertical slice), 5 separate AI sessions can execute them simultaneously. Each session starts fresh (smart zone), picks up one issue, implements it with TDD, and produces a PR. Sequential execution limits you to one agent at a time.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🏗️</span> Owning Your Planning Stack</h3>
+      <p>Matt advocates for owning and customizing your planning process rather than blindly adopting a framework. You need observability — the ability to see what went wrong and adjust.</p>
+      <div class="key-insight">
+        <p><strong>Principle:</strong> Use frameworks as starting points, not gospel. If vertical slices don't work for a particular task, adapt. If the AI's generated plan is wrong, override it. Maintain control over your process.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4 -->
+<section class="module" id="module-4">
+  <div class="module-header">
+    <div class="module-num">4</div>
+    <h2>Implementation & Agents</h2>
+    <span class="module-tag">Execution</span>
+  </div>
+  <p class="module-intro">Once planning is complete, implementation shifts from "human-in-the-loop" to "AFK" (away from keyboard). This module covers how to run AI agents autonomously and how TDD provides the feedback loop they need.</p>
+
+  <div class="concepts">
+    <div class="concept">
+      <h3><span class="emoji">🧑‍💻</span> Human-in-the-Loop vs. AFK Tasks</h3>
+      <p>Not all work requires your active presence. Categorize every task:</p>
+      <div class="comparison">
+        <div class="comp-item do">
+          <h4>Human-in-the-Loop (Active)</h4>
+          <p>Planning, PRD writing, architecture decisions, UX design, business logic validation, code review. These ALWAYS require you.</p>
+        </div>
+        <div class="comp-item do">
+          <h4>AFK (Autonomous)</h4>
+          <p>Implementing well-defined features, writing boilerplate, running test suites, fixing lint errors, data migrations, refactoring. Delegate these.</p>
+        </div>
+      </div>
+      <div class="key-insight">
+        <p><strong>The "night shift" metaphor:</strong> After thorough human planning during the day, AI agents run autonomously like a night shift — executing the well-defined plan without needing supervision.</p>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🧪</span> Test-Driven Development (TDD)</h3>
+      <p>TDD is the single most important technique for AI-assisted coding. It provides the feedback loop that AI needs to produce correct code.</p>
+      <div class="flow">
+        <span class="flow-step" style="border-color: rgba(239,68,68,0.5); background: rgba(239,68,68,0.1);">RED: Write Failing Test</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step" style="border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.1);">GREEN: Implement Until Pass</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step" style="border-color: rgba(59,130,246,0.5); background: rgba(59,130,246,0.1);">REFACTOR: Clean Up</span>
+      </div>
+      <div class="detail">
+        <strong>Why TDD + AI is powerful:</strong> The test defines "done." AI has a binary signal: does it pass or not? Without this, AI produces code that looks right but may not function correctly. Tests eliminate ambiguity and give the agent a clear objective.
+      </div>
+      <div class="key-insight">
+        <p><strong>Watch out:</strong> AI can sometimes "cheat" tests — writing implementations that technically pass but don't solve the real problem. Using tools like <code>npx vitest</code> and well-designed test cases makes cheating harder.</p>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🔁</span> Feedback Loops Are Everything</h3>
+      <p>Without feedback loops, AI produces unreliable output. The quality of your feedback loop directly determines the quality of AI's code.</p>
+      <p><strong>Types of feedback loops:</strong></p>
+      <div class="flow">
+        <span class="flow-step">Test Results</span>
+        <span class="flow-step">Linter Errors</span>
+        <span class="flow-step">Type Checking</span>
+        <span class="flow-step">Build Errors</span>
+        <span class="flow-step">Runtime Errors</span>
+      </div>
+      <div class="detail">
+        <strong>Improving feedback loops = improving AI output.</strong> If your project has no tests, no type system, and no linter — AI is flying blind. Invest in tooling that gives AI clear pass/fail signals.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🤖</span> Sub-Agents & Delegation</h3>
+      <p>Sub-agents are separate LLM contexts that handle complex sub-tasks independently. The main agent delegates work, the sub-agent explores and returns a concise summary.</p>
+      <div class="detail">
+        <strong>Benefits:</strong> Keeps the main agent's context clean (smart zone). Sub-agents can explore complex problems without overwhelming the primary session's token usage. Results are summarized back concisely.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">⚙️</span> The AFK Agent Loop</h3>
+      <p>Matt demonstrates a bash script ("Ralph") that runs Claude autonomously in a loop:</p>
+      <div class="flow">
+        <span class="flow-step">Collect Issues from Backlog</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Prioritize (Bugs → Infra → Features)</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Agent Picks Task</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Implements with TDD</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Commits & Moves to Next</span>
+      </div>
+      <div class="detail">
+        <strong>Sandboxing:</strong> Uses Docker containers to isolate agent work. Each task runs in its own work tree, preventing conflicts. Start sequential to learn the system, then explore parallelization.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">📐</span> Push vs. Pull Information</h3>
+      <p>Two ways to get standards and context to AI agents:</p>
+      <div class="comparison">
+        <div class="comp-item do">
+          <h4>Push (Send Directly)</h4>
+          <p>Instructions baked into system prompt or task description. Good for reviewers who need to enforce specific standards.</p>
+        </div>
+        <div class="comp-item do">
+          <h4>Pull (Agent Finds It)</h4>
+          <p>Agent discovers standards by reading config files, CLAUDE.md, or project docs as needed. Good for implementation — agent grabs what's relevant.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5 -->
+<section class="module" id="module-5">
+  <div class="module-header">
+    <div class="module-num">5</div>
+    <h2>Codebase Design & Quality Assurance</h2>
+    <span class="module-tag">Sustainability</span>
+  </div>
+  <p class="module-intro">The architecture of your codebase determines how effectively AI can work within it. A well-designed codebase amplifies AI; a poorly designed one makes it struggle. QA is where you impose your personal taste.</p>
+
+  <div class="concepts">
+    <div class="concept">
+      <h3><span class="emoji">🏛️</span> Deep Modules vs. Shallow Modules</h3>
+      <p>From John Ousterhout's "A Philosophy of Software Design" — module structure matters enormously for AI effectiveness.</p>
+      <div class="comparison">
+        <div class="comp-item dont">
+          <h4>Shallow Modules (Bad for AI)</h4>
+          <p>Many tiny files with complex interdependencies. Hard to understand in isolation. Difficult to test. AI gets confused navigating them.</p>
+        </div>
+        <div class="comp-item do">
+          <h4>Deep Modules (Good for AI)</h4>
+          <p>Simple public interfaces hiding extensive functionality within. Easy to test from the outside. AI can implement changes confidently without understanding every internal detail.</p>
+        </div>
+      </div>
+      <div class="key-insight">
+        <p><strong>Design principle:</strong> Create services with simple APIs but rich internals. E.g., <code>OrderService.createOrder(data)</code> hides all validation, payment, email, and inventory logic behind one clean interface.</p>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🧱</span> Testable Architecture</h3>
+      <p>Building an easily testable codebase directly improves AI performance — because tests ARE the feedback loop. If your code is hard to test, AI can't get clear signals.</p>
+      <div class="detail">
+        <strong>What makes code testable:</strong> Clear module boundaries, dependency injection, pure functions where possible, services that can be instantiated with test databases, and well-defined interfaces between layers.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🔍</span> Three Layers of QA</h3>
+      <p>Quality assurance in AI-assisted development happens at three levels:</p>
+      <div class="flow">
+        <span class="flow-step">1. AI Self-Review</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">2. Automated Tests</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">3. Human Manual QA</span>
+      </div>
+      <div class="detail">
+        <strong>AI Self-Review:</strong> Clear context and have a fresh AI session review the code. It's now in the "smart zone" for reviewing, catching issues the implementing agent missed.<br><br>
+        <strong>Automated Tests:</strong> The TDD suite catches regressions and verifies functional correctness continuously.<br><br>
+        <strong>Human Manual QA:</strong> This is where YOU impose taste, judgment, and business knowledge. Don't skip this — it's what separates quality software from generic output.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">✋</span> Manual QA = Imposing Your Taste</h3>
+      <p>Teams that try to fully automate development end up with applications that feel generic and lack quality. Manual QA is your opportunity to inject taste, standards, and craftsmanship.</p>
+      <div class="key-insight">
+        <p><strong>What to check manually:</strong> Does the UX feel right? Does the code read clearly? Is it over-engineered or under-engineered? Does it match the team's style? Would you be proud to ship this? These are human judgment calls that can't be automated.</p>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">📏</span> Small Pull Requests</h3>
+      <p>Keep PRs small and self-contained. Each vertical slice becomes one PR. This reduces review complexity and catches issues faster.</p>
+      <div class="detail">
+        <strong>Benefits:</strong> Easier to review (fewer loops), easier to revert if something breaks, clear scope per change. Use a separate AI reviewer (e.g., Opus for reviewing, Sonnet for implementing) to get high-quality automated reviews before human review.
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🗂️</span> Documentation That Doesn't Rot</h3>
+      <p>Keep documentation relevant and current. Old PRDs that no longer reflect the code become misleading — Matt calls this "doc rot."</p>
+      <div class="comparison">
+        <div class="comp-item do">
+          <h4>Keep</h4>
+          <p>Living docs that reflect current state: CLAUDE.md, active architecture decisions, current module interfaces, coding standards.</p>
+        </div>
+        <div class="comp-item dont">
+          <h4>Remove</h4>
+          <p>Outdated PRDs that describe features as-planned (not as-built), obsolete architecture docs, stale README sections that mislead AI.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="concept">
+      <h3><span class="emoji">🧭</span> Staying Familiar with Your Codebase</h3>
+      <p>As you delegate more to AI, there's a risk of losing familiarity with your own codebase. Matt's solution: focus on designing module interfaces rather than implementing every detail.</p>
+      <div class="key-insight">
+        <p><strong>Your role shifts to:</strong> Defining the "shapes" and behaviors of modules — what they accept, what they return, how they interact. You don't need to co-review every line of implementation, but you must understand the architecture and boundaries.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="footer">
+  <p>Source: <a href="https://www.youtube.com/watch?v=-QFHIoCo-Ko" style="color: #4F7CFF; text-decoration: none;">Matt Pocock — Full Walkthrough: Workflow for AI Coding</a></p>
+  <p style="margin-top: 8px;">Next step: Set up our coding environment using this methodology →</p>
+</div>
+
+</body>
+</html>

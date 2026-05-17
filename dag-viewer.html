@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAG Viewer — Project Pipeline</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0B1121; color: #E2E8F0; min-height: 100vh; }
+
+/* Header */
+.header { background: #111827; border-bottom: 1px solid #1F2937; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header h1 { font-size: 18px; color: #F9FAFB; display: flex; align-items: center; gap: 10px; }
+.header h1 .dot { width: 8px; height: 8px; border-radius: 50%; background: #22C55E; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; color: #9CA3AF; }
+.poll-indicator { display: flex; align-items: center; gap: 6px; }
+.poll-indicator .ring { width: 6px; height: 6px; border-radius: 50%; background: #3B82F6; }
+
+/* Stats Bar */
+.stats-bar { background: #111827; border-bottom: 1px solid #1F2937; padding: 12px 24px; display: flex; gap: 24px; }
+.stat { display: flex; align-items: center; gap: 8px; }
+.stat-dot { width: 10px; height: 10px; border-radius: 3px; }
+.stat-dot.completed { background: #22C55E; }
+.stat-dot.in-progress { background: #F59E0B; }
+.stat-dot.pending { background: #6B7280; }
+.stat-dot.blocked { background: #EF4444; }
+.stat-label { font-size: 12px; color: #9CA3AF; }
+.stat-value { font-size: 14px; font-weight: 600; color: #F9FAFB; }
+
+/* Main Layout */
+.main { display: grid; grid-template-columns: 1fr 320px; min-height: calc(100vh - 110px); }
+
+/* DAG Canvas */
+.dag-canvas { padding: 32px; overflow: auto; position: relative; }
+
+/* SVG arrow layer */
+.arrow-layer { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+.arrow-layer path { fill: none; stroke-width: 2; }
+.arrow-layer path.edge-completed { stroke: #166534; stroke-opacity: 0.6; }
+.arrow-layer path.edge-active { stroke: #F59E0B; stroke-width: 2.5; stroke-dasharray: 8 4; animation: dashFlow 1s linear infinite; }
+.arrow-layer path.edge-blocked { stroke: #EF4444; stroke-opacity: 0.7; }
+.arrow-layer path.edge-pending { stroke: #374151; stroke-opacity: 0.8; }
+.arrow-layer polygon { stroke: none; }
+.arrow-layer polygon.edge-completed { fill: #166534; opacity: 0.6; }
+.arrow-layer polygon.edge-active { fill: #F59E0B; }
+.arrow-layer polygon.edge-blocked { fill: #EF4444; opacity: 0.7; }
+.arrow-layer polygon.edge-pending { fill: #374151; opacity: 0.8; }
+@keyframes dashFlow { to { stroke-dashoffset: -12; } }
+
+/* Node grid */
+.dag-grid { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(auto-fill, 230px); gap: 24px 20px; }
+
+/* Phase dividers */
+.phase-divider { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 8px 0; margin-top: 12px; }
+.phase-divider:first-child { margin-top: 0; }
+.phase-divider span { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #6B7280; white-space: nowrap; }
+.phase-divider::after { content: ''; flex: 1; height: 1px; background: #1F2937; }
+
+/* Nodes */
+.node { width: 220px; border-radius: 10px; padding: 16px; position: relative; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+.node:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 10; }
+
+.node.completed { background: #052E16; border-color: #166534; }
+.node.in-progress { background: #1C1917; border-color: #92400E; animation: working 2s ease-in-out infinite; }
+@keyframes working { 0%, 100% { border-color: #92400E; } 50% { border-color: #F59E0B; } }
+.node.pending { background: #1F2937; border-color: #374151; }
+.node.blocked { background: #1C1015; border-color: #7F1D1D; }
+
+.node-status-dot { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: 12px; right: 12px; }
+.node.completed .node-status-dot { background: #22C55E; }
+.node.in-progress .node-status-dot { background: #F59E0B; animation: pulse 1.5s infinite; }
+.node.pending .node-status-dot { background: #6B7280; }
+.node.blocked .node-status-dot { background: #EF4444; }
+
+.node-id { font-size: 11px; color: #6B7280; font-family: monospace; margin-bottom: 4px; }
+.node-title { font-size: 14px; font-weight: 600; color: #F9FAFB; margin-bottom: 8px; line-height: 1.3; }
+.node-meta { font-size: 11px; color: #9CA3AF; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.node-type { background: #374151; padding: 2px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.node-agent { color: #60A5FA; font-weight: 500; }
+
+/* Dependency badges on nodes */
+.node-deps { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+.dep-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+.dep-badge.dep-from { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.3); }
+.dep-badge.dep-to { background: rgba(34, 197, 94, 0.15); color: #86EFAC; border: 1px solid rgba(34, 197, 94, 0.3); }
+
+/* Sidebar */
+.sidebar { background: #111827; border-left: 1px solid #1F2937; padding: 20px; overflow-y: auto; max-height: calc(100vh - 110px); }
+.sidebar h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #6B7280; margin-bottom: 16px; }
+
+/* Agents Panel */
+.agent-card { background: #1F2937; border-radius: 8px; padding: 14px; margin-bottom: 12px; border-left: 3px solid #3B82F6; }
+.agent-name { font-size: 13px; font-weight: 600; color: #F9FAFB; margin-bottom: 4px; }
+.agent-status { font-size: 11px; color: #9CA3AF; }
+.agent-task { font-size: 12px; color: #60A5FA; margin-top: 6px; }
+.agent-stats { font-size: 11px; color: #6B7280; margin-top: 4px; }
+
+/* Activity Log */
+.log-section { margin-top: 24px; }
+.log-entry { padding: 10px 0; border-bottom: 1px solid #1F2937; }
+.log-time { font-size: 10px; color: #6B7280; font-family: monospace; }
+.log-message { font-size: 12px; color: #D1D5DB; margin-top: 2px; }
+.log-entry .event-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; }
+.event-dot.task_started { background: #F59E0B; }
+.event-dot.task_completed { background: #22C55E; }
+.event-dot.task_failed { background: #EF4444; }
+.event-dot.task_blocked { background: #EF4444; }
+.event-dot.agent_joined { background: #3B82F6; }
+.event-dot.nodes_added { background: #A78BFA; }
+
+/* Legend */
+.legend { margin-top: 24px; padding-top: 16px; border-top: 1px solid #1F2937; }
+.legend h2 { margin-bottom: 12px; }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; color: #9CA3AF; }
+.legend-line { width: 28px; height: 2px; border-radius: 1px; }
+.legend-line.completed { background: #166534; }
+.legend-line.active { background: #F59E0B; background: repeating-linear-gradient(90deg, #F59E0B 0, #F59E0B 8px, transparent 8px, transparent 12px); }
+.legend-line.blocked { background: #EF4444; }
+.legend-line.pending { background: #374151; }
+
+/* Detail Panel (slide-in) */
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.detail-overlay.open { opacity: 1; pointer-events: auto; }
+.detail-panel { position: fixed; top: 0; right: -440px; width: 440px; height: 100vh; background: #111827; border-left: 1px solid #1F2937; z-index: 501; transition: right 0.25s ease; overflow-y: auto; display: flex; flex-direction: column; }
+.detail-panel.open { right: 0; }
+
+.detail-header { padding: 20px 24px; border-bottom: 1px solid #1F2937; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; position: sticky; top: 0; background: #111827; z-index: 1; }
+.detail-header h2 { font-size: 18px; color: #F9FAFB; line-height: 1.3; }
+.detail-close { background: none; border: none; color: #9CA3AF; font-size: 22px; cursor: pointer; padding: 4px 8px; border-radius: 6px; line-height: 1; }
+.detail-close:hover { background: #1F2937; color: #F9FAFB; }
+
+.detail-body { padding: 20px 24px; flex: 1; }
+
+.detail-status-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.detail-status-pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-status-pill.completed { background: rgba(34, 197, 94, 0.15); color: #22C55E; }
+.detail-status-pill.in-progress { background: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+.detail-status-pill.pending { background: rgba(107, 114, 128, 0.15); color: #9CA3AF; }
+.detail-status-pill.blocked { background: rgba(239, 68, 68, 0.15); color: #EF4444; }
+.detail-type-pill { padding: 4px 10px; border-radius: 4px; font-size: 11px; background: #374151; color: #D1D5DB; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-agent-pill { padding: 4px 10px; border-radius: 4px; font-size: 11px; background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+
+.detail-section { margin-bottom: 20px; }
+.detail-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: #6B7280; margin-bottom: 8px; }
+.detail-description { font-size: 14px; line-height: 1.6; color: #D1D5DB; }
+
+.detail-criteria { list-style: none; padding: 0; }
+.detail-criteria li { font-size: 13px; color: #B0BEC5; padding: 6px 0; border-bottom: 1px solid #1F2937; display: flex; align-items: flex-start; gap: 8px; }
+.detail-criteria li::before { content: ''; width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid #4B5563; flex-shrink: 0; margin-top: 2px; }
+.detail-criteria li.done::before { background: #22C55E; border-color: #22C55E; }
+
+.detail-deps { display: flex; flex-direction: column; gap: 6px; }
+.detail-dep-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 12px; background: #1F2937; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+.detail-dep-item:hover { background: #374151; }
+.detail-dep-item .dep-dir { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; text-transform: uppercase; }
+.detail-dep-item .dep-dir.upstream { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; }
+.detail-dep-item .dep-dir.downstream { background: rgba(34, 197, 94, 0.15); color: #86EFAC; }
+.detail-dep-item .dep-id { font-family: monospace; color: #9CA3AF; font-size: 12px; }
+.detail-dep-item .dep-title { color: #D1D5DB; }
+.detail-dep-item .dep-status { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.detail-timestamps { font-size: 12px; color: #6B7280; }
+.detail-timestamps div { margin-bottom: 4px; }
+.detail-timestamps span { color: #9CA3AF; }
+
+.detail-links { display: flex; flex-direction: column; gap: 8px; }
+.detail-link { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #1F2937; border-radius: 8px; text-decoration: none; color: #60A5FA; font-size: 13px; transition: background 0.15s; border: 1px solid #374151; }
+.detail-link:hover { background: #374151; color: #93C5FD; }
+.detail-link .link-icon { font-size: 16px; flex-shrink: 0; }
+.detail-link .link-label { font-size: 11px; color: #6B7280; display: block; }
+.detail-link .link-path { color: #60A5FA; font-family: monospace; font-size: 12px; word-break: break-all; }
+
+/* Connection error */
+.error-banner { background: #7F1D1D; color: #FCA5A5; padding: 10px 24px; font-size: 13px; text-align: center; display: none; }
+.error-banner.visible { display: block; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 80px 40px; color: #6B7280; }
+.empty-state h2 { font-size: 20px; color: #9CA3AF; margin-bottom: 8px; }
+.empty-state p { font-size: 14px; max-width: 400px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="dot"></span> DAG Viewer</h1>
+  <div class="header-right">
+    <div class="poll-indicator">
+      <span class="ring"></span>
+      <span id="lastUpdate">Connecting...</span>
+    </div>
+    <span id="projectName">—</span>
+  </div>
+</div>
+
+<!-- Detail Panel (slide-in on node click) -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <h2 id="detailTitle">—</h2>
+    <button class="detail-close" onclick="closeDetail()">&times;</button>
+  </div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<div class="error-banner" id="errorBanner">Cannot reach dag.json — make sure the local server is running (see README)</div>
+
+<div class="stats-bar" id="statsBar">
+  <div class="stat"><div class="stat-dot completed"></div><span class="stat-label">Completed</span><span class="stat-value" id="statCompleted">0</span></div>
+  <div class="stat"><div class="stat-dot in-progress"></div><span class="stat-label">In Progress</span><span class="stat-value" id="statInProgress">0</span></div>
+  <div class="stat"><div class="stat-dot pending"></div><span class="stat-label">Pending</span><span class="stat-value" id="statPending">0</span></div>
+  <div class="stat"><div class="stat-dot blocked"></div><span class="stat-label">Blocked</span><span class="stat-value" id="statBlocked">0</span></div>
+</div>
+
+<div class="main">
+  <div class="dag-canvas" id="dagCanvas">
+    <svg class="arrow-layer" id="arrowLayer"></svg>
+    <div class="dag-grid" id="dagGrid">
+      <div class="empty-state" id="emptyState">
+        <h2>No tasks yet</h2>
+        <p>Run /create-issues to populate the DAG, or the agent loop will populate it as work begins.</p>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar">
+    <h2>Active Agents</h2>
+    <div id="agentsPanel">
+      <div style="color: #6B7280; font-size: 13px;">No agents active</div>
+    </div>
+    <div class="log-section">
+      <h2>Activity Log</h2>
+      <div id="logPanel"></div>
+    </div>
+    <div class="legend">
+      <h2>Arrow Legend</h2>
+      <div class="legend-item"><div class="legend-line completed"></div> Dependency satisfied (completed)</div>
+      <div class="legend-item"><div class="legend-line active"></div> Upstream in progress</div>
+      <div class="legend-item"><div class="legend-line blocked"></div> Blocking (upstream incomplete)</div>
+      <div class="legend-item"><div class="legend-line pending"></div> Waiting (both pending)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const POLL_INTERVAL = 2000;
+let lastHash = null;
+
+async function fetchDAG() {
+  try {
+    const res = await fetch('/dag.json?' + Date.now());
+    if (!res.ok) throw new Error('Not found');
+    const data = await res.json();
+    document.getElementById('errorBanner').classList.remove('visible');
+
+    const hash = JSON.stringify(data);
+    if (hash !== lastHash) {
+      lastHash = hash;
+      render(data);
+    }
+
+    document.getElementById('lastUpdate').textContent =
+      'Live — updated ' + new Date(data.lastUpdated).toLocaleTimeString();
+  } catch (e) {
+    document.getElementById('errorBanner').classList.add('visible');
+    document.getElementById('lastUpdate').textContent = 'Disconnected';
+  }
+}
+
+function render(data) {
+  document.getElementById('projectName').textContent = data.project;
+  renderStats(data);
+  renderNodes(data);
+  // Arrows need a frame to let nodes settle into position
+  requestAnimationFrame(() => requestAnimationFrame(() => renderArrows(data)));
+  renderAgents(data);
+  renderLog(data);
+}
+
+function renderStats(data) {
+  const counts = { completed: 0, 'in-progress': 0, pending: 0, blocked: 0 };
+  data.nodes.forEach(n => { counts[n.status] = (counts[n.status] || 0) + 1; });
+  document.getElementById('statCompleted').textContent = counts.completed;
+  document.getElementById('statInProgress').textContent = counts['in-progress'];
+  document.getElementById('statPending').textContent = counts.pending;
+  document.getElementById('statBlocked').textContent = counts.blocked;
+}
+
+function renderNodes(data) {
+  const grid = document.getElementById('dagGrid');
+
+  if (!data.nodes || data.nodes.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><h2>No tasks yet</h2><p>Run /create-issues to populate the DAG.</p></div>`;
+    return;
+  }
+
+  // Build lookup for dependency badges
+  const incomingMap = {}; // nodeId → [fromIds]
+  const outgoingMap = {}; // nodeId → [toIds]
+  (data.edges || []).forEach(e => {
+    if (!incomingMap[e.to]) incomingMap[e.to] = [];
+    incomingMap[e.to].push(e.from);
+    if (!outgoingMap[e.from]) outgoingMap[e.from] = [];
+    outgoingMap[e.from].push(e.to);
+  });
+
+  // Group by phase
+  const phaseMap = {};
+  data.phases.forEach(p => { phaseMap[p.id] = { ...p, nodes: [] }; });
+  data.nodes.forEach(n => {
+    if (phaseMap[n.phase]) phaseMap[n.phase].nodes.push(n);
+  });
+
+  let html = '';
+  Object.values(phaseMap).forEach(phase => {
+    if (phase.nodes.length === 0) return;
+
+    html += `<div class="phase-divider"><span>${phase.name} — ${phase.description}</span></div>`;
+
+    phase.nodes.forEach(node => {
+      const agentHtml = node.agent
+        ? `<span class="node-agent">${getAgentName(data, node.agent)}</span>`
+        : '';
+
+      // Dependency badges
+      const incoming = incomingMap[node.id] || [];
+      const outgoing = outgoingMap[node.id] || [];
+      let depsHtml = '';
+      if (incoming.length > 0 || outgoing.length > 0) {
+        depsHtml = '<div class="node-deps">';
+        incoming.forEach(fromId => {
+          depsHtml += `<span class="dep-badge dep-from" title="Blocked by #${fromId}">← #${fromId}</span>`;
+        });
+        outgoing.forEach(toId => {
+          depsHtml += `<span class="dep-badge dep-to" title="Blocks #${toId}">→ #${toId}</span>`;
+        });
+        depsHtml += '</div>';
+      }
+
+      html += `
+        <div class="node ${node.status}" data-node-id="${node.id}" id="node-${node.id}" onclick="openDetail('${node.id}')">
+          <div class="node-status-dot"></div>
+          <div class="node-id">#${node.id}</div>
+          <div class="node-title">${node.title}</div>
+          <div class="node-meta">
+            <span class="node-type">${node.type}</span>
+            ${agentHtml}
+          </div>
+          ${depsHtml}
+        </div>
+      `;
+    });
+  });
+
+  grid.innerHTML = html;
+}
+
+function renderArrows(data) {
+  const svg = document.getElementById('arrowLayer');
+  const canvas = document.getElementById('dagCanvas');
+  const canvasRect = canvas.getBoundingClientRect();
+  const scrollLeft = canvas.scrollLeft;
+  const scrollTop = canvas.scrollTop;
+
+  // Size SVG to cover the full scrollable area
+  svg.setAttribute('width', canvas.scrollWidth);
+  svg.setAttribute('height', canvas.scrollHeight);
+  svg.style.width = canvas.scrollWidth + 'px';
+  svg.style.height = canvas.scrollHeight + 'px';
+
+  if (!data.edges || data.edges.length === 0) {
+    svg.innerHTML = '';
+    return;
+  }
+
+  // Define arrowhead markers for each state
+  let defs = `<defs>
+    <marker id="arrow-completed" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" class="edge-completed"/>
+    </marker>
+    <marker id="arrow-active" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" class="edge-active"/>
+    </marker>
+    <marker id="arrow-blocked" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" class="edge-blocked"/>
+    </marker>
+    <marker id="arrow-pending" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" class="edge-pending"/>
+    </marker>
+  </defs>`;
+
+  let paths = '';
+  data.edges.forEach(edge => {
+    const fromEl = document.getElementById(`node-${edge.from}`);
+    const toEl = document.getElementById(`node-${edge.to}`);
+    if (!fromEl || !toEl) return;
+
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
+
+    // Calculate positions relative to the canvas scroll area
+    const fromX = fromRect.left - canvasRect.left + scrollLeft + fromRect.width / 2;
+    const fromY = fromRect.top - canvasRect.top + scrollTop + fromRect.height;
+    const toX = toRect.left - canvasRect.left + scrollLeft + toRect.width / 2;
+    const toY = toRect.top - canvasRect.top + scrollTop;
+
+    // Determine arrow class based on node statuses
+    const fromNode = data.nodes.find(n => n.id === edge.from);
+    const toNode = data.nodes.find(n => n.id === edge.to);
+    let edgeClass = 'edge-pending';
+    if (fromNode && fromNode.status === 'completed') {
+      edgeClass = 'edge-completed';
+    } else if (fromNode && fromNode.status === 'in-progress') {
+      edgeClass = 'edge-active';
+    } else if (toNode && toNode.status === 'blocked') {
+      edgeClass = 'edge-blocked';
+    }
+
+    // Draw a curved path (bezier)
+    const midY = (fromY + toY) / 2;
+    const dx = Math.abs(toX - fromX);
+    const controlOffset = Math.min(60, Math.max(30, (toY - fromY) * 0.4));
+
+    // If nodes are in same row (similar Y), curve more dramatically
+    let pathD;
+    if (Math.abs(fromY - toY) < 20) {
+      // Same-row: arc over the top
+      const arcMidY = Math.min(fromY, toY) - 50;
+      pathD = `M ${fromX} ${fromY} C ${fromX} ${arcMidY}, ${toX} ${arcMidY}, ${toX} ${toY}`;
+    } else {
+      // Normal: smooth S-curve
+      pathD = `M ${fromX} ${fromY} C ${fromX} ${fromY + controlOffset}, ${toX} ${toY - controlOffset}, ${toX} ${toY}`;
+    }
+
+    paths += `<path d="${pathD}" class="${edgeClass}" marker-end="url(#arrow-${edgeClass.replace('edge-', '')})"/>`;
+  });
+
+  svg.innerHTML = defs + paths;
+}
+
+function getAgentName(data, agentId) {
+  const agent = (data.agents || []).find(a => a.id === agentId);
+  return agent ? agent.name : agentId;
+}
+
+function renderAgents(data) {
+  const panel = document.getElementById('agentsPanel');
+  if (!data.agents || data.agents.length === 0) {
+    panel.innerHTML = '<div style="color: #6B7280; font-size: 13px;">No agents active</div>';
+    return;
+  }
+
+  panel.innerHTML = data.agents.map(agent => {
+    const taskNode = data.nodes.find(n => n.id === agent.currentTask);
+    const taskLabel = taskNode ? `Working on: ${taskNode.title}` : 'Idle';
+    return `
+      <div class="agent-card">
+        <div class="agent-name">${agent.name}</div>
+        <div class="agent-status">${agent.status}</div>
+        <div class="agent-task">${taskLabel}</div>
+        <div class="agent-stats">${agent.tasksCompleted} tasks completed this session</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderLog(data) {
+  const panel = document.getElementById('logPanel');
+  if (!data.log || data.log.length === 0) {
+    panel.innerHTML = '<div style="color: #6B7280; font-size: 12px; padding: 10px 0;">No activity yet</div>';
+    return;
+  }
+
+  const entries = [...data.log].reverse().slice(0, 20);
+  panel.innerHTML = entries.map(entry => `
+    <div class="log-entry">
+      <div class="log-time">${new Date(entry.timestamp).toLocaleTimeString()}</div>
+      <div class="log-message">
+        <span class="event-dot ${entry.event}"></span>
+        ${entry.message}
+      </div>
+    </div>
+  `).join('');
+}
+
+// --- Detail Panel ---
+
+let currentDetailData = null;
+
+function openDetail(nodeId) {
+  if (!lastHash) return;
+  const data = JSON.parse(lastHash);
+  currentDetailData = data;
+
+  const node = data.nodes.find(n => n.id === nodeId);
+  if (!node) return;
+
+  document.getElementById('detailTitle').textContent = node.title;
+
+  const incoming = (data.edges || []).filter(e => e.to === nodeId);
+  const outgoing = (data.edges || []).filter(e => e.from === nodeId);
+
+  let html = '';
+
+  // Status bar
+  html += `<div class="detail-status-bar">`;
+  html += `<span class="detail-status-pill ${node.status}">${node.status.replace('-', ' ')}</span>`;
+  html += `<span class="detail-type-pill">${node.type}</span>`;
+  if (node.agent) {
+    html += `<span class="detail-agent-pill">${getAgentName(data, node.agent)}</span>`;
+  }
+  html += `</div>`;
+
+  // Description
+  if (node.description) {
+    html += `<div class="detail-section">`;
+    html += `<div class="detail-section-title">Description</div>`;
+    html += `<div class="detail-description">${node.description}</div>`;
+    html += `</div>`;
+  }
+
+  // Acceptance Criteria
+  if (node.acceptanceCriteria && node.acceptanceCriteria.length > 0) {
+    html += `<div class="detail-section">`;
+    html += `<div class="detail-section-title">Acceptance Criteria</div>`;
+    html += `<ul class="detail-criteria">`;
+    node.acceptanceCriteria.forEach(c => {
+      const done = node.status === 'completed' ? ' done' : '';
+      html += `<li class="${done}">${c}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  // Dependencies
+  if (incoming.length > 0 || outgoing.length > 0) {
+    html += `<div class="detail-section">`;
+    html += `<div class="detail-section-title">Dependencies</div>`;
+    html += `<div class="detail-deps">`;
+
+    incoming.forEach(edge => {
+      const fromNode = data.nodes.find(n => n.id === edge.from);
+      if (!fromNode) return;
+      const statusColor = getStatusColor(fromNode.status);
+      html += `<div class="detail-dep-item" onclick="openDetail('${edge.from}')">
+        <span class="dep-dir upstream">depends on</span>
+        <span class="dep-id">#${edge.from}</span>
+        <span class="dep-title">${fromNode.title}</span>
+        <span class="dep-status" style="background: ${statusColor}"></span>
+      </div>`;
+    });
+
+    outgoing.forEach(edge => {
+      const toNode = data.nodes.find(n => n.id === edge.to);
+      if (!toNode) return;
+      const statusColor = getStatusColor(toNode.status);
+      html += `<div class="detail-dep-item" onclick="openDetail('${edge.to}')">
+        <span class="dep-dir downstream">blocks</span>
+        <span class="dep-id">#${edge.to}</span>
+        <span class="dep-title">${toNode.title}</span>
+        <span class="dep-status" style="background: ${statusColor}"></span>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  }
+
+  // Links (Issue file + PRD reference)
+  html += `<div class="detail-section">`;
+  html += `<div class="detail-section-title">Links</div>`;
+  html += `<div class="detail-links">`;
+
+  if (node.issueFile) {
+    html += `<a class="detail-link" href="/${node.issueFile}" target="_blank">
+      <span class="link-icon">📋</span>
+      <span><span class="link-label">Issue / Task File</span><span class="link-path">${node.issueFile}</span></span>
+    </a>`;
+  }
+
+  if (node.prdRef) {
+    html += `<a class="detail-link" href="/${node.prdRef.split('#')[0]}" target="_blank">
+      <span class="link-icon">📄</span>
+      <span><span class="link-label">PRD Reference</span><span class="link-path">${node.prdRef}</span></span>
+    </a>`;
+  }
+
+  html += `</div></div>`;
+
+  // Timestamps
+  html += `<div class="detail-section">`;
+  html += `<div class="detail-section-title">Timeline</div>`;
+  html += `<div class="detail-timestamps">`;
+  if (node.startedAt) {
+    html += `<div>Started: <span>${new Date(node.startedAt).toLocaleString()}</span></div>`;
+  }
+  if (node.completedAt) {
+    html += `<div>Completed: <span>${new Date(node.completedAt).toLocaleString()}</span></div>`;
+  }
+  if (node.startedAt && node.completedAt) {
+    const duration = Math.round((new Date(node.completedAt) - new Date(node.startedAt)) / 60000);
+    html += `<div>Duration: <span>${duration} minutes</span></div>`;
+  }
+  if (!node.startedAt) {
+    html += `<div>Not yet started</div>`;
+  }
+  html += `</div></div>`;
+
+  document.getElementById('detailBody').innerHTML = html;
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+function getStatusColor(status) {
+  switch (status) {
+    case 'completed': return '#22C55E';
+    case 'in-progress': return '#F59E0B';
+    case 'blocked': return '#EF4444';
+    default: return '#6B7280';
+  }
+}
+
+// Close on Escape key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDetail();
+});
+
+// Redraw arrows on resize
+window.addEventListener('resize', () => {
+  if (lastHash) {
+    try { renderArrows(JSON.parse(lastHash)); } catch(e) {}
+  }
+});
+
+// Start polling
+fetchDAG();
+setInterval(fetchDAG, POLL_INTERVAL);
+</script>
+</body>
+</html>

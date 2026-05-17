@@ -1,0 +1,39 @@
+---
+description: Sidestep marketing site — product context, page sections, and key features
+alwaysApply: true
+---
+
+# Sidestep Website
+
+This repo is the **marketing website for Sidestep**, a company that sells **customized jerseys**.
+
+## Site goals
+
+- Explain who Sidestep is and how custom jersey ordering works
+- Help prospects understand customization options and pricing
+- Capture leads via an intake form (not a full e-commerce checkout)
+
+## Page structure (planned sections)
+
+Build as clear, scannable sections on a mostly static marketing site:
+
+1. **Hero** — Company value proposition; who Sidestep is and why order custom jerseys here
+2. **Customization options** — What customers can customize (design, colors, logos, names/numbers, materials, etc. as product requirements define)
+3. **Ordering process** — Step-by-step flow from inquiry/design through production and delivery
+4. **Pricing** — Transparent pricing guidance plus an interactive **pricing calculator** driven by **order size** (quantity tiers or similar)
+5. **Lead intake** — Form to capture new leads (contact details, team/org, quantity, timeline, notes)
+
+## Implementation guidance
+
+- Prefer **static content** for marketing copy; isolate interactive pieces (calculator, form) in dedicated components
+- **Pricing calculator**: inputs should map clearly to order size/quantity; show estimated price or per-unit breakdown; avoid hard-coding business rules in UI — use a small, testable pricing module
+- **Lead intake form**: validate required fields client-side; submit to the project’s chosen backend or service (webhook, API, email provider) once wired — do not invent secret keys or endpoints
+- Tone: professional, sports/team-friendly, conversion-oriented without being pushy
+- Accessibility: semantic headings per section, labels on form fields, keyboard-friendly calculator controls
+- When adding features, align with `docs/prd/` and backlog issues if they exist; extend the PRD if requirements are still undefined
+
+## Out of scope (unless explicitly requested)
+
+- Full shopping cart, inventory, or payment processing
+- Customer accounts or order tracking portals
+- Admin dashboards

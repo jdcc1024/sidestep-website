@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Coding Workflow — Key Takeaways for Small Business Web Platform</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1E2761; overflow: hidden; height: 100vh; }
+
+.slide-container {
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.slide {
+  display: none; width: 960px; max-width: 95vw; height: 540px;
+  border-radius: 12px; padding: 50px 60px; position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  animation: fadeIn 0.3s ease;
+}
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Slide themes */
+.slide.dark { background: #1E2761; color: #CADCFC; }
+.slide.light { background: #F8FAFC; color: #1E2761; }
+.slide.accent { background: linear-gradient(135deg, #1E2761 0%, #2D3A8C 100%); color: #CADCFC; }
+
+.slide h1 { font-size: 38px; font-weight: 700; margin-bottom: 16px; line-height: 1.2; }
+.slide.dark h1, .slide.accent h1 { color: #FFFFFF; }
+.slide.light h1 { color: #1E2761; }
+
+.slide h2 { font-size: 28px; font-weight: 600; margin-bottom: 20px; }
+.slide.dark h2, .slide.accent h2 { color: #CADCFC; }
+.slide.light h2 { color: #2D3A8C; }
+
+.slide p { font-size: 16px; line-height: 1.7; margin-bottom: 12px; }
+.slide .subtitle { font-size: 18px; opacity: 0.85; margin-top: 8px; }
+.slide .tag { display: inline-block; background: rgba(202, 220, 252, 0.15); border: 1px solid rgba(202, 220, 252, 0.3); padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+.slide.light .tag { background: rgba(30, 39, 97, 0.08); border-color: rgba(30, 39, 97, 0.2); color: #2D3A8C; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 10px; }
+.col-item { background: rgba(255,255,255,0.06); border-radius: 8px; padding: 16px 20px; border-left: 3px solid #4F7CFF; }
+.slide.light .col-item { background: rgba(30, 39, 97, 0.04); border-left-color: #2D3A8C; }
+.col-item h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: #FFFFFF; }
+.slide.light .col-item h3 { color: #1E2761; }
+.col-item p { font-size: 13px; margin: 0; opacity: 0.85; }
+
+.concept-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px; }
+.concept-card { background: rgba(255,255,255,0.07); border-radius: 8px; padding: 18px; text-align: center; }
+.slide.light .concept-card { background: rgba(30, 39, 97, 0.05); }
+.concept-card .icon { font-size: 28px; margin-bottom: 8px; }
+.concept-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.concept-card p { font-size: 12px; opacity: 0.8; }
+
+.steps { margin-top: 16px; }
+.step { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+.step-num { width: 30px; height: 30px; border-radius: 50%; background: #4F7CFF; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.slide.light .step-num { background: #1E2761; }
+.step-content h3 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+.step-content p { font-size: 13px; opacity: 0.8; }
+
+.big-stat { font-size: 64px; font-weight: 800; color: #4F7CFF; margin: 8px 0; }
+.slide.light .big-stat { color: #1E2761; }
+
+.vs-container { display: flex; align-items: center; gap: 20px; margin-top: 16px; }
+.vs-box { flex: 1; padding: 20px; border-radius: 8px; text-align: center; }
+.vs-box.good { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); }
+.vs-box.bad { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); }
+.slide.light .vs-box.good { background: rgba(34, 197, 94, 0.08); }
+.slide.light .vs-box.bad { background: rgba(239, 68, 68, 0.08); }
+.vs-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.vs-box.good h3 { color: #22C55E; }
+.vs-box.bad h3 { color: #EF4444; }
+.vs-box p { font-size: 13px; opacity: 0.85; }
+.vs-divider { font-size: 20px; font-weight: 700; opacity: 0.5; }
+
+/* Nav */
+.nav { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; background: rgba(0,0,0,0.6); padding: 10px 24px; border-radius: 30px; backdrop-filter: blur(10px); }
+.nav button { background: none; border: none; color: white; font-size: 22px; cursor: pointer; padding: 4px 10px; border-radius: 6px; transition: background 0.2s; }
+.nav button:hover { background: rgba(255,255,255,0.15); }
+.nav button:disabled { opacity: 0.3; cursor: default; }
+.nav span { color: rgba(255,255,255,0.7); font-size: 13px; min-width: 60px; text-align: center; }
+
+.source { position: fixed; top: 16px; right: 20px; font-size: 11px; color: rgba(255,255,255,0.4); }
+.source a { color: rgba(202, 220, 252, 0.6); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="source">Source: <a href="https://www.youtube.com/watch?v=-QFHIoCo-Ko" target="_blank">Matt Pocock — Full Walkthrough: Workflow for AI Coding</a></div>
+
+<div class="slide-container">
+
+<!-- Slide 1: Title -->
+<div class="slide dark active" id="s1">
+  <div class="tag">Workshop Summary</div>
+  <h1>AI-Assisted Development Workflow</h1>
+  <p class="subtitle">Key takeaways from Matt Pocock's workshop — applied to building a small business web platform</p>
+  <p style="margin-top: 24px; font-size: 14px; opacity: 0.6;">Use arrow keys or buttons to navigate →</p>
+</div>
+
+<!-- Slide 2: Smart Zone vs Dumb Zone -->
+<div class="slide light" id="s2">
+  <div class="tag">Core Concept</div>
+  <h2>The "Smart Zone" vs. "Dumb Zone"</h2>
+  <p>LLMs work best at the start of a session with minimal context. As more tokens accumulate, quality degrades — complexity increases quadratically.</p>
+  <div class="vs-container">
+    <div class="vs-box good">
+      <h3>Smart Zone</h3>
+      <p>Fresh context, small focused tasks, clear instructions. AI produces high-quality output.</p>
+    </div>
+    <div class="vs-divider">vs</div>
+    <div class="vs-box bad">
+      <h3>Dumb Zone</h3>
+      <p>Overloaded context, long rambling sessions, vague goals. AI makes mistakes & forgets.</p>
+    </div>
+  </div>
+  <p style="margin-top: 16px; font-size: 14px;"><strong>For your platform:</strong> Break your build into small, independent tasks — don't try to build everything in one session.</p>
+</div>
+
+<!-- Slide 3: Start with a PRD -->
+<div class="slide accent" id="s3">
+  <div class="tag">Planning</div>
+  <h2>Start with a Product Requirements Document</h2>
+  <p>Before writing code, define your destination. A PRD captures the shared understanding between you and AI.</p>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-content"><h3>Problem Statement</h3><p>What business problem does your platform solve?</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><h3>User Stories</h3><p>Who uses it and what do they need to accomplish?</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><h3>Implementation Decisions</h3><p>Tech stack, constraints, and scope boundaries.</p></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-content"><h3>Testing Strategy</h3><p>How will you verify it works correctly?</p></div></div>
+  </div>
+</div>
+
+<!-- Slide 4: Grill Me — Stress-test requirements -->
+<div class="slide light" id="s4">
+  <div class="tag">Alignment</div>
+  <h2>Stress-Test Your Requirements</h2>
+  <p>Use AI to challenge your assumptions <em>before</em> building. Matt calls this the "Grill Me" technique — have AI ask you hard questions about your plan.</p>
+  <div class="two-col">
+    <div class="col-item">
+      <h3>Why It Matters</h3>
+      <p>Prevents costly misalignment. Catches edge cases, missing features, and unclear requirements early.</p>
+    </div>
+    <div class="col-item">
+      <h3>How To Do It</h3>
+      <p>Ask AI to question your brief: "What's unclear? What could go wrong? What am I missing?" Get to shared understanding.</p>
+    </div>
+    <div class="col-item">
+      <h3>For Your Platform</h3>
+      <p>Before building, have AI grill you on: target users, payment flows, auth needs, mobile requirements, integrations.</p>
+    </div>
+    <div class="col-item">
+      <h3>When To Stop</h3>
+      <p>When you've reached a clear "design concept" — both you and AI understand the same destination.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 5: Vertical Slices -->
+<div class="slide dark" id="s5">
+  <div class="tag">Architecture</div>
+  <h2>Build in Vertical Slices (Tracer Bullets)</h2>
+  <p>Don't build all database tables, then all APIs, then all frontend. Instead, build thin end-to-end features that touch every layer.</p>
+  <div class="vs-container">
+    <div class="vs-box bad">
+      <h3>❌ Horizontal (Layer by Layer)</h3>
+      <p>Build all DB → all API → all Frontend. No feedback until the very end. Risky for small businesses.</p>
+    </div>
+    <div class="vs-divider">→</div>
+    <div class="vs-box good">
+      <h3>✓ Vertical (Feature by Feature)</h3>
+      <p>One feature end-to-end: DB + API + UI. Immediate feedback. Ship incrementally.</p>
+    </div>
+  </div>
+  <p style="margin-top: 14px; font-size: 14px;"><strong>Example:</strong> Build "user can sign up and see dashboard" as one slice, not "build all auth" separately from "build all pages."</p>
+</div>
+
+<!-- Slide 6: Parallelizable Issues -->
+<div class="slide light" id="s6">
+  <div class="tag">Task Management</div>
+  <h2>Create Independent, Parallelizable Issues</h2>
+  <p>Break your PRD into a Directed Acyclic Graph (DAG) of tasks — independent units that can be worked on simultaneously.</p>
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="icon">🎯</div>
+      <h3>Small & Focused</h3>
+      <p>Each task stays in the "smart zone" — one clear objective</p>
+    </div>
+    <div class="concept-card">
+      <div class="icon">🔀</div>
+      <h3>Independent</h3>
+      <p>Tasks can run in parallel without blocking each other</p>
+    </div>
+    <div class="concept-card">
+      <div class="icon">📋</div>
+      <h3>Phased</h3>
+      <p>Group into phases with clear dependencies between groups</p>
+    </div>
+  </div>
+  <p style="margin-top: 16px; font-size: 14px;"><strong>For your platform:</strong> Phase 1 might be auth + basic layout. Phase 2 adds business features. Phase 3 adds polish & integrations.</p>
+</div>
+
+<!-- Slide 7: TDD with AI -->
+<div class="slide accent" id="s7">
+  <div class="tag">Quality</div>
+  <h2>Use Test-Driven Development (TDD)</h2>
+  <p>TDD is the single most effective technique for getting quality code from AI agents. Write the test first, then let AI implement until it passes.</p>
+  <div class="steps">
+    <div class="step"><div class="step-num" style="background:#EF4444;">R</div><div class="step-content"><h3>Red — Write a Failing Test</h3><p>Define what "correct" looks like before any code exists.</p></div></div>
+    <div class="step"><div class="step-num" style="background:#22C55E;">G</div><div class="step-content"><h3>Green — AI Implements Until It Passes</h3><p>AI has a clear feedback loop: does the test pass? If not, keep trying.</p></div></div>
+    <div class="step"><div class="step-num" style="background:#3B82F6;">R</div><div class="step-content"><h3>Refactor — Clean Up</h3><p>Once passing, improve code quality while tests protect correctness.</p></div></div>
+  </div>
+  <p style="margin-top: 10px; font-size: 14px;"><strong>Key insight:</strong> Without feedback loops, AI produces unreliable code. Tests ARE the feedback loop.</p>
+</div>
+
+<!-- Slide 8: Deep vs Shallow Modules -->
+<div class="slide light" id="s8">
+  <div class="tag">Codebase Design</div>
+  <h2>Design Deep Modules, Not Shallow Ones</h2>
+  <p>How you structure your codebase directly affects how well AI can work with it. Prefer "deep" modules over "shallow" ones.</p>
+  <div class="vs-container">
+    <div class="vs-box bad">
+      <h3>Shallow Modules</h3>
+      <p>Many tiny files with complex dependencies between them. Hard for AI to navigate. Hard to test.</p>
+    </div>
+    <div class="vs-divider">vs</div>
+    <div class="vs-box good">
+      <h3>Deep Modules</h3>
+      <p>Simple interfaces hiding rich functionality. Easy to test end-to-end. AI thrives here.</p>
+    </div>
+  </div>
+  <p style="margin-top: 14px; font-size: 14px;"><strong>For your platform:</strong> Build a clean service layer (e.g., OrderService, UserService) with simple public methods hiding complex logic inside.</p>
+</div>
+
+<!-- Slide 9: Human-in-the-loop vs AFK -->
+<div class="slide dark" id="s9">
+  <div class="tag">Workflow</div>
+  <h2>Know When You're Needed (and When You're Not)</h2>
+  <p>Not all tasks require your attention equally. Categorize work to maximize your time.</p>
+  <div class="two-col">
+    <div class="col-item">
+      <h3>🧑 Human-in-the-Loop</h3>
+      <p>Planning, design decisions, UX reviews, business logic validation. You MUST be present. Never automate these.</p>
+    </div>
+    <div class="col-item">
+      <h3>💤 AFK (Away from Keyboard)</h3>
+      <p>Implementing well-defined features, writing tests, fixing lint errors, data migrations. AI runs autonomously.</p>
+    </div>
+    <div class="col-item">
+      <h3>Planning = Always Human</h3>
+      <p>PRD writing, architecture decisions, and prioritization always need your judgment and domain knowledge.</p>
+    </div>
+    <div class="col-item">
+      <h3>Implementation = Delegate</h3>
+      <p>Once a task is well-defined with clear tests, hand it off. Review the output, don't watch it run.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 10: QA & Manual Review -->
+<div class="slide light" id="s10">
+  <div class="tag">Quality Assurance</div>
+  <h2>Manual QA Imposes Your Taste</h2>
+  <p>AI can write code, but only you know what "good" feels like for your business. Manual QA is where you impose personal standards.</p>
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="icon">🔍</div>
+      <h3>AI Self-Review</h3>
+      <p>Let AI review its own code with fresh context first</p>
+    </div>
+    <div class="concept-card">
+      <div class="icon">🧪</div>
+      <h3>Automated Tests</h3>
+      <p>Tests catch regressions and verify correctness</p>
+    </div>
+    <div class="concept-card">
+      <div class="icon">👁️</div>
+      <h3>Your Review</h3>
+      <p>You check for taste, UX quality, and business fit</p>
+    </div>
+  </div>
+  <p style="margin-top: 16px; font-size: 14px;"><strong>Key point:</strong> Don't try to automate everything. Teams that over-automate end up with apps that feel generic and lack quality.</p>
+</div>
+
+<!-- Slide 11: Applying to Your Platform -->
+<div class="slide accent" id="s11">
+  <div class="tag">Action Plan</div>
+  <h2>Applying This to Your Web Platform</h2>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-content"><h3>Write Your PRD</h3><p>Define the business problem, target users, and core features. Have AI grill you on gaps.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><h3>Slice Into Vertical Features</h3><p>Identify 3-5 end-to-end features to build first. Each should be independently shippable.</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><h3>Build with TDD</h3><p>Write tests defining behavior, then let AI implement. Keep tasks small and focused.</p></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-content"><h3>Review & Iterate</h3><p>QA each slice, create new issues from findings, and repeat the cycle.</p></div></div>
+  </div>
+</div>
+
+<!-- Slide 12: Next Steps -->
+<div class="slide dark" id="s12">
+  <div class="tag">Next Steps</div>
+  <h1>Ready to Start Designing</h1>
+  <p class="subtitle" style="margin-bottom: 24px;">Let's apply these principles to your small business web platform.</p>
+  <div class="two-col">
+    <div class="col-item">
+      <h3>Start Here</h3>
+      <p>Tell me about your business — what problem does the platform solve? Who are the users?</p>
+    </div>
+    <div class="col-item">
+      <h3>We'll Build</h3>
+      <p>A PRD together, define vertical slices, and start implementing with AI-assisted TDD.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="nav">
+  <button id="prev" onclick="navigate(-1)">←</button>
+  <span id="counter">1 / 12</span>
+  <button id="next" onclick="navigate(1)">→</button>
+</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+
+function showSlide(n) {
+  slides.forEach(s => s.classList.remove('active'));
+  slides[n].classList.add('active');
+  document.getElementById('counter').textContent = `${n + 1} / ${total}`;
+  document.getElementById('prev').disabled = n === 0;
+  document.getElementById('next').disabled = n === total - 1;
+}
+
+function navigate(dir) {
+  current = Math.max(0, Math.min(total - 1, current + dir));
+  showSlide(current);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+</script>
+</body>
+</html>
