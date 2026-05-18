@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-18T16:55:52.729Z",
+  "lastUpdated": "2026-05-18T17:40:11.675Z",
   "phases": [
     {
       "id": "phase-1",
@@ -45,9 +45,9 @@
       "phase": "phase-1",
       "type": "infrastructure",
       "description": "Define all Convex schema tables: users, designs, orders, jerseyRuns, jerseyRunResponses, and intakes. Includes field types, optional fields, and indexes for common query patterns.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
+      "status": "in-progress",
+      "agent": "agent-claude-opus47-s1",
+      "startedAt": "2026-05-18T17:40:11.674Z",
       "completedAt": null,
       "issueFile": "backlog/1-02-database-schema.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
@@ -549,8 +549,8 @@
     {
       "id": "agent-claude-opus47-s1",
       "name": "Claude Opus 4.7 (Session 1)",
-      "status": "idle",
-      "currentTask": null,
+      "status": "working",
+      "currentTask": "1-02",
       "tasksCompleted": 1
     }
   ],
@@ -729,6 +729,13 @@
       "nodeId": "1-01",
       "agent": "agent-claude-opus47-s1",
       "message": "Completed: Project Scaffolding"
+    },
+    {
+      "timestamp": "2026-05-18T17:40:11.675Z",
+      "event": "task_started",
+      "nodeId": "1-02",
+      "agent": "agent-claude-opus47-s1",
+      "message": "Claude Opus 4.7 (Session 1) picked up: Database Schema"
     }
   ]
 }

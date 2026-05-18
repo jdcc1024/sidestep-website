@@ -1,6 +1,6 @@
 # Issue: Database Schema
 
-## Status: pending
+## Status: done
 
 ## Phase: 1
 
@@ -8,25 +8,25 @@
 
 ## Vertical Slice
 This issue touches:
-- [ ] Database: Define all Convex schema tables and field types
-- [ ] API: Convex schema validation active (Convex enforces types at runtime)
-- [ ] Frontend: No UI — schema only
-- [ ] Tests: Schema compiles; basic Convex queries for each table return expected shape
+- [x] Database: Define all Convex schema tables and field types
+- [x] API: Convex schema validation active (Convex enforces types at runtime)
+- [x] Frontend: No UI — schema only
+- [x] Tests: Schema compiles; basic Convex queries for each table return expected shape
 
 ## Description
 Define the complete Convex schema covering all core entities: users, designs, orders, jersey runs, jersey run responses, and intake submissions. Establishes the data model that every feature issue builds on. Includes field types, optional fields, and index definitions for common query patterns.
 
 ## Acceptance Criteria
-- [ ] `users` table: clerkId, email, name, isAdmin (boolean), createdAt
-- [ ] `designs` table: ownerId, title, brief, canvaLink (optional), fileIds (array of Convex storage IDs), createdAt, updatedAt
-- [ ] `orders` table: captainId, teamName, sport, estimatedQuantity, jerseyStyle, neckline, sleeveStyle, hasOwnDesign, designIds (array), internalStages (array of stage objects with name + completedAt), createdAt, updatedAt
-- [ ] `jerseyRuns` table: orderId, captainId, namesMode ("open"|"fixed"), fixedRoster (optional array), customQuestions (array), deadline, status ("open"|"closed"), createdAt
-- [ ] `jerseyRunResponses` table: jerseyRunId, respondentName, respondentEmail, jerseyName (optional), jerseyNumber (optional), size, customAnswers (object), submittedAt
-- [ ] `intakes` table: name, teamName, sport, estimatedQuantity, brief, submittedAt
-- [ ] Indexes defined for common queries (e.g. orders by captainId, jerseyRunResponses by jerseyRunId)
-- [ ] `npx convex dev` starts without schema errors
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] `users` table: clerkId, email, name, isAdmin (boolean), createdAt
+- [x] `designs` table: ownerId, title, brief, canvaLink (optional), fileIds (array of Convex storage IDs), createdAt, updatedAt
+- [x] `orders` table: captainId, teamName, sport, estimatedQuantity, jerseyStyle, neckline, sleeveStyle, hasOwnDesign, designIds (array), internalStages (array of stage objects with name + completedAt), createdAt, updatedAt
+- [x] `jerseyRuns` table: orderId, captainId, namesMode ("open"|"fixed"), fixedRoster (optional array), customQuestions (array), deadline, status ("open"|"closed"), createdAt
+- [x] `jerseyRunResponses` table: jerseyRunId, respondentName, respondentEmail, jerseyName (optional), jerseyNumber (optional), size, customAnswers (object), submittedAt
+- [x] `intakes` table: name, teamName, sport, estimatedQuantity, brief, submittedAt
+- [x] Indexes defined for common queries (e.g. orders by captainId, jerseyRunResponses by jerseyRunId)
+- [x] `npx convex dev` starts without schema errors
+- [x] All tests pass
+- [x] No regressions in existing tests
 
 ## Dependencies
 - Blocked by: 1-01
