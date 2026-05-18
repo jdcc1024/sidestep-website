@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-17T15:29:01.864Z",
+  "lastUpdated": "2026-05-18T15:04:38.581Z",
   "phases": [
     {
       "id": "phase-1",
@@ -18,8 +18,688 @@
       "description": "Enhancements and optimization"
     }
   ],
-  "nodes": [],
-  "edges": [],
+  "nodes": [
+    {
+      "id": "1-01",
+      "title": "Project Scaffolding",
+      "phase": "phase-1",
+      "type": "infrastructure",
+      "description": "Bootstrap the full tech stack: Next.js App Router with TypeScript and Tailwind, Convex backend, Clerk and Resend SDKs installed, environment variables documented. No features — just a runnable foundation.",
+      "status": "pending",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/1-01-project-scaffolding.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#6-implementation-decisions",
+      "acceptanceCriteria": [
+        "npm run dev starts without errors",
+        "Convex dev server connects",
+        "Clerk, Resend, Convex packages installed",
+        ".env.local.example documents all required vars",
+        "TypeScript and ESLint compile clean"
+      ]
+    },
+    {
+      "id": "1-02",
+      "title": "Database Schema",
+      "phase": "phase-1",
+      "type": "infrastructure",
+      "description": "Define all Convex schema tables: users, designs, orders, jerseyRuns, jerseyRunResponses, and intakes. Includes field types, optional fields, and indexes for common query patterns.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/1-02-database-schema.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
+      "acceptanceCriteria": [
+        "All 6 tables defined in convex/schema.ts",
+        "Indexes defined for captainId and jerseyRunId",
+        "npx convex dev starts without schema errors",
+        "Basic queries for each table return expected shape"
+      ]
+    },
+    {
+      "id": "1-03",
+      "title": "Authentication Flows",
+      "phase": "phase-1",
+      "type": "infrastructure",
+      "description": "Wire up Clerk authentication: self-registration, invite-link registration (pre-fills order form from intake), Convex user sync via webhook, admin flag in Clerk privateMetadata, and Resend email on new self-registration.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/1-03-authentication-flows.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#6-implementation-decisions",
+      "acceptanceCriteria": [
+        "Self-registration creates user in Convex users table",
+        "Invite link pre-fills order form from intake record",
+        "/portal and /admin routes protected by Clerk middleware",
+        "Admin flag only readable server-side",
+        "Resend email sent to info@sidestep.design on self-registration"
+      ]
+    },
+    {
+      "id": "1-04",
+      "title": "Application Shell",
+      "phase": "phase-1",
+      "type": "infrastructure",
+      "description": "Three Next.js App Router layouts: public marketing (nav + footer), authenticated portal (sidebar + user menu), and admin (admin sidebar). Fully responsive, mobile-first, Sidestep brand colors applied.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/1-04-application-shell.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#7-technical-constraints",
+      "acceptanceCriteria": [
+        "Three distinct layouts with correct route groups",
+        "All layouts responsive at 375px, 768px, 1280px",
+        "Nav active states highlight current route",
+        "Sidestep teal and logo applied",
+        "Mobile hamburger menu works on portal and admin"
+      ]
+    },
+    {
+      "id": "2-01",
+      "title": "Marketing Pages",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Hero, customization options, design-to-delivery process, and FAQ sections. Static content replacing the existing brochure site. Placeholder for jersey photos until client provides assets.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-01-marketing-pages.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#2-proposed-solution",
+      "acceptanceCriteria": [
+        "Hero section with CTA linking to intake form",
+        "Customization section shows fabric, neckline, sleeve options",
+        "Process section shows 3-step flow",
+        "FAQ covers minimum order, timeline, design help, Vancouver-only",
+        "Responsive at 375px, 768px, 1280px"
+      ]
+    },
+    {
+      "id": "2-02",
+      "title": "Pricing Calculator",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Interactive public calculator: quantity input, design fee toggle, instant estimate. Pure client-side. Tiers: 1-9=0, 10-25=0, 26-50=5, 51+=0 per jersey. 50 optional design fee. Unit tested at all tier boundaries.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-02-pricing-calculator.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
+      "acceptanceCriteria": [
+        "All 4 pricing tiers calculate correctly",
+        "Design fee toggle adds 50",
+        "Output labeled as estimate",
+        "Edge cases at tier boundaries pass unit tests",
+        "CTA below calculator links to intake form"
+      ]
+    },
+    {
+      "id": "2-03",
+      "title": "Public Intake Form",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Lead-capture form on the marketing site: name, team, sport, quantity, brief. Saves to Convex intakes table. No account required. Intake ID becomes the invite token for portal registration.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-03-public-intake-form.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
+      "acceptanceCriteria": [
+        "Form saves to Convex intakes table on submit",
+        "All required fields validated before submission",
+        "Success confirmation shown after submit",
+        "Intake record includes submittedAt timestamp",
+        "Mobile responsive"
+      ]
+    },
+    {
+      "id": "2-04",
+      "title": "Customer Portal Dashboard",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Authenticated portal home: captain's orders list with status chips, designs list, and empty states. Real-time via Convex subscription. Hub for all customer activity.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-04-customer-portal-dashboard.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Shows My Orders with customer-facing status chips",
+        "Shows My Designs with file count",
+        "Empty states with CTAs for new users",
+        "Real-time updates without page refresh",
+        "Unauthenticated users redirected to sign-in"
+      ]
+    },
+    {
+      "id": "2-05",
+      "title": "Design Creation",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Design creation form in the portal: title, brief, optional Canva link, multi-file upload (any file type) to Convex storage. Design detail page with download links. Edit mode to add more files.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-05-design-creation.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
+      "acceptanceCriteria": [
+        "Form creates design record in Convex with uploaded file IDs",
+        "Files stored in Convex storage and retrievable via URL",
+        "Design appears in portal dashboard after save",
+        "Design detail shows all files as download links",
+        "Upload progress indicator shown"
+      ]
+    },
+    {
+      "id": "2-06",
+      "title": "Order Creation",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Full order creation form: team name, sport, quantity, jersey style, neckline, sleeve style, own-design checkbox, and design-linking multi-select. Creates order with initial Inquiry internal stage.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-06-order-creation.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Order created in Convex with all required fields",
+        "Initial internalStages set to Inquiry",
+        "Captain can link existing designs to the order",
+        "Order appears in dashboard with Order Started status chip",
+        "Redirects to order detail page after creation"
+      ]
+    },
+    {
+      "id": "2-07",
+      "title": "Order Status Tracking",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Order detail page in the portal: 8-stage customer-facing timeline, linked designs, order specs. Real-time Convex subscription. Internal stage names never shown to customer.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-07-order-status-tracking.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#8-success-metrics",
+      "acceptanceCriteria": [
+        "8 customer-facing stages shown as visual timeline",
+        "Current stage highlighted, past stages marked complete",
+        "Stage derives from internalStages in real-time",
+        "Internal stage names not visible to customer",
+        "Linked designs shown with download links"
+      ]
+    },
+    {
+      "id": "2-08",
+      "title": "Jersey Run Creation",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Captain creates a jersey run from the order detail page: jersey sizes, names mode (open/fixed), fixed roster, custom questions, deadline. Generates a shareable public URL.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-08-jersey-run-creation.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Jersey run created with namesMode, sizes, customQuestions, and deadline",
+        "Fixed roster allows captain to pre-define names and numbers",
+        "Shareable link /run/<id> generated and displayed with copy button",
+        "Link is accessible without authentication",
+        "Up to 5 custom questions can be added"
+      ]
+    },
+    {
+      "id": "2-09",
+      "title": "Jersey Run Public Form",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Public fan submission form at /run/<id>: no account required. Adapts to open vs fixed names mode. Warns on blank name or number. Shows closed state when deadline passes or run is closed.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-09-jersey-run-public-form.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Accessible at /run/<id> without authentication",
+        "Blank name or number triggers warning before submit",
+        "Fixed mode shows roster dropdown, open mode shows free text",
+        "Submission creates jerseyRunResponse record",
+        "Closed state shown when run is expired or closed"
+      ]
+    },
+    {
+      "id": "2-10",
+      "title": "Jersey Run Captain Dashboard",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Authenticated captain view of their jersey run responses: live table of all submissions, participation count, deadline countdown, and running price estimate. Real-time via Convex.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-10-jersey-run-captain-dashboard.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Response table shows name, email, size, jersey name/number, custom answers",
+        "Participation count displayed prominently",
+        "Deadline countdown shows days remaining",
+        "Running price estimate shown using pricing tiers",
+        "Data updates in real-time without page refresh"
+      ]
+    },
+    {
+      "id": "2-11",
+      "title": "Admin Order Overview",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Admin-only order list across all customers: sortable table with team name, captain, sport, quantity, internal stage, date. Clicking opens admin order detail with all fields and captain contact info.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-11-admin-order-overview.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Admin-only route returns 403 for non-admin users",
+        "Orders table shows all customers orders with correct columns",
+        "Sortable by any column",
+        "Admin order detail shows captain email and all order fields",
+        "Admin designs list shows all designs system-wide"
+      ]
+    },
+    {
+      "id": "2-12",
+      "title": "Admin Stage Management",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "14-stage internal checklist on admin order detail: admin checks/unchecks stages with timestamps. Completing a stage triggers real-time customer-facing stage update in the portal.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-12-admin-stage-management.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "All 14 internal stages shown as checklist with timestamps",
+        "Checking a stage sets completedAt timestamp",
+        "Unchecking clears the timestamp",
+        "Customer portal stage updates in real-time after admin checks a stage",
+        "Non-admin users cannot call adminUpdateOrderStages mutation"
+      ]
+    },
+    {
+      "id": "2-13",
+      "title": "Admin Customer Management",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Admin customer list with New badge for recent signups, intake leads list with Send Invite Link button, and inline editing for any order, design, or customer record field.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/2-13-admin-customer-management.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Customer list shows all users with registration date and New badge within 7 days",
+        "Leads list shows all intake submissions with invite link copy button",
+        "Admin can inline-edit any order, design, or customer field",
+        "All mutations enforce admin-only access",
+        "New self-registered users appear prominently"
+      ]
+    },
+    {
+      "id": "3-01",
+      "title": "Jersey Run Deadline Enforcement",
+      "phase": "phase-3",
+      "type": "feature",
+      "description": "Convex daily cron job closes expired jersey runs and sends Resend emails to captain and Sidestep admin. Reusable close logic also wired to manual admin close button in 3-02.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/3-01-jersey-run-deadline-enforcement.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
+      "acceptanceCriteria": [
+        "Cron runs daily and closes all runs where deadline < now",
+        "Resend email sent to captain and info@sidestep.design on close",
+        "Already-closed runs are skipped",
+        "Manual close by admin triggers same emails",
+        "Expired runs show closed state on public form"
+      ]
+    },
+    {
+      "id": "3-02",
+      "title": "Admin Jersey Run Oversight",
+      "phase": "phase-3",
+      "type": "feature",
+      "description": "Admin page listing all jersey runs system-wide: team, captain, response count, deadline, status. Full response detail view per run. Manual close button reusing the cron closure logic.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/3-02-admin-jersey-run-oversight.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Admin jersey runs list shows all runs across all customers",
+        "Clicking a run shows full response table with all fields",
+        "Close run button sets status to closed and sends emails",
+        "Closed runs show badge and disabled close button",
+        "Non-admin users cannot access"
+      ]
+    },
+    {
+      "id": "3-03",
+      "title": "Admin Data Export",
+      "phase": "phase-3",
+      "type": "feature",
+      "description": "CSV export button on admin order detail. Downloads a file with order info and all jersey run responses formatted for supplier handoff. Admin-only API route.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/3-03-admin-data-export.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Export CSV button triggers browser file download",
+        "CSV includes all jersey run response rows when run exists",
+        "CSV includes single order row when no run exists",
+        "Filename is sidestep-order-<team>-<date>.csv",
+        "Non-admin request to export API returns 403"
+      ]
+    },
+    {
+      "id": "3-04",
+      "title": "Customer Participation History",
+      "phase": "phase-3",
+      "type": "feature",
+      "description": "Participated In section in the portal dashboard: shows jersey runs the customer submitted responses to (matched by email), with team name, jersey details, and submission date. Read-only.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/3-04-customer-participation-history.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "Participated In section shows on portal dashboard",
+        "Entries matched by respondentEmail to logged-in user email",
+        "Each entry shows team name, size, jersey name, number, and submission date",
+        "Empty state when no participations",
+        "Read-only in Phase 1"
+      ]
+    },
+    {
+      "id": "3-05",
+      "title": "SEO Performance and Polish",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Final pre-launch pass: Next.js metadata on all pages, OG image, Next.js Image optimization, jersey photos added, Lighthouse score >= 85 mobile, axe accessibility audit, zero TypeScript/ESLint errors.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/3-05-seo-performance-and-polish.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#7-technical-constraints",
+      "acceptanceCriteria": [
+        "Every page has unique title and meta description",
+        "OG image set on homepage",
+        "Lighthouse Performance >= 85 on mobile",
+        "Lighthouse Accessibility >= 90 on all public pages",
+        "TypeScript compiles clean with zero errors"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "1-01",
+      "to": "1-02"
+    },
+    {
+      "from": "1-02",
+      "to": "1-03"
+    },
+    {
+      "from": "1-03",
+      "to": "1-04"
+    },
+    {
+      "from": "1-04",
+      "to": "2-01"
+    },
+    {
+      "from": "1-04",
+      "to": "2-02"
+    },
+    {
+      "from": "1-04",
+      "to": "2-03"
+    },
+    {
+      "from": "1-04",
+      "to": "2-04"
+    },
+    {
+      "from": "1-04",
+      "to": "2-11"
+    },
+    {
+      "from": "2-04",
+      "to": "2-05"
+    },
+    {
+      "from": "2-05",
+      "to": "2-06"
+    },
+    {
+      "from": "2-06",
+      "to": "2-07"
+    },
+    {
+      "from": "2-07",
+      "to": "2-08"
+    },
+    {
+      "from": "2-08",
+      "to": "2-09"
+    },
+    {
+      "from": "2-09",
+      "to": "2-10"
+    },
+    {
+      "from": "2-11",
+      "to": "2-12"
+    },
+    {
+      "from": "2-11",
+      "to": "2-13"
+    },
+    {
+      "from": "2-10",
+      "to": "3-01"
+    },
+    {
+      "from": "3-01",
+      "to": "3-02"
+    },
+    {
+      "from": "3-02",
+      "to": "3-03"
+    },
+    {
+      "from": "2-09",
+      "to": "3-04"
+    },
+    {
+      "from": "2-13",
+      "to": "3-05"
+    }
+  ],
   "agents": [],
-  "log": []
+  "log": [
+    {
+      "timestamp": "2026-05-18T15:01:14.603Z",
+      "event": "nodes_added",
+      "nodeId": "1-01",
+      "agent": null,
+      "message": "New task added: Project Scaffolding"
+    },
+    {
+      "timestamp": "2026-05-18T15:01:14.649Z",
+      "event": "nodes_added",
+      "nodeId": "1-02",
+      "agent": null,
+      "message": "New task added: Database Schema"
+    },
+    {
+      "timestamp": "2026-05-18T15:01:14.697Z",
+      "event": "nodes_added",
+      "nodeId": "1-03",
+      "agent": null,
+      "message": "New task added: Authentication Flows"
+    },
+    {
+      "timestamp": "2026-05-18T15:01:14.745Z",
+      "event": "nodes_added",
+      "nodeId": "1-04",
+      "agent": null,
+      "message": "New task added: Application Shell"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:02.342Z",
+      "event": "nodes_added",
+      "nodeId": "2-01",
+      "agent": null,
+      "message": "New task added: Marketing Pages"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:02.395Z",
+      "event": "nodes_added",
+      "nodeId": "2-02",
+      "agent": null,
+      "message": "New task added: Pricing Calculator"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:02.449Z",
+      "event": "nodes_added",
+      "nodeId": "2-03",
+      "agent": null,
+      "message": "New task added: Public Intake Form"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:02.502Z",
+      "event": "nodes_added",
+      "nodeId": "2-04",
+      "agent": null,
+      "message": "New task added: Customer Portal Dashboard"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:36.109Z",
+      "event": "nodes_added",
+      "nodeId": "2-05",
+      "agent": null,
+      "message": "New task added: Design Creation"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:36.158Z",
+      "event": "nodes_added",
+      "nodeId": "2-06",
+      "agent": null,
+      "message": "New task added: Order Creation"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:36.207Z",
+      "event": "nodes_added",
+      "nodeId": "2-07",
+      "agent": null,
+      "message": "New task added: Order Status Tracking"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:36.258Z",
+      "event": "nodes_added",
+      "nodeId": "2-08",
+      "agent": null,
+      "message": "New task added: Jersey Run Creation"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:56.171Z",
+      "event": "nodes_added",
+      "nodeId": "2-09",
+      "agent": null,
+      "message": "New task added: Jersey Run Public Form"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:56.229Z",
+      "event": "nodes_added",
+      "nodeId": "2-10",
+      "agent": null,
+      "message": "New task added: Jersey Run Captain Dashboard"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:56.287Z",
+      "event": "nodes_added",
+      "nodeId": "2-11",
+      "agent": null,
+      "message": "New task added: Admin Order Overview"
+    },
+    {
+      "timestamp": "2026-05-18T15:03:56.341Z",
+      "event": "nodes_added",
+      "nodeId": "2-12",
+      "agent": null,
+      "message": "New task added: Admin Stage Management"
+    },
+    {
+      "timestamp": "2026-05-18T15:04:15.955Z",
+      "event": "nodes_added",
+      "nodeId": "2-13",
+      "agent": null,
+      "message": "New task added: Admin Customer Management"
+    },
+    {
+      "timestamp": "2026-05-18T15:04:16.003Z",
+      "event": "nodes_added",
+      "nodeId": "3-01",
+      "agent": null,
+      "message": "New task added: Jersey Run Deadline Enforcement"
+    },
+    {
+      "timestamp": "2026-05-18T15:04:16.055Z",
+      "event": "nodes_added",
+      "nodeId": "3-02",
+      "agent": null,
+      "message": "New task added: Admin Jersey Run Oversight"
+    },
+    {
+      "timestamp": "2026-05-18T15:04:16.109Z",
+      "event": "nodes_added",
+      "nodeId": "3-03",
+      "agent": null,
+      "message": "New task added: Admin Data Export"
+    },
+    {
+      "timestamp": "2026-05-18T15:04:26.507Z",
+      "event": "nodes_added",
+      "nodeId": "3-04",
+      "agent": null,
+      "message": "New task added: Customer Participation History"
+    },
+    {
+      "timestamp": "2026-05-18T15:04:26.560Z",
+      "event": "nodes_added",
+      "nodeId": "3-05",
+      "agent": null,
+      "message": "New task added: SEO Performance and Polish"
+    }
+  ]
 }
