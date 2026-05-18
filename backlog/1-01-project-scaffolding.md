@@ -1,6 +1,6 @@
 # Issue: Project Scaffolding
 
-## Status: pending
+## Status: done
 
 ## Phase: 1
 

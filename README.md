@@ -1,27 +1,76 @@
-# AI Project Template
+# Sidestep Website
 
-A reusable project template for AI-assisted development, built on the methodology taught by Matt Pocock in his [Workflow for AI Coding](https://www.youtube.com/watch?v=-QFHIoCo-Ko) workshop.
+Full-stack web app for [Sidestep](https://sidestep.design) — a Greater Vancouver custom sublimated jersey business. Replaces the existing brochure site with a marketing site, customer portal (designs, orders, jersey runs), and admin dashboard.
 
-This template provides the structure, system prompts, and skills needed to start any coding project using a disciplined AI workflow — from requirements gathering through autonomous implementation to quality assurance.
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Convex · Clerk · Resend
+
+See `docs/prd/sidestep-website-phase1.md` for the full Phase 1 PRD.
 
 ---
 
-## Quick Start
+## Local Development
 
-### 1. Copy this template
-```bash
-cp -r ai-project-template/ my-new-project/
-cd my-new-project/
-git init
+### Prerequisites
+- Node.js 20+ (tested on 22)
+- npm 10+
+- Accounts on [Convex](https://dashboard.convex.dev), [Clerk](https://dashboard.clerk.com), and [Resend](https://resend.com) (free tiers are fine for Phase 1)
 
-# Initialize a fresh DAG for your project
-node scripts/dag-reset.js "My Project Name"
+### First-time setup
 
-# Start the DAG viewer in a separate terminal
-node scripts/serve-dag.js
+```powershell
+# 1. Install dependencies
+npm install
+
+# 2. Create your local env file from the template
+copy .env.local.example .env.local
+# (then fill in real values — see comments inside .env.local.example)
+
+# 3. Initialize Convex (one-time, interactive — logs you in via browser)
+npx convex dev
+# This writes CONVEX_DEPLOYMENT and NEXT_PUBLIC_CONVEX_URL into .env.local automatically.
+# Leave it running in this terminal — it watches convex/ for changes.
+
+# 4. In a second terminal, start the Next.js dev server
+npm run dev
+# → http://localhost:3000
 ```
 
-### 2. Start with the Grill
+### Daily development
+```powershell
+npx convex dev   # terminal 1 — Convex watcher
+npm run dev      # terminal 2 — Next.js
+```
+
+### Quality checks
+```powershell
+npm run typecheck   # tsc --noEmit
+npm run lint        # eslint
+npm run build       # production build (also typechecks)
+```
+
+### Environment variables
+All required keys are documented in `.env.local.example`. Never commit `.env.local`. Clerk's `CLERK_SECRET_KEY` and `RESEND_API_KEY` are server-side only; only the `NEXT_PUBLIC_*` keys are exposed to the browser.
+
+### Project structure
+```
+sidestep-website/
+├── app/                    Next.js App Router routes
+├── public/                 Static assets
+├── convex/                 Convex schema + functions (created in issue 1-02)
+├── backlog/                Vertical-slice issue files
+├── docs/prd/               Product Requirements Documents
+├── scripts/                DAG dashboard CLI tools
+├── dag.json                Live DAG state (agents write here)
+└── dag-viewer.html         Open in browser to watch progress
+```
+
+---
+
+## AI Workflow
+
+This repo uses a structured AI-assisted development workflow. See `CLAUDE.md` for the full system prompt and `dag-viewer.html` (served via `node scripts/serve-dag.js`) for the live task DAG.
+
+### 1. Start with the Grill
 Open your AI coding tool (Claude Code, Cursor, etc.) and invoke:
 ```
 /grill-me
