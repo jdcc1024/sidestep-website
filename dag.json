@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-18T19:17:19.533Z",
+  "lastUpdated": "2026-05-18T19:27:30.768Z",
   "phases": [
     {
       "id": "phase-1",
@@ -63,10 +63,10 @@
       "title": "Authentication Flows",
       "phase": "phase-1",
       "type": "infrastructure",
-      "description": "Wire up Clerk authentication: self-registration, invite-link registration (pre-fills order form from intake), Convex user sync via webhook, admin flag in Clerk privateMetadata, and Resend email on new self-registration.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
+      "description": "Wire up Clerk authentication: self-registration, invite-link registration (pre-fills order form from intake), Convex user sync via webhook, and admin flag in Clerk privateMetadata.",
+      "status": "in-progress",
+      "agent": "agent-claude-sonnet46-s2",
+      "startedAt": "2026-05-18T19:27:30.767Z",
       "completedAt": null,
       "issueFile": "backlog/1-03-authentication-flows.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#6-implementation-decisions",
@@ -74,8 +74,7 @@
         "Self-registration creates user in Convex users table",
         "Invite link pre-fills order form from intake record",
         "/portal and /admin routes protected by Clerk middleware",
-        "Admin flag only readable server-side",
-        "Resend email sent to info@sidestep.design on self-registration"
+        "Admin flag only readable server-side"
       ]
     },
     {
@@ -457,6 +456,25 @@
         "Lighthouse Accessibility >= 90 on all public pages",
         "TypeScript compiles clean with zero errors"
       ]
+    },
+    {
+      "id": "3-06",
+      "title": "Registration Email Notification",
+      "phase": "phase-3",
+      "type": "feature",
+      "description": "Resend email to info@sidestep.design when a new captain self-registers without an invite link. Triggered via the Clerk webhook user.created event. Email includes captain name and email address.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/3-06-registration-email-notification.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#6-implementation-decisions",
+      "acceptanceCriteria": [
+        "Resend email sent to info@sidestep.design on self-registration",
+        "Email includes captain name and email",
+        "Only fires for self-registration not invite-link registration",
+        "All tests pass"
+      ]
     }
   ],
   "edges": [
@@ -543,6 +561,14 @@
     {
       "from": "2-13",
       "to": "3-05"
+    },
+    {
+      "from": "1-03",
+      "to": "3-06"
+    },
+    {
+      "from": "2-03",
+      "to": "3-06"
     }
   ],
   "agents": [
@@ -552,6 +578,13 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 2
+    },
+    {
+      "id": "agent-claude-sonnet46-s2",
+      "name": "Claude Sonnet 4.6 (Session 2)",
+      "status": "working",
+      "currentTask": "1-03",
+      "tasksCompleted": 0
     }
   ],
   "log": [
@@ -743,6 +776,27 @@
       "nodeId": "1-02",
       "agent": "agent-claude-opus47-s1",
       "message": "Completed: Database Schema"
+    },
+    {
+      "timestamp": "2026-05-18T19:26:59.599Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-sonnet46-s2",
+      "message": "Claude Sonnet 4.6 (Session 2) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-18T19:27:05.998Z",
+      "event": "nodes_added",
+      "nodeId": "3-06",
+      "agent": null,
+      "message": "New task added: Registration Email Notification"
+    },
+    {
+      "timestamp": "2026-05-18T19:27:30.768Z",
+      "event": "task_started",
+      "nodeId": "1-03",
+      "agent": "agent-claude-sonnet46-s2",
+      "message": "Claude Sonnet 4.6 (Session 2) picked up: Authentication Flows"
     }
   ]
 }

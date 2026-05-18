@@ -9,6 +9,7 @@
  */
 
 import type * as _schemaSmokeTest from "../_schemaSmokeTest.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   _schemaSmokeTest: typeof _schemaSmokeTest;
+  users: typeof users;
 }>;
 
 /**
