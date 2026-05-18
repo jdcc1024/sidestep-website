@@ -25,7 +25,17 @@
       "Bash(node scripts/dag-update.js add-edge \"1-03\" \"1-04\")",
       "Bash(node scripts/dag-update.js add-edge \"1-04\" \"2-01\")",
       "Bash(node scripts/dag-update.js add-edge \"1-04\" \"2-02\")",
-      "Bash(node scripts/dag-update.js status)"
+      "Bash(node scripts/dag-update.js status)",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(node *)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --use-npm --yes --turbopack)",
+      "Bash(npx --yes create-next-app@latest .next-scaffold --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --use-npm --yes --turbopack)",
+      "Bash(npm install *)",
+      "Bash(npm view *)",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(npx convex *)"
     ]
   }
 }
