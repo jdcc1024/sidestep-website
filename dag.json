@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-19T02:42:38.603Z",
+  "lastUpdated": "2026-05-19T02:50:59.301Z",
   "phases": [
     {
       "id": "phase-1",
@@ -103,9 +103,9 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Hero, customization options, design-to-delivery process, and FAQ sections. Static content replacing the existing brochure site. Placeholder for jersey photos until client provides assets.",
-      "status": "blocked",
-      "agent": null,
-      "startedAt": null,
+      "status": "in-progress",
+      "agent": "agent-claude-opus47-s2",
+      "startedAt": "2026-05-19T02:50:59.301Z",
       "completedAt": null,
       "issueFile": "backlog/2-01-marketing-pages.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#2-proposed-solution",
@@ -123,7 +123,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Interactive public calculator: quantity input, design fee toggle, instant estimate. Pure client-side. Tiers: 1-9=0, 10-25=0, 26-50=5, 51+=0 per jersey. 50 optional design fee. Unit tested at all tier boundaries.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -143,7 +143,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Lead-capture form on the marketing site: name, team, sport, quantity, brief. Saves to Convex intakes table. No account required. Intake ID becomes the invite token for portal registration.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -163,7 +163,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Authenticated portal home: captain's orders list with status chips, designs list, and empty states. Real-time via Convex subscription. Hub for all customer activity.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -303,7 +303,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Admin-only order list across all customers: sortable table with team name, captain, sport, quantity, internal stage, date. Clicking opens admin order detail with all fields and captain contact info.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -643,6 +643,13 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s2",
+      "name": "Claude Opus 4.7 (s2)",
+      "status": "working",
+      "currentTask": "2-01",
+      "tasksCompleted": 0
     }
   ],
   "log": [
@@ -897,6 +904,20 @@
       "nodeId": "1-05",
       "agent": null,
       "message": "New task added: Fix Mobile Responsive Shell"
+    },
+    {
+      "timestamp": "2026-05-19T02:50:59.244Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s2",
+      "message": "Claude Opus 4.7 (s2) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-19T02:50:59.301Z",
+      "event": "task_started",
+      "nodeId": "2-01",
+      "agent": "agent-claude-opus47-s2",
+      "message": "Claude Opus 4.7 (s2) picked up: Marketing Pages"
     }
   ]
 }

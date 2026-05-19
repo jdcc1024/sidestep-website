@@ -7,9 +7,9 @@ import { Authenticated, Unauthenticated } from "convex/react";
 import { Logo } from "./Logo";
 
 const navLinks = [
-  { href: "/customize", label: "Customize" },
-  { href: "/process", label: "Process" },
-  { href: "/pricing", label: "Pricing" },
+  { href: "/#customize", label: "Customize" },
+  { href: "/#process", label: "Process" },
+  { href: "/#pricing", label: "Pricing" },
 ];
 
 export function MarketingNav() {
@@ -23,23 +23,15 @@ export function MarketingNav() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Logo />
         <nav className="flex items-center gap-1" aria-label="Main">
-          {navLinks.map((link) => {
-            const active = isActive(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={active ? "page" : undefined}
-                className={`hidden rounded-md px-3 py-2 text-sm font-medium transition-colors sm:inline-block ${
-                  active
-                    ? "bg-teal-50 text-teal-700"
-                    : "text-zinc-700 hover:bg-zinc-100"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="hidden rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 sm:inline-block"
+            >
+              {link.label}
+            </Link>
+          ))}
           <Unauthenticated>
             <Link
               href="/sign-in"
@@ -48,7 +40,7 @@ export function MarketingNav() {
               Sign in
             </Link>
             <Link
-              href="/intake"
+              href="/#quote"
               className="ml-1 rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
             >
               Get a Quote

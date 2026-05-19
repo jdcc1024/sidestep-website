@@ -1,6 +1,6 @@
 # Issue: Marketing Pages
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
