@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-19T06:42:30.526Z",
+  "lastUpdated": "2026-05-19T06:51:37.098Z",
   "phases": [
     {
       "id": "phase-1",
@@ -143,10 +143,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Lead-capture form on the marketing site: name, team, sport, quantity, brief. Saves to Convex intakes table. No account required. Intake ID becomes the invite token for portal registration.",
-      "status": "in-progress",
+      "status": "completed",
       "agent": "claude-intake",
       "startedAt": "2026-05-19T06:05:25.756Z",
-      "completedAt": null,
+      "completedAt": "2026-05-19T06:51:37.097Z",
       "issueFile": "backlog/2-03-public-intake-form.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
       "acceptanceCriteria": [
@@ -463,7 +463,7 @@
       "phase": "phase-3",
       "type": "feature",
       "description": "Resend email to info@sidestep.design when a new captain self-registers without an invite link. Triggered via the Clerk webhook user.created event. Email includes captain name and email address.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -521,7 +521,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Let intake-form visitors optionally attach photos or mood-board images (jerseys they like, team colors, inspiration). Files attach to the intake record so design conversations can start with visual context. Anonymous uploads create real abuse risk — open-write storage would let anyone fill our bucket — so the abuse-control approach needs a decision before implementation.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -691,9 +691,9 @@
     {
       "id": "claude-intake",
       "name": "Claude (Intake form)",
-      "status": "working",
-      "currentTask": "2-03",
-      "tasksCompleted": 0
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
@@ -1011,6 +1011,13 @@
       "nodeId": "2-14",
       "agent": null,
       "message": "New task added: Optional Intake Image Uploads"
+    },
+    {
+      "timestamp": "2026-05-19T06:51:37.097Z",
+      "event": "task_completed",
+      "nodeId": "2-03",
+      "agent": "claude-intake",
+      "message": "Completed: Public Intake Form"
     }
   ]
 }
