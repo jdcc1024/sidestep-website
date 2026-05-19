@@ -81,9 +81,26 @@ export default defineSchema({
   intakes: defineTable({
     name: v.string(),
     teamName: v.string(),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
     sport: v.string(),
     estimatedQuantity: v.number(),
+    designPreference: v.optional(
+      v.union(
+        v.literal("own-design"),
+        v.literal("needs-help"),
+        v.literal("undecided"),
+      ),
+    ),
+    usageContext: v.optional(
+      v.array(v.union(v.literal("event"), v.literal("league"))),
+    ),
+    deadline: v.optional(v.number()),
     brief: v.string(),
+    questions: v.optional(v.string()),
+    newsletterOptIn: v.optional(v.boolean()),
     submittedAt: v.number(),
-  }),
+  })
+    .index("by_submittedAt", ["submittedAt"])
+    .index("by_deadline", ["deadline"]),
 });

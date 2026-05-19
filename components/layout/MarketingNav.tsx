@@ -40,7 +40,7 @@ export function MarketingNav() {
               Sign in
             </Link>
             <Link
-              href="/#quote"
+              href="/intake"
               className="ml-1 rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
             >
               Get a Quote
