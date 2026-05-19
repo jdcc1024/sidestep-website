@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-19T02:50:59.301Z",
+  "lastUpdated": "2026-05-19T05:08:21.278Z",
   "phases": [
     {
       "id": "phase-1",
@@ -103,10 +103,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Hero, customization options, design-to-delivery process, and FAQ sections. Static content replacing the existing brochure site. Placeholder for jersey photos until client provides assets.",
-      "status": "in-progress",
+      "status": "completed",
       "agent": "agent-claude-opus47-s2",
       "startedAt": "2026-05-19T02:50:59.301Z",
-      "completedAt": null,
+      "completedAt": "2026-05-19T02:53:58.617Z",
       "issueFile": "backlog/2-01-marketing-pages.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#2-proposed-solution",
       "acceptanceCriteria": [
@@ -123,10 +123,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Interactive public calculator: quantity input, design fee toggle, instant estimate. Pure client-side. Tiers: 1-9=0, 10-25=0, 26-50=5, 51+=0 per jersey. 50 optional design fee. Unit tested at all tier boundaries.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-s4",
+      "startedAt": "2026-05-19T05:00:57.138Z",
+      "completedAt": "2026-05-19T05:08:21.278Z",
       "issueFile": "backlog/2-02-pricing-calculator.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
       "acceptanceCriteria": [
@@ -647,9 +647,16 @@
     {
       "id": "agent-claude-opus47-s2",
       "name": "Claude Opus 4.7 (s2)",
-      "status": "working",
-      "currentTask": "2-01",
-      "tasksCompleted": 0
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s4",
+      "name": "Claude Opus 4.7 (Session 4)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
@@ -918,6 +925,34 @@
       "nodeId": "2-01",
       "agent": "agent-claude-opus47-s2",
       "message": "Claude Opus 4.7 (s2) picked up: Marketing Pages"
+    },
+    {
+      "timestamp": "2026-05-19T02:53:58.618Z",
+      "event": "task_completed",
+      "nodeId": "2-01",
+      "agent": "agent-claude-opus47-s2",
+      "message": "Completed: Marketing Pages"
+    },
+    {
+      "timestamp": "2026-05-19T05:00:57.078Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s4",
+      "message": "Claude Opus 4.7 (Session 4) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-19T05:00:57.139Z",
+      "event": "task_started",
+      "nodeId": "2-02",
+      "agent": "agent-claude-opus47-s4",
+      "message": "Claude Opus 4.7 (Session 4) picked up: Pricing Calculator"
+    },
+    {
+      "timestamp": "2026-05-19T05:08:21.278Z",
+      "event": "task_completed",
+      "nodeId": "2-02",
+      "agent": "agent-claude-opus47-s4",
+      "message": "Completed: Pricing Calculator"
     }
   ]
 }

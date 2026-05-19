@@ -1,6 +1,6 @@
 # Issue: Pricing Calculator
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -17,16 +17,16 @@ This issue touches:
 Build the public pricing calculator on the marketing site pricing section. A visitor enters a jersey quantity, optionally toggles the design fee, and sees an instant estimated total. No login required. The output is clearly labeled as an estimate. Computation is pure client-side with no API call.
 
 ## Acceptance Criteria
-- [ ] Quantity input: number field, min 1, no max enforced in UI (but priced at 50+ tier beyond 50)
-- [ ] Pricing tiers: 1–9 jerseys = $60/unit, 10–25 = $50/unit, 26–50 = $45/unit, 51+ = $40/unit
-- [ ] Design fee toggle: adds $150 to the total when enabled ("I don't have my own design")
-- [ ] Output shows: per-unit price, subtotal (quantity × unit price), design fee (if toggled), and estimated total — all updating instantly on input change
-- [ ] Output is labeled "Estimated cost — final quote confirmed by Sidestep"
-- [ ] Edge cases handled correctly: quantity 0 shows $0, quantity exactly 10 uses $50 tier, quantity exactly 26 uses $45 tier, quantity exactly 51 uses $40 tier
-- [ ] A CTA below the calculator links to the intake form ("Get your official quote →")
-- [ ] Calculator is accessible (labeled inputs, output announced to screen readers)
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] Quantity input: number field, min 1, no max enforced in UI (but priced at 50+ tier beyond 50)
+- [x] Pricing tiers: 1–9 jerseys = $60/unit, 10–25 = $50/unit, 26–50 = $45/unit, 51+ = $40/unit
+- [x] Design fee toggle: adds $150 to the total when enabled ("I don't have my own design")
+- [x] Output shows: per-unit price, subtotal (quantity × unit price), design fee (if toggled), and estimated total — all updating instantly on input change
+- [x] Output is labeled "Estimated cost — final quote confirmed by Sidestep"
+- [x] Edge cases handled correctly: quantity 0 shows $0, quantity exactly 10 uses $50 tier, quantity exactly 26 uses $45 tier, quantity exactly 51 uses $40 tier
+- [x] A CTA below the calculator links to the intake form ("Get your official quote →")
+- [x] Calculator is accessible (labeled inputs, output announced to screen readers)
+- [x] All tests pass (15/15 in lib/pricing.test.ts)
+- [x] No regressions in existing tests (no prior tests existed; vitest harness added)
 
 ## Dependencies
 - Blocked by: 1-04
