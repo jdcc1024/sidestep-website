@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-18T19:41:54.070Z",
+  "lastUpdated": "2026-05-19T00:02:15.118Z",
   "phases": [
     {
       "id": "phase-1",
@@ -475,6 +475,25 @@
         "Only fires for self-registration not invite-link registration",
         "All tests pass"
       ]
+    },
+    {
+      "id": "3-07",
+      "title": "User Sync Architecture Revisit",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Revisit the client-side query+mutation pattern for syncing Clerk users into Convex. Current approach runs a Convex query on every page load for authenticated users. Evaluate: Clerk webhook handled entirely as a Convex HTTP action, or a Convex auth trigger, to guarantee sync fires exactly once on sign-up with no client-side overhead.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/3-07-user-sync-architecture-revisit.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#6-implementation-decisions",
+      "acceptanceCriteria": [
+        "Sync fires exactly once on user creation with no per-page-load queries",
+        "No unauthenticated mutations callable from outside the system",
+        "Solution works in local dev without ngrok or manual steps",
+        "Existing users table data preserved"
+      ]
     }
   ],
   "edges": [
@@ -569,6 +588,14 @@
     {
       "from": "2-03",
       "to": "3-06"
+    },
+    {
+      "from": "1-03",
+      "to": "3-07"
+    },
+    {
+      "from": "3-06",
+      "to": "3-07"
     }
   ],
   "agents": [
@@ -804,6 +831,13 @@
       "nodeId": "1-03",
       "agent": "agent-claude-sonnet46-s2",
       "message": "Completed: Authentication Flows"
+    },
+    {
+      "timestamp": "2026-05-19T00:02:12.137Z",
+      "event": "nodes_added",
+      "nodeId": "3-07",
+      "agent": null,
+      "message": "New task added: User Sync Architecture Revisit"
     }
   ]
 }
