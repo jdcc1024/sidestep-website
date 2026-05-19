@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { calculateEstimate, PRICING_TIERS, DESIGN_FEE } from "./pricing";
 
 describe("PRICING_TIERS", () => {
-  it("covers every quantity from 1 upward with no gaps", () => {
-    let cursor = 1;
+  it("covers every quantity from 5 upward with no gaps", () => {
+    let cursor = 5;
     for (const tier of PRICING_TIERS) {
       expect(tier.min).toBe(cursor);
       cursor = tier.max === null ? Infinity : tier.max + 1;
@@ -14,12 +14,13 @@ describe("PRICING_TIERS", () => {
 
 describe("calculateEstimate — tier boundaries (no design fee)", () => {
   const cases: Array<[number, number]> = [
-    [1, 60],
+    [1, 0],
     [9, 60],
     [10, 50],
-    [25, 50],
-    [26, 45],
-    [50, 45],
+    [24, 50],
+    [25, 45],
+    [49, 45],
+    [50, 40],
     [51, 40],
     [100, 40],
   ];
@@ -36,13 +37,13 @@ describe("calculateEstimate — tier boundaries (no design fee)", () => {
 });
 
 describe("calculateEstimate — design fee toggle", () => {
-  it("adds $150 when design fee is enabled", () => {
+  it("adds $125 when design fee is enabled", () => {
     const result = calculateEstimate(20, true);
     expect(result.perUnitPrice).toBe(50);
     expect(result.subtotal).toBe(1000);
     expect(result.designFee).toBe(DESIGN_FEE);
-    expect(result.designFee).toBe(150);
-    expect(result.total).toBe(1150);
+    expect(result.designFee).toBe(125);
+    expect(result.total).toBe(1125);
   });
 
   it("does not charge design fee when toggle is off", () => {
