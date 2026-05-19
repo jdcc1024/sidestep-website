@@ -1,4 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
+import { AdminShell } from "@/components/layout/AdminShell";
 
 // Reads privateMetadata.isAdmin server-side — this value is never sent to the client.
 export default async function AdminLayout({
@@ -11,7 +12,7 @@ export default async function AdminLayout({
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen flex-1 items-center justify-center">
         <div className="text-center">
           <p className="text-xl font-semibold text-zinc-900">
             403 — Access Denied
@@ -24,5 +25,5 @@ export default async function AdminLayout({
     );
   }
 
-  return <>{children}</>;
+  return <AdminShell>{children}</AdminShell>;
 }
