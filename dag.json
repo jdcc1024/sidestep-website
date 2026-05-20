@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-19T07:38:30.055Z",
+  "lastUpdated": "2026-05-20T04:20:49.758Z",
   "phases": [
     {
       "id": "phase-1",
@@ -303,10 +303,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Admin-only order list across all customers: sortable table with team name, captain, sport, quantity, internal stage, date. Clicking opens admin order detail with all fields and captain contact info.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-portal",
+      "startedAt": "2026-05-19T14:58:59.844Z",
+      "completedAt": "2026-05-20T04:20:49.757Z",
       "issueFile": "backlog/2-11-admin-order-overview.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
       "acceptanceCriteria": [
@@ -323,7 +323,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "14-stage internal checklist on admin order detail: admin checks/unchecks stages with timestamps. Completing a stage triggers real-time customer-facing stage update in the portal.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -700,7 +700,7 @@
       "name": "Claude Opus 4.7 (Portal Dashboard)",
       "status": "idle",
       "currentTask": null,
-      "tasksCompleted": 1
+      "tasksCompleted": 2
     }
   ],
   "log": [
@@ -1046,6 +1046,20 @@
       "nodeId": "2-04",
       "agent": "agent-claude-opus47-portal",
       "message": "Completed: Customer Portal Dashboard"
+    },
+    {
+      "timestamp": "2026-05-19T14:58:59.844Z",
+      "event": "task_started",
+      "nodeId": "2-11",
+      "agent": "agent-claude-opus47-portal",
+      "message": "Claude Opus 4.7 (Portal Dashboard) picked up: Admin Order Overview"
+    },
+    {
+      "timestamp": "2026-05-20T04:20:49.758Z",
+      "event": "task_completed",
+      "nodeId": "2-11",
+      "agent": "agent-claude-opus47-portal",
+      "message": "Completed: Admin Order Overview"
     }
   ]
 }
