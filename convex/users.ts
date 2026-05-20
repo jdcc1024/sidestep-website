@@ -33,21 +33,25 @@ export const syncCurrentUser = mutation({
   },
 });
 
-// Used by the Clerk webhook handler (production user.updated sync).
+// Called by the Clerk webhook on user.created and user.updated. The webhook
+// is the only path that writes isAdmin — keeps Clerk's privateMetadata as
+// the canonical source. syncCurrentUser (called from the browser) never
+// touches isAdmin.
 export const syncUser = mutation({
   args: {
     clerkId: v.string(),
     email: v.string(),
     name: v.string(),
+    isAdmin: v.boolean(),
   },
-  handler: async (ctx, { clerkId, email, name }) => {
+  handler: async (ctx, { clerkId, email, name, isAdmin }) => {
     const existing = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, { email, name });
+      await ctx.db.patch(existing._id, { email, name, isAdmin });
       return existing._id;
     }
 
@@ -55,7 +59,7 @@ export const syncUser = mutation({
       clerkId,
       email,
       name,
-      isAdmin: false,
+      isAdmin,
       createdAt: Date.now(),
     });
   },

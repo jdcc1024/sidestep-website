@@ -12,6 +12,10 @@ type ClerkUserEvent = {
     email_addresses: Array<{ email_address: string; primary: boolean }>;
     first_name: string | null;
     last_name: string | null;
+    // privateMetadata is server-only by Clerk's design — never sent to the
+    // browser. We read it here and forward to Convex so admin status is
+    // anchored to Clerk as the source of truth.
+    private_metadata?: { is_admin?: unknown };
   };
 };
 
@@ -49,16 +53,19 @@ export async function POST(req: Request) {
     return new Response(null, { status: 200 });
   }
 
-  const { id, email_addresses, first_name, last_name } = event.data;
+  const { id, email_addresses, first_name, last_name, private_metadata } =
+    event.data;
   const primaryEmail =
     email_addresses.find((e) => e.primary)?.email_address ?? "";
   const name =
     [first_name, last_name].filter(Boolean).join(" ").trim() || primaryEmail;
+  const isAdmin = private_metadata?.is_admin === true;
 
   await convex.mutation(api.users.syncUser, {
     clerkId: id,
     email: primaryEmail,
     name,
+    isAdmin,
   });
 
   return new Response(null, { status: 200 });

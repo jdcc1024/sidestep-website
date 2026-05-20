@@ -88,3 +88,23 @@ export function chipToneForStage(
   if (stage === "Delivered") return "complete";
   return "in-progress";
 }
+
+// The latest internal stage marked complete, in INTERNAL_STAGES order — used
+// by the admin overview column. Unlike deriveCustomerStage this does not
+// collapse names; admins see the raw checklist label they're tracking.
+// Stages are completed by checklist position, not by timestamp, so an admin
+// who back-fills an earlier stage doesn't accidentally pull the column
+// backwards.
+export function currentInternalStage(
+  internalStages: ReadonlyArray<InternalStage>,
+): InternalStageName | null {
+  const completed = new Set<string>();
+  for (const stage of internalStages) {
+    if (stage.completedAt != null) completed.add(stage.name);
+  }
+  let latest: InternalStageName | null = null;
+  for (const name of INTERNAL_STAGES) {
+    if (completed.has(name)) latest = name;
+  }
+  return latest;
+}

@@ -2,7 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import { SidebarShell, type SidebarLink } from "./SidebarShell";
 
 const adminLinks: SidebarLink[] = [
-  { href: "/admin", label: "All Orders", exact: true },
+  { href: "/admin/orders", label: "All Orders" },
   { href: "/admin/designs", label: "All Designs" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/leads", label: "Leads" },

@@ -3,6 +3,7 @@ import {
   CUSTOMER_STAGES,
   INTERNAL_STAGES,
   chipToneForStage,
+  currentInternalStage,
   deriveCustomerStage,
   type InternalStage,
 } from "./orderStages";
@@ -195,6 +196,55 @@ describe("deriveCustomerStage", () => {
       { name: "Bogus Stage", completedAt: 1_700_000_000_000 },
     ];
     expect(deriveCustomerStage(stages)).toBe("Order Started");
+  });
+});
+
+describe("currentInternalStage", () => {
+  it("returns null when no stages are completed", () => {
+    expect(currentInternalStage(staged([]))).toBeNull();
+  });
+
+  it("returns null when the array is empty", () => {
+    expect(currentInternalStage([])).toBeNull();
+  });
+
+  it("returns Inquiry when only Inquiry is completed", () => {
+    expect(currentInternalStage(staged(["Inquiry"]))).toBe("Inquiry");
+  });
+
+  it("returns Delivered when every stage is completed", () => {
+    expect(currentInternalStage(staged([...INTERNAL_STAGES]))).toBe(
+      "Delivered",
+    );
+  });
+
+  it("returns the latest stage by checklist order, not by array position", () => {
+    // Reverse the input array order — output must still pick the highest
+    // INTERNAL_STAGES index.
+    const stages: InternalStage[] = INTERNAL_STAGES.slice()
+      .reverse()
+      .map((name) =>
+        name === "Design Confirmed" || name === "Inquiry"
+          ? { name, completedAt: 1_700_000_000_000 }
+          : { name, completedAt: undefined },
+      );
+    expect(currentInternalStage(stages)).toBe("Design Confirmed");
+  });
+
+  it("ignores a completedAt of null (treats as not completed)", () => {
+    const stages: InternalStage[] = [
+      { name: "Inquiry", completedAt: 1_700_000_000_000 },
+      { name: "Design Ideated", completedAt: null as unknown as undefined },
+    ];
+    expect(currentInternalStage(stages)).toBe("Inquiry");
+  });
+
+  it("ignores unrecognized stage names", () => {
+    const stages: InternalStage[] = [
+      { name: "Inquiry", completedAt: 1_700_000_000_000 },
+      { name: "Bogus Stage", completedAt: 1_700_000_000_000 },
+    ];
+    expect(currentInternalStage(stages)).toBe("Inquiry");
   });
 });
 
