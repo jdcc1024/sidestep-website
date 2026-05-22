@@ -43,19 +43,23 @@ export default defineSchema({
   jerseyRuns: defineTable({
     orderId: v.id("orders"),
     captainId: v.id("users"),
+    // Available sizes the fan can pick from on the public form.
+    // Stored on the run (not hard-coded) so captains can scope size
+    // options to what they expect their team to need.
+    sizeOptions: v.array(v.string()),
     namesMode: v.union(v.literal("open"), v.literal("fixed")),
     fixedRoster: v.optional(
       v.array(
         v.object({
-          name: v.optional(v.string()),
+          name: v.string(),
           number: v.optional(v.string()),
         }),
       ),
     ),
     customQuestions: v.array(
       v.object({
-        prompt: v.string(),
-        required: v.boolean(),
+        id: v.string(),
+        label: v.string(),
       }),
     ),
     deadline: v.number(),

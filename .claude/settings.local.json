@@ -35,7 +35,13 @@
       "Bash(npm view *)",
       "Bash(npm run *)",
       "Bash(git add *)",
-      "Bash(npx convex *)"
+      "Bash(npx convex *)",
+      "Bash(curl -s http://localhost:8080/)",
+      "Bash(curl -s 'http://localhost:8080/_next/static/chunks/%5Broot-of-the-server%5D__06.-pfn._.css')",
+      "Bash(grep -oE '\\\\.md\\\\\\\\:[a-z-]+')",
+      "Bash(grep *)",
+      "Bash(npm test *)",
+      "Bash(curl -s -L https://sidestep.design)"
     ]
   }
 }

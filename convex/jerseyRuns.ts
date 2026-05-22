@@ -1,0 +1,291 @@
+import { ConvexError, v } from "convex/values";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+
+// Server-side guards. Mirror lib/jerseyRun.ts and lib/jerseyRunResponse.ts
+// so the client and server cap values the same way — defense in depth
+// against a hand-rolled client that posts past the form's UI guards.
+const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"] as const;
+const MAX_CUSTOM_QUESTIONS = 5;
+const QUESTION_LABEL_MAX_LENGTH = 200;
+const ROSTER_NAME_MAX_LENGTH = 80;
+const ROSTER_NUMBER_MAX_LENGTH = 8;
+const MAX_ROSTER_ENTRIES = 200;
+const RESPONDENT_NAME_MAX_LENGTH = 120;
+const EMAIL_MAX_LENGTH = 254;
+const JERSEY_NAME_MAX_LENGTH = 40;
+const JERSEY_NUMBER_MAX_LENGTH = 8;
+const ANSWER_MAX_LENGTH = 500;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function requireCurrentUser(
+  ctx: MutationCtx | QueryCtx,
+): Promise<Doc<"users">> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new ConvexError("Not authenticated.");
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+    .unique();
+  if (!user) throw new ConvexError("User not found.");
+  return user;
+}
+
+// Get the jersey run linked to one of the captain's orders. Returns null
+// if no run exists yet — the order detail page uses that to show the
+// "set up jersey run" CTA instead of the run details. Throws if the
+// caller doesn't own the order (a stronger signal than "not found", so
+// the UI can distinguish a missing run from an access violation).
+export const getByOrder = query({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, { orderId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) return null;
+
+    const order = await ctx.db.get(orderId);
+    if (!order) return null;
+    if (order.captainId !== user._id)
+      throw new ConvexError("You don't have access to this order.");
+
+    return ctx.db
+      .query("jerseyRuns")
+      .withIndex("by_order", (q) => q.eq("orderId", orderId))
+      .unique();
+  },
+});
+
+// Public — used by the fan submission form (issue 2-09) and the captain's
+// run detail view. Returns the run plus the captain's display name and
+// the order's team name so the public page can render a friendly header
+// without exposing captain email or other PII.
+export const getPublic = query({
+  args: { jerseyRunId: v.id("jerseyRuns") },
+  handler: async (ctx, { jerseyRunId }) => {
+    const run = await ctx.db.get(jerseyRunId);
+    if (!run) return null;
+
+    const order = await ctx.db.get(run.orderId);
+    const captain = await ctx.db.get(run.captainId);
+
+    return {
+      run,
+      teamName: order?.teamName ?? "",
+      captainName: captain?.name ?? "",
+    };
+  },
+});
+
+export const create = mutation({
+  args: {
+    orderId: v.id("orders"),
+    sizeOptions: v.array(v.string()),
+    namesMode: v.union(v.literal("open"), v.literal("fixed")),
+    fixedRoster: v.array(
+      v.object({
+        name: v.string(),
+        number: v.optional(v.string()),
+      }),
+    ),
+    customQuestions: v.array(
+      v.object({ id: v.string(), label: v.string() }),
+    ),
+    deadline: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx);
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new ConvexError("Order not found.");
+    if (order.captainId !== user._id)
+      throw new ConvexError("You don't have access to this order.");
+
+    // One run per order — the captain can edit the existing run if they
+    // need to make changes (handled in a later issue). Creating a second
+    // run for the same order would orphan responses from the first.
+    const existing = await ctx.db
+      .query("jerseyRuns")
+      .withIndex("by_order", (q) => q.eq("orderId", args.orderId))
+      .unique();
+    if (existing) throw new ConvexError("This order already has a jersey run.");
+
+    const sizeOptions = Array.from(new Set(args.sizeOptions)).filter(
+      (s): s is (typeof SIZE_OPTIONS)[number] =>
+        (SIZE_OPTIONS as readonly string[]).includes(s),
+    );
+    if (sizeOptions.length === 0)
+      throw new ConvexError("Pick at least one size.");
+
+    if (args.deadline <= Date.now())
+      throw new ConvexError("Deadline must be in the future.");
+
+    if (args.customQuestions.length > MAX_CUSTOM_QUESTIONS)
+      throw new ConvexError(
+        `Up to ${MAX_CUSTOM_QUESTIONS} custom questions.`,
+      );
+    const seenQuestionIds = new Set<string>();
+    for (const q of args.customQuestions) {
+      const label = q.label.trim();
+      if (!label) throw new ConvexError("Every question needs a label.");
+      if (label.length > QUESTION_LABEL_MAX_LENGTH)
+        throw new ConvexError("A custom question is too long.");
+      if (!q.id || seenQuestionIds.has(q.id))
+        throw new ConvexError("Custom question ids must be unique.");
+      seenQuestionIds.add(q.id);
+    }
+
+    let fixedRoster: Array<{ name: string; number?: string }> = [];
+    if (args.namesMode === "fixed") {
+      const cleaned = args.fixedRoster
+        .map((entry) => ({
+          name: entry.name.trim(),
+          number: entry.number?.trim() ?? "",
+        }))
+        .filter((entry) => entry.name.length > 0);
+      if (cleaned.length === 0)
+        throw new ConvexError("Add at least one name to the roster.");
+      if (cleaned.length > MAX_ROSTER_ENTRIES)
+        throw new ConvexError(
+          `Rosters are capped at ${MAX_ROSTER_ENTRIES} names.`,
+        );
+      for (const entry of cleaned) {
+        if (entry.name.length > ROSTER_NAME_MAX_LENGTH)
+          throw new ConvexError("A roster name is too long.");
+        if (entry.number.length > ROSTER_NUMBER_MAX_LENGTH)
+          throw new ConvexError("A roster number is too long.");
+      }
+      fixedRoster = cleaned.map((entry) => ({
+        name: entry.name,
+        number: entry.number.length > 0 ? entry.number : undefined,
+      }));
+    }
+
+    const customQuestions = args.customQuestions.map((q) => ({
+      id: q.id,
+      label: q.label.trim(),
+    }));
+
+    return ctx.db.insert("jerseyRuns", {
+      orderId: args.orderId,
+      captainId: user._id,
+      sizeOptions,
+      namesMode: args.namesMode,
+      // Only persist a roster when the run uses fixed names; omitting the
+      // field for open-mode runs keeps the document clean.
+      fixedRoster: args.namesMode === "fixed" ? fixedRoster : undefined,
+      customQuestions,
+      deadline: args.deadline,
+      status: "open",
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// Captain or admin view of every response submitted to a run. Used by the
+// captain dashboard (issue 2-10). Returns the run plus the linked order so
+// the dashboard can show team name + deadline without a follow-up query.
+// Throws on access violation so the UI can show a 403; returns null if
+// the run or order has been deleted.
+export const listResponses = query({
+  args: { jerseyRunId: v.id("jerseyRuns") },
+  handler: async (ctx, { jerseyRunId }) => {
+    const user = await requireCurrentUser(ctx);
+
+    const run = await ctx.db.get(jerseyRunId);
+    if (!run) return null;
+    const order = await ctx.db.get(run.orderId);
+    if (!order) return null;
+
+    if (run.captainId !== user._id && !user.isAdmin)
+      throw new ConvexError("You don't have access to this jersey run.");
+
+    const responses = await ctx.db
+      .query("jerseyRunResponses")
+      .withIndex("by_jerseyRun", (q) => q.eq("jerseyRunId", jerseyRunId))
+      .collect();
+
+    // Newest first — captain wants to see fresh submissions at the top
+    // without having to sort the column manually.
+    responses.sort((a, b) => b.submittedAt - a.submittedAt);
+
+    return { run, order, responses };
+  },
+});
+
+// Public — no auth. Called by the fan submission form at /run/[id].
+// Re-validates everything the client checked; the public form is the
+// one surface anyone on the internet can hit, so trust nothing.
+export const submitResponse = mutation({
+  args: {
+    jerseyRunId: v.id("jerseyRuns"),
+    respondentName: v.string(),
+    respondentEmail: v.string(),
+    size: v.string(),
+    jerseyName: v.optional(v.string()),
+    jerseyNumber: v.optional(v.string()),
+    customAnswers: v.record(v.string(), v.string()),
+  },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.jerseyRunId);
+    if (!run) throw new ConvexError("Jersey run not found.");
+
+    if (run.status === "closed")
+      throw new ConvexError("This jersey run is closed.");
+    if (run.deadline < Date.now())
+      throw new ConvexError("This jersey run is closed.");
+
+    const respondentName = args.respondentName.trim();
+    if (respondentName.length === 0)
+      throw new ConvexError("Tell us your name.");
+    if (respondentName.length > RESPONDENT_NAME_MAX_LENGTH)
+      throw new ConvexError("Your name is too long.");
+
+    const respondentEmail = args.respondentEmail.trim().toLowerCase();
+    if (respondentEmail.length === 0)
+      throw new ConvexError("We need an email address.");
+    if (respondentEmail.length > EMAIL_MAX_LENGTH)
+      throw new ConvexError("That email is too long.");
+    if (!EMAIL_PATTERN.test(respondentEmail))
+      throw new ConvexError("That doesn't look like an email.");
+
+    if (!run.sizeOptions.includes(args.size))
+      throw new ConvexError("Pick a size from the list.");
+
+    const jerseyName = args.jerseyName?.trim();
+    if (jerseyName && jerseyName.length > JERSEY_NAME_MAX_LENGTH)
+      throw new ConvexError("Jersey name is too long.");
+
+    const jerseyNumber = args.jerseyNumber?.trim();
+    if (jerseyNumber && jerseyNumber.length > JERSEY_NUMBER_MAX_LENGTH)
+      throw new ConvexError("Jersey number is too long.");
+
+    const knownQuestionIds = new Set(run.customQuestions.map((q) => q.id));
+    const customAnswers: Record<string, string> = {};
+    for (const [id, value] of Object.entries(args.customAnswers)) {
+      if (!knownQuestionIds.has(id)) continue;
+      if (typeof value !== "string")
+        throw new ConvexError("Answers must be text.");
+      const trimmed = value.trim();
+      if (trimmed.length > ANSWER_MAX_LENGTH)
+        throw new ConvexError("An answer is too long.");
+      customAnswers[id] = trimmed;
+    }
+
+    return ctx.db.insert("jerseyRunResponses", {
+      jerseyRunId: args.jerseyRunId,
+      respondentName,
+      respondentEmail,
+      size: args.size,
+      jerseyName: jerseyName && jerseyName.length > 0 ? jerseyName : undefined,
+      jerseyNumber:
+        jerseyNumber && jerseyNumber.length > 0 ? jerseyNumber : undefined,
+      customAnswers,
+      submittedAt: Date.now(),
+    });
+  },
+});

@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-22T18:23:05.839Z",
+  "lastUpdated": "2026-05-22T23:29:40.701Z",
   "phases": [
     {
       "id": "phase-1",
@@ -243,10 +243,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Captain creates a jersey run from the order detail page: jersey sizes, names mode (open/fixed), fixed roster, custom questions, deadline. Generates a shareable public URL.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-jersey",
+      "startedAt": "2026-05-22T18:24:52.226Z",
+      "completedAt": "2026-05-22T19:03:17.122Z",
       "issueFile": "backlog/2-08-jersey-run-creation.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
       "acceptanceCriteria": [
@@ -263,10 +263,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Public fan submission form at /run/<id>: no account required. Adapts to open vs fixed names mode. Warns on blank name or number. Shows closed state when deadline passes or run is closed.",
-      "status": "blocked",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-jersey-public",
+      "startedAt": "2026-05-22T20:20:17.522Z",
+      "completedAt": "2026-05-22T20:25:12.199Z",
       "issueFile": "backlog/2-09-jersey-run-public-form.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
       "acceptanceCriteria": [
@@ -283,10 +283,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Authenticated captain view of their jersey run responses: live table of all submissions, participation count, deadline countdown, and running price estimate. Real-time via Convex.",
-      "status": "blocked",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-captain-dashboard",
+      "startedAt": "2026-05-22T23:25:34.260Z",
+      "completedAt": "2026-05-22T23:29:40.700Z",
       "issueFile": "backlog/2-10-jersey-run-captain-dashboard.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
       "acceptanceCriteria": [
@@ -363,7 +363,7 @@
       "phase": "phase-3",
       "type": "feature",
       "description": "Convex daily cron job closes expired jersey runs and sends Resend emails to captain and Sidestep admin. Reusable close logic also wired to manual admin close button in 3-02.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -423,7 +423,7 @@
       "phase": "phase-3",
       "type": "feature",
       "description": "Participated In section in the portal dashboard: shows jersey runs the customer submitted responses to (matched by email), with team name, jersey details, and submission date. Read-only.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -719,6 +719,27 @@
     {
       "id": "agent-claude-opus47-tracking",
       "name": "Claude Opus 4.7 (2-07 Tracking)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-jersey",
+      "name": "Claude Opus 4.7 (Jersey Runs)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "opus-jersey-public",
+      "name": "Opus Jersey Public Form",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-captain-dashboard",
+      "name": "Claude Opus 4.7 (Captain Dashboard)",
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
@@ -1158,6 +1179,69 @@
       "nodeId": "2-07",
       "agent": "agent-claude-opus47-tracking",
       "message": "Completed: Order Status Tracking"
+    },
+    {
+      "timestamp": "2026-05-22T18:24:49.287Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-jersey",
+      "message": "Claude Opus 4.7 (Jersey Runs) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-22T18:24:52.226Z",
+      "event": "task_started",
+      "nodeId": "2-08",
+      "agent": "agent-claude-opus47-jersey",
+      "message": "Claude Opus 4.7 (Jersey Runs) picked up: Jersey Run Creation"
+    },
+    {
+      "timestamp": "2026-05-22T19:03:17.122Z",
+      "event": "task_completed",
+      "nodeId": "2-08",
+      "agent": "agent-claude-opus47-jersey",
+      "message": "Completed: Jersey Run Creation"
+    },
+    {
+      "timestamp": "2026-05-22T20:19:18.924Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-jersey-public",
+      "message": "Opus Jersey Public Form joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-22T20:20:17.523Z",
+      "event": "task_started",
+      "nodeId": "2-09",
+      "agent": "opus-jersey-public",
+      "message": "Opus Jersey Public Form picked up: Jersey Run Public Form"
+    },
+    {
+      "timestamp": "2026-05-22T20:25:12.199Z",
+      "event": "task_completed",
+      "nodeId": "2-09",
+      "agent": "opus-jersey-public",
+      "message": "Completed: Jersey Run Public Form"
+    },
+    {
+      "timestamp": "2026-05-22T23:25:31.683Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-captain-dashboard",
+      "message": "Claude Opus 4.7 (Captain Dashboard) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-22T23:25:34.261Z",
+      "event": "task_started",
+      "nodeId": "2-10",
+      "agent": "agent-claude-opus47-captain-dashboard",
+      "message": "Claude Opus 4.7 (Captain Dashboard) picked up: Jersey Run Captain Dashboard"
+    },
+    {
+      "timestamp": "2026-05-22T23:29:40.700Z",
+      "event": "task_completed",
+      "nodeId": "2-10",
+      "agent": "agent-claude-opus47-captain-dashboard",
+      "message": "Completed: Jersey Run Captain Dashboard"
     }
   ]
 }

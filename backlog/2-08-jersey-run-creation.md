@@ -1,6 +1,6 @@
 # Issue: Jersey Run Creation
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -8,24 +8,24 @@
 
 ## Vertical Slice
 This issue touches:
-- [ ] Database: `jerseyRuns` table — write via Convex mutation linked to an order
-- [ ] API: Convex mutation `createJerseyRun`; query `getJerseyRun`
-- [ ] Frontend: Jersey run setup form within the order detail page; shareable link generation
-- [ ] Tests: Run created with correct fields; shareable link generated; fixed roster vs open mode both work; custom questions save correctly
+- [x] Database: `jerseyRuns` table — write via Convex mutation linked to an order
+- [x] API: Convex mutation `createJerseyRun`; query `getJerseyRun`
+- [x] Frontend: Jersey run setup form within the order detail page; shareable link generation
+- [x] Tests: Run created with correct fields; shareable link generated; fixed roster vs open mode both work; custom questions save correctly
 
 ## Description
 Build the jersey run creation flow accessible from an order's detail page. The captain defines the run's jersey options (names/numbers mode: open or fixed-roster), adds any custom questions (e.g. "How should we deliver to you?"), and sets a deadline. On save, Convex creates a `jerseyRun` record and returns a unique shareable link the captain can send to their team and fans.
 
 ## Acceptance Criteria
-- [ ] Jersey run setup form fields: jersey size options (checkboxes for available sizes: XS, S, M, L, XL, XXL), names mode (open = fan enters their own, fixed = captain pre-defines a roster list), deadline date picker (required)
-- [ ] When "fixed roster" is selected: captain can add names (and optionally numbers) to a roster list; fan selects from this list on the submission form
-- [ ] When "open" is selected: fan types their own name and number on the submission form
-- [ ] Custom questions: captain can add 0–5 custom questions (each is a text label; fan answers in a free-text field); questions can be reordered and deleted
-- [ ] On save, a `jerseyRun` record is created in Convex with status "open"
-- [ ] A shareable public URL is generated: `/run/<jerseyRunId>` — displayed on the order detail page with a copy-to-clipboard button
-- [ ] The jersey run setup section is visible on the order detail page; it shows "Set up jersey run" if none exists, and the run details + shareable link if one does
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] Jersey run setup form fields: jersey size options (checkboxes for available sizes: XS, S, M, L, XL, XXL), names mode (open = fan enters their own, fixed = captain pre-defines a roster list), deadline date picker (required)
+- [x] When "fixed roster" is selected: captain can add names (and optionally numbers) to a roster list; fan selects from this list on the submission form
+- [x] When "open" is selected: fan types their own name and number on the submission form
+- [x] Custom questions: captain can add 0–5 custom questions (each is a text label; fan answers in a free-text field); questions can be reordered and deleted
+- [x] On save, a `jerseyRun` record is created in Convex with status "open"
+- [x] A shareable public URL is generated: `/run/<jerseyRunId>` — displayed on the order detail page with a copy-to-clipboard button
+- [x] The jersey run setup section is visible on the order detail page; it shows "Set up jersey run" if none exists, and the run details + shareable link if one does
+- [x] All tests pass
+- [x] No regressions in existing tests
 
 ## Dependencies
 - Blocked by: 2-07

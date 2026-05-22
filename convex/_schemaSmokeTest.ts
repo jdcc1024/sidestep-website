@@ -46,8 +46,9 @@ export const run = internalMutation({
     const runId = await ctx.db.insert("jerseyRuns", {
       orderId,
       captainId: userId,
+      sizeOptions: ["S", "M", "L"],
       namesMode: "open",
-      customQuestions: [{ prompt: "Delivery method?", required: false }],
+      customQuestions: [{ id: "q1", label: "Delivery method?" }],
       deadline: now + 7 * 24 * 60 * 60 * 1000,
       status: "open",
       createdAt: now,

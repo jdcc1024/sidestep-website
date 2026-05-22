@@ -7,6 +7,8 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",
+  // Jersey run public form — fans submit without an account.
+  "/run/(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

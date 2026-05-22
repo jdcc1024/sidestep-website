@@ -1,6 +1,6 @@
 # Issue: Jersey Run Captain Dashboard
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 

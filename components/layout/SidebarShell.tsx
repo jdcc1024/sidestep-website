@@ -36,7 +36,7 @@ export function SidebarShell({
 
   return (
     <div className="relative flex min-h-screen flex-1 bg-zinc-50">
-      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 md:hidden">
+      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 lg:hidden">
         <div className="flex items-center gap-2">
           <Logo />
           {brandBadge}
@@ -67,7 +67,7 @@ export function SidebarShell({
 
       <aside
         aria-label={label}
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-zinc-200 bg-white transition-transform md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-zinc-200 bg-white transition-transform lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -80,7 +80,7 @@ export function SidebarShell({
             type="button"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
-            className="rounded-md p-2 text-zinc-700 hover:bg-zinc-100 md:hidden"
+            className="rounded-md p-2 text-zinc-700 hover:bg-zinc-100 lg:hidden"
           >
             <svg
               className="h-6 w-6"
@@ -134,11 +134,11 @@ export function SidebarShell({
           type="button"
           aria-label="Close menu backdrop"
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
         />
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col pt-14 md:ml-64 md:pt-0">
+      <div className="flex min-w-0 flex-1 flex-col pt-14 lg:ml-64 lg:pt-0">
         <main className="flex-1">{children}</main>
       </div>
     </div>

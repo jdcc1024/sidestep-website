@@ -5,6 +5,7 @@ import { use } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { JerseyRunSetup } from "@/components/portal/JerseyRunSetup";
 import { OrderTimeline } from "@/components/portal/OrderTimeline";
 import {
   chipToneForStage,
@@ -94,6 +95,25 @@ export default function OrderDetailPage({ params }: PageProps) {
           />
           <Field label="Last updated" value={formatDate(order.updatedAt)} />
         </dl>
+      </section>
+
+      <section
+        aria-labelledby="jersey-run-heading"
+        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
+      >
+        <h2
+          id="jersey-run-heading"
+          className="text-base font-semibold text-zinc-900"
+        >
+          Jersey run
+        </h2>
+        <p className="mt-1 text-sm text-zinc-600">
+          Collect sizes, names, and numbers from your team with one shareable
+          link.
+        </p>
+        <div className="mt-6">
+          <JerseyRunSetup orderId={orderId} />
+        </div>
       </section>
 
       <section

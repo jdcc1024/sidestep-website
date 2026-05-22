@@ -1,0 +1,380 @@
+import { describe, expect, it } from "vitest";
+import {
+  EMPTY_JERSEY_RUN,
+  MAX_CUSTOM_QUESTIONS,
+  MAX_ROSTER_ENTRIES,
+  QUESTION_LABEL_MAX_LENGTH,
+  ROSTER_NAME_MAX_LENGTH,
+  ROSTER_NUMBER_MAX_LENGTH,
+  SIZE_OPTIONS,
+  isNamesMode,
+  isSizeOption,
+  newQuestionId,
+  parseDeadline,
+  toJerseyRunPayload,
+  validateJerseyRun,
+  type JerseyRunInput,
+} from "./jerseyRun";
+
+// Fixed "now" so deadline tests aren't flaky around midnight rollover.
+const NOW = Date.parse("2026-05-22T12:00:00.000Z");
+const FUTURE_DATE = "2026-06-15";
+const PAST_DATE = "2026-05-01";
+
+function validInput(overrides: Partial<JerseyRunInput> = {}): JerseyRunInput {
+  return {
+    sizeOptions: ["S", "M", "L"],
+    namesMode: "open",
+    fixedRoster: [],
+    customQuestions: [],
+    deadline: FUTURE_DATE,
+    ...overrides,
+  };
+}
+
+describe("validateJerseyRun — happy path", () => {
+  it("accepts a minimal open-mode run", () => {
+    expect(validateJerseyRun(validInput(), NOW)).toEqual({});
+  });
+
+  it("accepts a fixed-mode run with a populated roster", () => {
+    const errors = validateJerseyRun(
+      validInput({
+        namesMode: "fixed",
+        fixedRoster: [
+          { name: "Alex", number: "7" },
+          { name: "Bo", number: "" },
+          { name: "Casey", number: "23" },
+        ],
+      }),
+      NOW,
+    );
+    expect(errors).toEqual({});
+  });
+
+  it("accepts up to MAX_CUSTOM_QUESTIONS questions", () => {
+    const customQuestions = Array.from(
+      { length: MAX_CUSTOM_QUESTIONS },
+      (_, i) => ({ id: `q${i}`, label: `Question ${i}` }),
+    );
+    expect(
+      validateJerseyRun(validInput({ customQuestions }), NOW).customQuestions,
+    ).toBeUndefined();
+  });
+});
+
+describe("validateJerseyRun — required fields", () => {
+  it("flags every required field when the form is empty", () => {
+    const errors = validateJerseyRun(EMPTY_JERSEY_RUN, NOW);
+    expect(errors.sizeOptions).toBeTruthy();
+    expect(errors.namesMode).toBeTruthy();
+    expect(errors.deadline).toBeTruthy();
+  });
+
+  it("rejects an empty size selection", () => {
+    expect(
+      validateJerseyRun(validInput({ sizeOptions: [] }), NOW).sizeOptions,
+    ).toBeTruthy();
+  });
+
+  it("ignores unknown sizes when checking the selection", () => {
+    // "XXXL" isn't a valid option — should be treated as if not picked.
+    expect(
+      validateJerseyRun(validInput({ sizeOptions: ["XXXL"] }), NOW).sizeOptions,
+    ).toBeTruthy();
+  });
+});
+
+describe("validateJerseyRun — fixed roster", () => {
+  it("rejects fixed mode with no named entries", () => {
+    expect(
+      validateJerseyRun(
+        validInput({ namesMode: "fixed", fixedRoster: [] }),
+        NOW,
+      ).fixedRoster,
+    ).toBeTruthy();
+  });
+
+  it("treats whitespace-only rows as empty", () => {
+    expect(
+      validateJerseyRun(
+        validInput({
+          namesMode: "fixed",
+          fixedRoster: [{ name: "   ", number: "" }],
+        }),
+        NOW,
+      ).fixedRoster,
+    ).toBeTruthy();
+  });
+
+  it("rejects a name over the cap", () => {
+    expect(
+      validateJerseyRun(
+        validInput({
+          namesMode: "fixed",
+          fixedRoster: [
+            { name: "x".repeat(ROSTER_NAME_MAX_LENGTH + 1), number: "" },
+          ],
+        }),
+        NOW,
+      ).fixedRoster,
+    ).toBeTruthy();
+  });
+
+  it("rejects a number over the cap", () => {
+    expect(
+      validateJerseyRun(
+        validInput({
+          namesMode: "fixed",
+          fixedRoster: [
+            { name: "Alex", number: "x".repeat(ROSTER_NUMBER_MAX_LENGTH + 1) },
+          ],
+        }),
+        NOW,
+      ).fixedRoster,
+    ).toBeTruthy();
+  });
+
+  it("rejects a roster larger than the cap", () => {
+    const fixedRoster = Array.from(
+      { length: MAX_ROSTER_ENTRIES + 1 },
+      (_, i) => ({ name: `Player ${i}`, number: "" }),
+    );
+    expect(
+      validateJerseyRun(
+        validInput({ namesMode: "fixed", fixedRoster }),
+        NOW,
+      ).fixedRoster,
+    ).toBeTruthy();
+  });
+
+  it("ignores the roster when names mode is open", () => {
+    expect(
+      validateJerseyRun(
+        validInput({ namesMode: "open", fixedRoster: [] }),
+        NOW,
+      ).fixedRoster,
+    ).toBeUndefined();
+  });
+});
+
+describe("validateJerseyRun — custom questions", () => {
+  it("rejects more than MAX_CUSTOM_QUESTIONS questions", () => {
+    const customQuestions = Array.from(
+      { length: MAX_CUSTOM_QUESTIONS + 1 },
+      (_, i) => ({ id: `q${i}`, label: `Q${i}` }),
+    );
+    expect(
+      validateJerseyRun(validInput({ customQuestions }), NOW).customQuestions,
+    ).toBeTruthy();
+  });
+
+  it("rejects a question with a blank label", () => {
+    expect(
+      validateJerseyRun(
+        validInput({ customQuestions: [{ id: "q1", label: "   " }] }),
+        NOW,
+      ).customQuestions,
+    ).toBeTruthy();
+  });
+
+  it("rejects a question label over the cap", () => {
+    expect(
+      validateJerseyRun(
+        validInput({
+          customQuestions: [
+            { id: "q1", label: "x".repeat(QUESTION_LABEL_MAX_LENGTH + 1) },
+          ],
+        }),
+        NOW,
+      ).customQuestions,
+    ).toBeTruthy();
+  });
+});
+
+describe("validateJerseyRun — deadline", () => {
+  it("rejects an empty deadline", () => {
+    expect(
+      validateJerseyRun(validInput({ deadline: "" }), NOW).deadline,
+    ).toBeTruthy();
+  });
+
+  it("rejects a deadline in the past", () => {
+    expect(
+      validateJerseyRun(validInput({ deadline: PAST_DATE }), NOW).deadline,
+    ).toBeTruthy();
+  });
+
+  it("rejects garbled date input", () => {
+    expect(
+      validateJerseyRun(validInput({ deadline: "not-a-date" }), NOW).deadline,
+    ).toBeTruthy();
+  });
+
+  it("accepts today as a deadline (end-of-day cutoff)", () => {
+    const noonToday = Date.parse("2026-05-22T12:00:00.000Z");
+    expect(
+      validateJerseyRun(validInput({ deadline: "2026-05-22" }), noonToday)
+        .deadline,
+    ).toBeUndefined();
+  });
+});
+
+describe("isSizeOption / isNamesMode", () => {
+  it("isSizeOption accepts every member of SIZE_OPTIONS", () => {
+    for (const value of SIZE_OPTIONS) expect(isSizeOption(value)).toBe(true);
+  });
+
+  it("isSizeOption rejects anything else", () => {
+    expect(isSizeOption("")).toBe(false);
+    expect(isSizeOption("XXXL")).toBe(false);
+  });
+
+  it("isNamesMode accepts open and fixed", () => {
+    expect(isNamesMode("open")).toBe(true);
+    expect(isNamesMode("fixed")).toBe(true);
+  });
+
+  it("isNamesMode rejects anything else", () => {
+    expect(isNamesMode("")).toBe(false);
+    expect(isNamesMode("hybrid")).toBe(false);
+  });
+});
+
+describe("parseDeadline", () => {
+  it("returns null for empty input", () => {
+    expect(parseDeadline("")).toBeNull();
+    expect(parseDeadline("   ")).toBeNull();
+  });
+
+  it("returns null for garbled input", () => {
+    expect(parseDeadline("not-a-date")).toBeNull();
+  });
+
+  it("returns end-of-day UTC for a valid date", () => {
+    const ms = parseDeadline("2026-06-15");
+    expect(ms).toBe(Date.parse("2026-06-15T23:59:59.999Z"));
+  });
+});
+
+describe("toJerseyRunPayload — open mode", () => {
+  it("returns the cleaned payload for an open-mode run with custom questions", () => {
+    const payload = toJerseyRunPayload(
+      validInput({
+        sizeOptions: ["S", "M", "L", "XL"],
+        namesMode: "open",
+        customQuestions: [
+          { id: "q1", label: "  Delivery method?  " },
+          { id: "q2", label: "Allergies?" },
+        ],
+        deadline: FUTURE_DATE,
+      }),
+    );
+    expect(payload.namesMode).toBe("open");
+    expect(payload.sizeOptions).toEqual(["S", "M", "L", "XL"]);
+    expect(payload.fixedRoster).toEqual([]);
+    expect(payload.customQuestions).toEqual([
+      { id: "q1", label: "Delivery method?" },
+      { id: "q2", label: "Allergies?" },
+    ]);
+    expect(payload.deadline).toBe(Date.parse(`${FUTURE_DATE}T23:59:59.999Z`));
+  });
+
+  it("drops unknown sizes from the selection", () => {
+    const payload = toJerseyRunPayload(
+      validInput({ sizeOptions: ["S", "XXXL", "M"] }),
+    );
+    expect(payload.sizeOptions).toEqual(["S", "M"]);
+  });
+
+  it("drops custom questions with blank labels", () => {
+    const payload = toJerseyRunPayload(
+      validInput({
+        customQuestions: [
+          { id: "q1", label: "Real question" },
+          { id: "q2", label: "   " },
+        ],
+      }),
+    );
+    expect(payload.customQuestions).toEqual([
+      { id: "q1", label: "Real question" },
+    ]);
+  });
+});
+
+describe("toJerseyRunPayload — fixed mode", () => {
+  it("populates fixedRoster with cleaned names and numbers", () => {
+    const payload = toJerseyRunPayload(
+      validInput({
+        namesMode: "fixed",
+        fixedRoster: [
+          { name: "  Alex  ", number: "  7  " },
+          { name: "Bo", number: "" },
+          { name: "Casey", number: "23" },
+        ],
+      }),
+    );
+    expect(payload.namesMode).toBe("fixed");
+    expect(payload.fixedRoster).toEqual([
+      { name: "Alex", number: "7" },
+      { name: "Bo", number: undefined },
+      { name: "Casey", number: "23" },
+    ]);
+  });
+
+  it("drops empty-name rows from the roster", () => {
+    const payload = toJerseyRunPayload(
+      validInput({
+        namesMode: "fixed",
+        fixedRoster: [
+          { name: "Alex", number: "" },
+          { name: "  ", number: "99" },
+        ],
+      }),
+    );
+    expect(payload.fixedRoster).toEqual([
+      { name: "Alex", number: undefined },
+    ]);
+  });
+
+  it("ignores the roster entirely when names mode is open", () => {
+    const payload = toJerseyRunPayload(
+      validInput({
+        namesMode: "open",
+        fixedRoster: [{ name: "Alex", number: "7" }],
+      }),
+    );
+    expect(payload.fixedRoster).toEqual([]);
+  });
+
+  it("throws for an invalid namesMode (caller should have validated)", () => {
+    expect(() =>
+      toJerseyRunPayload(validInput({ namesMode: "" })),
+    ).toThrow();
+  });
+
+  it("throws for an empty size selection (caller should have validated)", () => {
+    expect(() =>
+      toJerseyRunPayload(validInput({ sizeOptions: [] })),
+    ).toThrow();
+  });
+
+  it("throws for an invalid deadline (caller should have validated)", () => {
+    expect(() =>
+      toJerseyRunPayload(validInput({ deadline: "" })),
+    ).toThrow();
+  });
+});
+
+describe("newQuestionId", () => {
+  it("returns unique values across calls", () => {
+    const ids = new Set([
+      newQuestionId(),
+      newQuestionId(),
+      newQuestionId(),
+      newQuestionId(),
+      newQuestionId(),
+    ]);
+    expect(ids.size).toBe(5);
+  });
+});
