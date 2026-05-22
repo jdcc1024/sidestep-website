@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CUSTOMER_STAGES,
   INTERNAL_STAGES,
+  buildTimeline,
   chipToneForStage,
   currentInternalStage,
   deriveCustomerStage,
@@ -245,6 +246,61 @@ describe("currentInternalStage", () => {
       { name: "Bogus Stage", completedAt: 1_700_000_000_000 },
     ];
     expect(currentInternalStage(stages)).toBe("Inquiry");
+  });
+});
+
+describe("buildTimeline", () => {
+  it("returns 8 steps in customer-facing order", () => {
+    const steps = buildTimeline("Order Started");
+    expect(steps).toHaveLength(8);
+    expect(steps.map((s) => s.name)).toEqual([...CUSTOMER_STAGES]);
+  });
+
+  it("marks every step upcoming when there is no current stage", () => {
+    const steps = buildTimeline(null);
+    expect(steps.every((s) => s.state === "upcoming")).toBe(true);
+  });
+
+  it("marks past stages complete, current stage current, future stages upcoming", () => {
+    const steps = buildTimeline("Design Confirmed");
+    expect(steps.find((s) => s.name === "Order Started")?.state).toBe(
+      "complete",
+    );
+    expect(steps.find((s) => s.name === "Design Ideated")?.state).toBe(
+      "complete",
+    );
+    expect(steps.find((s) => s.name === "Design Confirmed")?.state).toBe(
+      "current",
+    );
+    expect(steps.find((s) => s.name === "Order Size Confirmed")?.state).toBe(
+      "upcoming",
+    );
+    expect(steps.find((s) => s.name === "Delivered")?.state).toBe("upcoming");
+  });
+
+  it("marks every step complete when current is Delivered", () => {
+    const steps = buildTimeline("Delivered");
+    expect(steps.every((s) => s.state === "complete")).toBe(true);
+  });
+
+  it("only contains customer-facing names — never internal-only labels", () => {
+    const internalOnly = new Set([
+      "Inquiry",
+      "Planned",
+      "Started",
+      "Invoice Sent",
+      "Sent to supplier",
+      "Invoice Paid",
+      "Colour Confirmation",
+      "Production",
+      "Produced",
+    ]);
+    for (const current of [null, ...CUSTOMER_STAGES] as const) {
+      const steps = buildTimeline(current);
+      for (const step of steps) {
+        expect(internalOnly.has(step.name)).toBe(false);
+      }
+    }
   });
 });
 

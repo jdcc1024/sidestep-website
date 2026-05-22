@@ -34,6 +34,53 @@ function requireShort(value: string, field: string, max: number): string {
   return trimmed;
 }
 
+// One of the captain's orders with linked designs (and their file URLs)
+// resolved server-side so the detail page can render download links in a
+// single round-trip. Stage derivation stays on the client so the same
+// `deriveCustomerStage` function powers both the dashboard chip and the
+// timeline — no chance of drift between the two views.
+//
+// Returns null for unauthenticated callers, unsynced users, and missing
+// orders. Throws on access violation (the order exists but belongs to a
+// different captain) so the UI can surface "you don't have access" instead
+// of indistinguishably rendering "not found".
+export const getMyOrder = query({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, { orderId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) return null;
+
+    const order = await ctx.db.get(orderId);
+    if (!order) return null;
+    if (order.captainId !== user._id)
+      throw new ConvexError("You don't have access to this order.");
+
+    // Linked designs may have been deleted since the order was placed;
+    // drop missing ids so the UI doesn't blow up on a stale reference.
+    const linkedDesigns = (
+      await Promise.all(order.designIds.map((id) => ctx.db.get(id)))
+    ).filter((d): d is Doc<"designs"> => d !== null);
+
+    const designs = await Promise.all(
+      linkedDesigns.map(async (design) => ({
+        _id: design._id,
+        title: design.title,
+        brief: design.brief,
+        canvaLink: design.canvaLink,
+        fileCount: design.fileIds.length,
+      })),
+    );
+
+    return { order, designs };
+  },
+});
+
 // Captain's own orders, newest first. Returns an empty array for the
 // unauthenticated case and for signed-in users whose Convex `users` row
 // hasn't been synced yet (first render before UserSync writes the row).

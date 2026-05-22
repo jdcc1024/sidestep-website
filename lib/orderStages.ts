@@ -89,6 +89,33 @@ export function chipToneForStage(
   return "in-progress";
 }
 
+export type TimelineStepState = "complete" | "current" | "upcoming";
+
+export type TimelineStep = {
+  name: CustomerStageName;
+  state: TimelineStepState;
+};
+
+// Builds the customer-facing 8-step timeline for the order detail page.
+// Stages before the current one are "complete"; the current stage is
+// "current"; later stages are "upcoming". Delivered is special-cased to
+// render as fully complete so the final state reads as "done" rather than
+// "in progress on the last step".
+export function buildTimeline(
+  current: CustomerStageName | null,
+): TimelineStep[] {
+  if (current === null) {
+    return CUSTOMER_STAGES.map((name) => ({ name, state: "upcoming" }));
+  }
+  const currentIndex = CUSTOMER_STAGES.indexOf(current);
+  return CUSTOMER_STAGES.map((name, idx) => {
+    if (current === "Delivered") return { name, state: "complete" };
+    if (idx < currentIndex) return { name, state: "complete" };
+    if (idx === currentIndex) return { name, state: "current" };
+    return { name, state: "upcoming" };
+  });
+}
+
 // The latest internal stage marked complete, in INTERNAL_STAGES order — used
 // by the admin overview column. Unlike deriveCustomerStage this does not
 // collapse names; admins see the raw checklist label they're tracking.

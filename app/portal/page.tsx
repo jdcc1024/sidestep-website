@@ -113,7 +113,10 @@ function OrderCard({ order }: { order: Doc<"orders"> }) {
   const tone = chipToneForStage(stage);
 
   return (
-    <article className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+    <Link
+      href={`/portal/orders/${order._id}`}
+      className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+    >
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-lg font-semibold text-zinc-900">
           {order.teamName}
@@ -126,7 +129,7 @@ function OrderCard({ order }: { order: Doc<"orders"> }) {
         <dt className="text-zinc-500">Quantity</dt>
         <dd className="text-zinc-900">{order.estimatedQuantity} jerseys</dd>
       </dl>
-    </article>
+    </Link>
   );
 }
 
