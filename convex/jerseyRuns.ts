@@ -1,6 +1,14 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 
 // Server-side guards. Mirror lib/jerseyRun.ts and lib/jerseyRunResponse.ts
 // so the client and server cap values the same way — defense in depth
@@ -214,6 +222,75 @@ export const listResponses = query({
     responses.sort((a, b) => b.submittedAt - a.submittedAt);
 
     return { run, order, responses };
+  },
+});
+
+// Internal — used by the deadline-enforcement cron (issue 3-01). Returns
+// every open run whose deadline has already passed so the action can
+// close each one. Scanning the table is fine at phase 1 volume; a
+// `by_status_deadline` index can come later if the catalog grows.
+export const _listExpiredOpenRuns = internalQuery({
+  args: { now: v.number() },
+  handler: async (ctx, { now }) => {
+    const runs = await ctx.db.query("jerseyRuns").collect();
+    return runs
+      .filter((run) => run.status === "open" && run.deadline < now)
+      .map((run) => run._id);
+  },
+});
+
+// Internal — closes a single run and returns the context needed to send
+// the notification emails. Returns null when the run is already closed,
+// has been deleted, or its order/captain has vanished — the action skips
+// those silently. Idempotent: running it twice on the same id is safe.
+export const _closeRun = internalMutation({
+  args: { jerseyRunId: v.id("jerseyRuns") },
+  handler: async (ctx, { jerseyRunId }) => {
+    const run = await ctx.db.get(jerseyRunId);
+    if (!run || run.status !== "open") return null;
+
+    await ctx.db.patch(jerseyRunId, { status: "closed" });
+
+    const order = await ctx.db.get(run.orderId);
+    const captain = await ctx.db.get(run.captainId);
+    if (!order || !captain) return null;
+
+    const responses = await ctx.db
+      .query("jerseyRunResponses")
+      .withIndex("by_jerseyRun", (q) => q.eq("jerseyRunId", jerseyRunId))
+      .collect();
+
+    return {
+      jerseyRunId,
+      orderId: run.orderId,
+      teamName: order.teamName,
+      captainEmail: captain.email,
+      captainName: captain.name,
+      deadline: run.deadline,
+      responseCount: responses.length,
+    };
+  },
+});
+
+// Admin-only manual close (issue 3-02 will surface this in the UI).
+// Schedules the same action the cron uses so the email side-effect
+// stays in one place and admins don't have to wait for it.
+export const closeRunByAdmin = mutation({
+  args: { jerseyRunId: v.id("jerseyRuns") },
+  handler: async (ctx, { jerseyRunId }) => {
+    const user = await requireCurrentUser(ctx);
+    if (!user.isAdmin) throw new ConvexError("Admin access required.");
+
+    const run = await ctx.db.get(jerseyRunId);
+    if (!run) throw new ConvexError("Jersey run not found.");
+    if (run.status === "closed") return { alreadyClosed: true };
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.jerseyRunActions.closeRunWithNotification,
+      { jerseyRunId },
+    );
+    return { alreadyClosed: false };
   },
 });
 

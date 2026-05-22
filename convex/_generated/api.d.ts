@@ -10,8 +10,10 @@
 
 import type * as _schemaSmokeTest from "../_schemaSmokeTest.js";
 import type * as admin from "../admin.js";
+import type * as crons from "../crons.js";
 import type * as designs from "../designs.js";
 import type * as intakes from "../intakes.js";
+import type * as jerseyRunActions from "../jerseyRunActions.js";
 import type * as jerseyRuns from "../jerseyRuns.js";
 import type * as orders from "../orders.js";
 import type * as users from "../users.js";
@@ -25,8 +27,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   _schemaSmokeTest: typeof _schemaSmokeTest;
   admin: typeof admin;
+  crons: typeof crons;
   designs: typeof designs;
   intakes: typeof intakes;
+  jerseyRunActions: typeof jerseyRunActions;
   jerseyRuns: typeof jerseyRuns;
   orders: typeof orders;
   users: typeof users;
