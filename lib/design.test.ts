@@ -1,0 +1,186 @@
+import { describe, expect, it } from "vitest";
+import {
+  BRIEF_MAX_LENGTH,
+  CANVA_LINK_MAX_LENGTH,
+  EMPTY_DESIGN,
+  TITLE_MAX_LENGTH,
+  isHttpUrl,
+  toDesignPayload,
+  validateDesign,
+  type DesignInput,
+} from "./design";
+
+function validInput(overrides: Partial<DesignInput> = {}): DesignInput {
+  return {
+    title: "Spring season kits",
+    brief: "Retro 90s look, cobalt blue with cream accents.",
+    canvaLink: "",
+    fileCount: 1,
+    ...overrides,
+  };
+}
+
+describe("validateDesign — happy path", () => {
+  it("accepts a fully populated design", () => {
+    expect(validateDesign(validInput())).toEqual({});
+  });
+
+  it("accepts an empty canva link (optional)", () => {
+    expect(validateDesign(validInput({ canvaLink: "" }))).toEqual({});
+  });
+
+  it("accepts a valid https canva link", () => {
+    expect(
+      validateDesign(
+        validInput({ canvaLink: "https://www.canva.com/design/abc/edit" }),
+      ),
+    ).toEqual({});
+  });
+});
+
+describe("validateDesign — required fields", () => {
+  it("flags every required field when the form is empty", () => {
+    const errors = validateDesign(EMPTY_DESIGN);
+    expect(errors.title).toBeTruthy();
+    expect(errors.brief).toBeTruthy();
+    expect(errors.fileCount).toBeTruthy();
+  });
+
+  it("rejects a whitespace-only title", () => {
+    expect(validateDesign(validInput({ title: "   " })).title).toBeTruthy();
+  });
+
+  it("rejects a whitespace-only brief", () => {
+    expect(validateDesign(validInput({ brief: "   " })).brief).toBeTruthy();
+  });
+
+  it("requires at least one file", () => {
+    expect(
+      validateDesign(validInput({ fileCount: 0 })).fileCount,
+    ).toBeTruthy();
+  });
+
+  it("accepts a file count of 1", () => {
+    expect(
+      validateDesign(validInput({ fileCount: 1 })).fileCount,
+    ).toBeUndefined();
+  });
+});
+
+describe("validateDesign — length caps", () => {
+  it("rejects a title over the max length", () => {
+    expect(
+      validateDesign(validInput({ title: "x".repeat(TITLE_MAX_LENGTH + 1) }))
+        .title,
+    ).toBeTruthy();
+  });
+
+  it("accepts a title at exactly the max length", () => {
+    expect(
+      validateDesign(validInput({ title: "x".repeat(TITLE_MAX_LENGTH) }))
+        .title,
+    ).toBeUndefined();
+  });
+
+  it("rejects a brief over the max length", () => {
+    expect(
+      validateDesign(validInput({ brief: "x".repeat(BRIEF_MAX_LENGTH + 1) }))
+        .brief,
+    ).toBeTruthy();
+  });
+
+  it("accepts a brief at exactly the max length", () => {
+    expect(
+      validateDesign(validInput({ brief: "x".repeat(BRIEF_MAX_LENGTH) }))
+        .brief,
+    ).toBeUndefined();
+  });
+
+  it("rejects a canva link over the max length", () => {
+    const tooLong = "https://canva.com/" + "x".repeat(CANVA_LINK_MAX_LENGTH);
+    expect(
+      validateDesign(validInput({ canvaLink: tooLong })).canvaLink,
+    ).toBeTruthy();
+  });
+});
+
+describe("validateDesign — canva link format", () => {
+  it("rejects a link without a scheme", () => {
+    expect(
+      validateDesign(validInput({ canvaLink: "canva.com/design/abc" }))
+        .canvaLink,
+    ).toBeTruthy();
+  });
+
+  it("rejects a javascript: pseudo-url", () => {
+    expect(
+      validateDesign(validInput({ canvaLink: "javascript:alert(1)" }))
+        .canvaLink,
+    ).toBeTruthy();
+  });
+
+  it("rejects garbled text", () => {
+    expect(
+      validateDesign(validInput({ canvaLink: "not a url at all" }))
+        .canvaLink,
+    ).toBeTruthy();
+  });
+
+  it("accepts plain http://", () => {
+    expect(
+      validateDesign(validInput({ canvaLink: "http://canva.com/design/abc" }))
+        .canvaLink,
+    ).toBeUndefined();
+  });
+});
+
+describe("isHttpUrl", () => {
+  it.each([
+    "https://canva.com/design/abc",
+    "http://example.com",
+    "https://sub.example.co.uk/path?q=1",
+  ])("accepts %s", (value) => {
+    expect(isHttpUrl(value)).toBe(true);
+  });
+
+  it.each([
+    "canva.com",
+    "ftp://example.com",
+    "javascript:alert(1)",
+    "",
+    "   ",
+    "not a url",
+  ])("rejects %s", (value) => {
+    expect(isHttpUrl(value)).toBe(false);
+  });
+});
+
+describe("toDesignPayload", () => {
+  it("trims whitespace from all string fields", () => {
+    const payload = toDesignPayload(
+      validInput({ title: "  Kits  ", brief: "  brief here  " }),
+    );
+    expect(payload.title).toBe("Kits");
+    expect(payload.brief).toBe("brief here");
+  });
+
+  it("omits canvaLink when blank", () => {
+    expect(
+      toDesignPayload(validInput({ canvaLink: "" })).canvaLink,
+    ).toBeUndefined();
+  });
+
+  it("omits canvaLink when whitespace only", () => {
+    expect(
+      toDesignPayload(validInput({ canvaLink: "   " })).canvaLink,
+    ).toBeUndefined();
+  });
+
+  it("includes canvaLink when present", () => {
+    expect(
+      toDesignPayload(
+        validInput({ canvaLink: "  https://canva.com/design/abc  " }),
+      ).canvaLink,
+    ).toBe("https://canva.com/design/abc");
+  });
+});

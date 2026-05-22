@@ -79,6 +79,14 @@ export default function PortalDashboardPage() {
               Briefs, mood boards, and reference files.
             </p>
           </div>
+          {designs && designs.length > 0 && (
+            <Link
+              href="/portal/designs/new"
+              className="inline-flex items-center gap-1 rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+            >
+              New design <span aria-hidden>→</span>
+            </Link>
+          )}
         </div>
         <div className="mt-4">
           {designs === undefined ? (
@@ -127,7 +135,10 @@ function DesignCard({ design }: { design: Doc<"designs"> }) {
   const briefPreview = truncate(design.brief, BRIEF_PREVIEW_CHARS);
 
   return (
-    <article className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+    <Link
+      href={`/portal/designs/${design._id}`}
+      className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+    >
       <h3 className="text-lg font-semibold text-zinc-900">{design.title}</h3>
       {briefPreview && (
         <p className="mt-2 text-sm text-zinc-600">{briefPreview}</p>
@@ -137,7 +148,7 @@ function DesignCard({ design }: { design: Doc<"designs"> }) {
           ? "No files yet"
           : `${fileCount} file${fileCount === 1 ? "" : "s"}`}
       </p>
-    </article>
+    </Link>
   );
 }
 
