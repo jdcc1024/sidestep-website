@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-23T00:19:49.202Z",
+  "lastUpdated": "2026-05-23T21:35:10.273Z",
   "phases": [
     {
       "id": "phase-1",
@@ -536,6 +536,414 @@
         "Files visible alongside the intake in the admin lead view (2-13)",
         "Mobile responsive — picker works on iOS Safari and Android Chrome"
       ]
+    },
+    {
+      "id": "A-01",
+      "title": "Extract Shared Convex Auth Helpers",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Replace four copy-pasted requireCurrentUser implementations (orders.ts, designs.ts, jerseyRuns.ts) and the inlined admin gate (jerseyRuns.ts:closeRunByAdmin) with a single convex/_auth.ts exposing getCurrentUserOrNull, requireCurrentUser, requireAdmin, and requireOrderOwnership. Pure code motion, no behavior change. Roughly -80 lines net.",
+      "status": "pending",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/A-01-extract-shared-convex-auth-helpers.md",
+      "prdRef": "docs/architecture/improvement-report-2026-05-22.md#priority-1",
+      "acceptanceCriteria": [
+        "convex/_auth.ts created with four helpers",
+        "orders.ts, designs.ts, jerseyRuns.ts, and admin.ts import from _auth.ts instead of redefining",
+        "requireOrderOwnership replaces the inline 'load order, check captainId' pattern in three call sites",
+        "npm run typecheck passes",
+        "existing tests still pass"
+      ]
+    },
+    {
+      "id": "A-02",
+      "title": "Add Convex Mutation Smoke Tests",
+      "phase": "phase-3",
+      "type": "infrastructure",
+      "description": "Add a convex-test harness and write one happy-path plus one rejection test per public mutation in orders.ts, designs.ts, jerseyRuns.ts, intakes.ts, and users.ts. Captures trust-boundary behavior so the A-03..A-05 validation refactor has a real safety net (today the server has zero tests; only lib does).",
+      "status": "pending",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/A-02-add-convex-mutation-smoke-tests.md",
+      "prdRef": "docs/architecture/improvement-report-2026-05-22.md#testing-gaps",
+      "acceptanceCriteria": [
+        "convex-test installed and configured",
+        "every public mutation has at least one happy-path test",
+        "every public mutation has at least one rejection test (auth, validation, or ownership)",
+        "tests run via npm test alongside existing Vitest suite",
+        "tests pass"
+      ]
+    },
+    {
+      "id": "A-03",
+      "title": "Consolidate Jersey Run Validation Rules",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Split lib/jerseyRun.ts into rules.ts (constants and atomic pure checks) and form.ts (existing JerseyRunErrors-shaped adapter). Convex jerseyRuns.ts:create imports from rules.ts so SIZE_OPTIONS, MAX_CUSTOM_QUESTIONS, ROSTER_NAME_MAX_LENGTH and friends have a single source. Sets the template for A-04 and A-05.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/A-03-consolidate-jersey-run-validation-rules.md",
+      "prdRef": "docs/architecture/improvement-report-2026-05-22.md#priority-2",
+      "acceptanceCriteria": [
+        "lib/jerseyRun/rules.ts holds all constants and pure checks",
+        "lib/jerseyRun/form.ts wraps rules into the JerseyRunErrors record",
+        "convex/jerseyRuns.ts:create calls rules directly instead of redefining constants",
+        "all lib tests stay green",
+        "A-02 smoke tests still pass"
+      ]
+    },
+    {
+      "id": "A-04",
+      "title": "Consolidate Jersey Run Response Validation Rules",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Apply the A-03 split to lib/jerseyRunResponse.ts: extract rules.ts (RESPONDENT_NAME_MAX_LENGTH, EMAIL_MAX_LENGTH, ANSWER_MAX_LENGTH, EMAIL_PATTERN, atomic checks) and have convex/jerseyRuns.ts:submitResponse import from it. Removes the ~120 lines of duplicated branching in submitResponse.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/A-04-consolidate-jersey-run-response-validation-rules.md",
+      "prdRef": "docs/architecture/improvement-report-2026-05-22.md#priority-2",
+      "acceptanceCriteria": [
+        "lib/jerseyRunResponse/rules.ts and form.ts created",
+        "convex/jerseyRuns.ts:submitResponse imports constants and checks from rules.ts",
+        "duplicated branching in submitResponse replaced with rule calls",
+        "all existing tests pass",
+        "A-02 smoke tests still pass"
+      ]
+    },
+    {
+      "id": "A-05",
+      "title": "Consolidate Order Design Intake Validation Rules",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Apply the A-03 split to lib/order.ts, lib/design.ts, and lib/intake.ts. Convex orders.ts, designs.ts, and intakes.ts import constants and checks from the new rules modules. Single source for team-name, sport, quantity, design title, and brief caps.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/A-05-consolidate-order-design-intake-validation-rules.md",
+      "prdRef": "docs/architecture/improvement-report-2026-05-22.md#priority-2",
+      "acceptanceCriteria": [
+        "rules.ts plus form.ts split done for order, design, and intake lib modules",
+        "convex/orders.ts, designs.ts, intakes.ts import constants from new rules modules",
+        "no duplicated validation constants remain across lib and convex",
+        "all existing tests pass",
+        "A-02 smoke tests still pass"
+      ]
+    },
+    {
+      "id": "A-06",
+      "title": "Extract Admin Join Users By Id Helper",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Extract the captainCache/ownerCache pattern repeated in convex/admin.ts:listOrders, listDesigns, and listJerseyRuns into a single joinUsersById helper in convex/_users.ts. Each admin query shrinks to ~6 lines: collect, joinUsersById, map. Land before 2-13 adds a fourth admin list view.",
+      "status": "pending",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/A-06-extract-admin-join-users-by-id-helper.md",
+      "prdRef": "docs/architecture/improvement-report-2026-05-22.md#priority-3",
+      "acceptanceCriteria": [
+        "convex/_users.ts:joinUsersById helper created with QueryCtx-rows-keyOf signature",
+        "listOrders, listDesigns, and listJerseyRuns each shrink to ~6 lines using the helper",
+        "Unknown/empty-email fallback strings live at the call-site mapper",
+        "no behavior change for admin endpoints",
+        "all existing tests pass"
+      ]
+    },
+    {
+      "id": "A-07",
+      "title": "Extract Form Hooks From Large Components",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Optional and deferred. Extract use*Form hooks (state, validation glue, payload building, submission status) out of JerseyRunSetup (686 lines), IntakeForm (678), JerseyRunPublicForm (594), DesignForm (589), and OrderForm (544). Only worth doing if the files still feel unwieldy after A-03..A-05 land - re-measure first.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/A-07-extract-form-hooks-from-large-components.md",
+      "prdRef": "docs/architecture/improvement-report-2026-05-22.md#priority-4",
+      "acceptanceCriteria": [
+        "after A-03..A-05 land, re-measure line counts for each form component and confirm extraction is still worth doing",
+        "if confirmed, useJerseyRunForm, useIntakeForm, useJerseyRunPublicForm, useDesignForm, useOrderForm hooks live in sibling files",
+        "each form component shrinks to ~300 lines of JSX plus onSubmit wiring",
+        "all existing tests pass"
+      ]
+    },
+    {
+      "id": "S-01",
+      "title": "shadcn Compatibility Smoke Test",
+      "phase": "phase-3",
+      "type": "infrastructure",
+      "description": "Verify shadcn/ui installs cleanly against Next 16 + React 19 + Tailwind v4. A short spike runs npx shadcn init, adds Button, renders on a throwaway /dev/smoke route, and confirms the build is still green. Resolves the highest-risk open question before the migration commits.",
+      "status": "in-progress",
+      "agent": "agent-claude-opus47-s6",
+      "startedAt": "2026-05-23T21:35:10.272Z",
+      "completedAt": null,
+      "issueFile": "backlog/S-01-shadcn-smoke-test.md",
+      "prdRef": "docs/prd/shadcn-migration.md#2-proposed-solution",
+      "acceptanceCriteria": [
+        "npx shadcn init completes without manual workarounds",
+        "Button primitive renders on /dev/smoke",
+        "build typecheck lint test all pass",
+        "spike commit is cleanly revertible",
+        "proceed-or-stop decision recorded"
+      ]
+    },
+    {
+      "id": "S-02",
+      "title": "Install shadcn Primitives and Dependencies",
+      "phase": "phase-3",
+      "type": "infrastructure",
+      "description": "Single commit that runs npx shadcn add for the full primitive set and installs lucide-react, next-themes, sonner, react-hook-form, zod, and @hookform/resolvers. No application code references these yet — this populates the menu so the AI sees the full primitive vocabulary before refactoring begins.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-02-install-shadcn-primitives.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "components/ui populated with full primitive set",
+        "all runtime deps installed",
+        "components.json present",
+        "no imports yet in composites",
+        "build typecheck lint test all pass"
+      ]
+    },
+    {
+      "id": "S-03",
+      "title": "Theme Provider, Dark Mode, and Theme Toggle Component",
+      "phase": "phase-3",
+      "type": "infrastructure",
+      "description": "Wire next-themes ThemeProvider into the root layout, define shadcn dark-mode CSS variables in app/globals.css using Tailwind v4 @theme directive, and build a reusable ThemeToggle component. Toggle is not mounted in any header yet — each surface sweep will drop it in.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-03-theme-provider-and-toggle.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "ThemeProvider wraps app with attribute=class",
+        "light and dark CSS vars defined via @theme in globals.css",
+        "ThemeToggle component exists and uses useTheme",
+        "preference persists across reloads",
+        "no FOUC on initial render"
+      ]
+    },
+    {
+      "id": "S-04",
+      "title": "/dev/components Showcase Page",
+      "phase": "phase-3",
+      "type": "infrastructure",
+      "description": "Single page at /dev/components renders every shadcn primitive with usage examples. Serves as the AI agent and developer reference catalog: one URL, one file, all primitives. Includes a canonical RHF + zod + shadcn Form example that S-06 mirrors.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-04-dev-components-showcase.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "page renders every primitive at least once",
+        "labeled sections with default + 1-2 variants",
+        "includes a full Form example",
+        "includes Toaster from sonner",
+        "not linked from public navigation",
+        "renders correctly in light and dark"
+      ]
+    },
+    {
+      "id": "S-05",
+      "title": "Portal Pilot — PortalShell and OrderTimeline on shadcn",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "First refactor surface. Replace inline UI in PortalShell and OrderTimeline with shadcn primitives. Mount the ThemeToggle in the portal header. Composite APIs preserved; only internal JSX changes. Improve while you are in there.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-05-portal-shell-and-order-timeline.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "PortalShell uses shadcn Button Sheet Separator",
+        "OrderTimeline uses Card Badge Separator",
+        "ThemeToggle visible in portal header",
+        "exported APIs unchanged",
+        "both light and dark render correctly",
+        "build typecheck lint test pass"
+      ]
+    },
+    {
+      "id": "S-06",
+      "title": "JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form)",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "First form conversion. Rewrites JerseyRunSetup to use react-hook-form for state, zod for validation, and shadcn Form wrapper for fields. Proves the integration pattern with the existing Convex mutation. Becomes the template for every other form (S-07, S-08, S-10, S-11).",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-06-jersey-run-setup-rhf-pilot.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "uses useForm with zodResolver",
+        "zod schema colocated",
+        "fields wrapped in shadcn Form primitives",
+        "custom questions use useFieldArray",
+        "Convex mutation receives same payload shape",
+        "validation errors via FormMessage",
+        "success via sonner toast"
+      ]
+    },
+    {
+      "id": "S-07",
+      "title": "DesignForm → RHF + zod + shadcn Form",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Apply the S-06 form pattern to DesignForm (title, brief, optional Canva link, multi-file upload). File-upload field stays imperative; RHF owns only metadata. Existing Convex storage upload flow preserved.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-07-design-form-rhf.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "uses RHF + zodResolver + shadcn Form",
+        "zod schema colocated",
+        "file upload UX preserved",
+        "Convex mutation receives same payload",
+        "existing tests pass",
+        "sonner toast for success"
+      ]
+    },
+    {
+      "id": "S-08",
+      "title": "OrderForm → RHF + zod + shadcn Form",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Apply the S-06 form pattern to OrderForm (team, sport, quantity, jersey specs, design linking). Closes out the portal surface migration — after this all three portal forms use the canonical form stack and the pilot is complete.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-08-order-form-rhf.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "uses RHF + zodResolver + shadcn Form",
+        "zod schema colocated",
+        "design multi-select uses appropriate primitive",
+        "Convex mutation receives same payload",
+        "existing tests pass",
+        "sonner toast for success"
+      ]
+    },
+    {
+      "id": "S-09",
+      "title": "Marketing Sweep",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Refactor HeroSection, CustomizeSection, ProcessSection, FaqSection, QuoteCtaSection, PricingCalculator, and PricingSection to use shadcn primitives. Drop ThemeToggle into MarketingNav. Pricing calculator presentation only — logic untouched.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-09-marketing-sweep.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "every primitive in marketing components sourced from components/ui",
+        "ThemeToggle visible in MarketingNav",
+        "pricing calculator unit tests still pass",
+        "FAQ uses shadcn Accordion or Collapsible",
+        "manual smoke in both themes at 375 768 1280"
+      ]
+    },
+    {
+      "id": "S-10",
+      "title": "IntakeForm → RHF + zod + shadcn Form",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Apply the canonical form pattern to the public intake form. Same Convex mutation, same payload; only form mechanics change. Public-facing and unauthenticated — extra care on a11y and dark-mode error visibility.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-10-intake-form-rhf.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "uses RHF + zodResolver + shadcn Form",
+        "zod schema colocated",
+        "intakes.create mutation receives same payload",
+        "success preserved or improved via sonner",
+        "existing tests pass",
+        "mobile responsive at 375px"
+      ]
+    },
+    {
+      "id": "S-11",
+      "title": "JerseyRunPublicForm → RHF + zod + shadcn Form",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Convert the public fan submission form at /run/id to the canonical form stack. Public and unauthenticated — preserve closed-state and open-vs-fixed-mode branching exactly as today. Last form to migrate; after this success metric all 5 forms on RHF + zod is achievable.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-11-jersey-run-public-form-rhf.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "uses RHF + zodResolver + shadcn Form",
+        "open mode shows free text input fixed mode shows roster Select",
+        "blank-name and blank-number warnings preserved",
+        "closed-state UI unchanged",
+        "existing tests pass"
+      ]
+    },
+    {
+      "id": "S-12",
+      "title": "Admin Sweep",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Refactor every admin surface — AdminShell, admin order list, admin order detail with 14-stage checklist if 2-12 has landed, admin customers, admin leads, admin jersey runs — to use shadcn primitives. Drop ThemeToggle into the AdminShell header. Largest sweep issue.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-12-admin-sweep.md",
+      "prdRef": "docs/prd/shadcn-migration.md#5-scope",
+      "acceptanceCriteria": [
+        "AdminShell uses shadcn Sheet Button Separator",
+        "admin tables use consistent shadcn pattern",
+        "stage checklist uses shadcn Checkbox with a11y labels",
+        "dropdown menus use shadcn DropdownMenu",
+        "ThemeToggle in admin header",
+        "manual smoke in light and dark"
+      ]
+    },
+    {
+      "id": "S-13",
+      "title": "Layout Sweep and Migration Audit",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Final pass on components/layout/* plus the migration exit audit. Confirms zero hand-rolled primitives remain anywhere, all five forms on RHF + zod, ThemeToggle works on every surface, and the build is fully green. Closes the migration.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-13-layout-sweep.md",
+      "prdRef": "docs/prd/shadcn-migration.md#8-success-metrics",
+      "acceptanceCriteria": [
+        "Logo MarketingFooter MarketingShell MarketingNav SidebarShell use shadcn primitives where applicable",
+        "grep audit shows no inline button or input classNames outside components/ui",
+        "all 5 forms on RHF + zod",
+        "ThemeToggle in marketing nav portal header admin header",
+        "dev showcase still renders every primitive",
+        "build typecheck lint test pass"
+      ]
     }
   ],
   "edges": [
@@ -650,6 +1058,98 @@
     {
       "from": "2-14",
       "to": "2-13"
+    },
+    {
+      "from": "3-02",
+      "to": "A-01"
+    },
+    {
+      "from": "3-02",
+      "to": "A-02"
+    },
+    {
+      "from": "3-02",
+      "to": "A-06"
+    },
+    {
+      "from": "A-02",
+      "to": "A-03"
+    },
+    {
+      "from": "A-03",
+      "to": "A-04"
+    },
+    {
+      "from": "A-03",
+      "to": "A-05"
+    },
+    {
+      "from": "A-04",
+      "to": "A-07"
+    },
+    {
+      "from": "A-05",
+      "to": "A-07"
+    },
+    {
+      "from": "A-06",
+      "to": "2-13"
+    },
+    {
+      "from": "S-01",
+      "to": "S-02"
+    },
+    {
+      "from": "S-02",
+      "to": "S-03"
+    },
+    {
+      "from": "S-02",
+      "to": "S-04"
+    },
+    {
+      "from": "S-03",
+      "to": "S-05"
+    },
+    {
+      "from": "S-04",
+      "to": "S-05"
+    },
+    {
+      "from": "S-05",
+      "to": "S-06"
+    },
+    {
+      "from": "S-06",
+      "to": "S-07"
+    },
+    {
+      "from": "S-06",
+      "to": "S-08"
+    },
+    {
+      "from": "S-07",
+      "to": "S-09"
+    },
+    {
+      "from": "S-08",
+      "to": "S-09"
+    },
+    {
+      "from": "S-09",
+      "to": "S-10"
+    },
+    {
+      "from": "S-10",
+      "to": "S-11"
+    },
+    {
+      "from": "S-11",
+      "to": "S-12"
+    },
+    {
+      "from": "S-12",
+      "to": "S-13"
     }
   ],
   "agents": [
@@ -750,6 +1250,13 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s6",
+      "name": "Claude Opus 4.7 (S-01 Smoke)",
+      "status": "working",
+      "currentTask": "S-01",
+      "tasksCompleted": 0
     }
   ],
   "log": [
@@ -1284,6 +1791,160 @@
       "nodeId": "3-02",
       "agent": "agent-claude-opus47-admin-runs",
       "message": "Completed: Admin Jersey Run Oversight"
+    },
+    {
+      "timestamp": "2026-05-23T20:30:45.090Z",
+      "event": "nodes_added",
+      "nodeId": "A-01",
+      "agent": null,
+      "message": "New task added: Extract Shared Convex Auth Helpers"
+    },
+    {
+      "timestamp": "2026-05-23T20:31:00.495Z",
+      "event": "nodes_added",
+      "nodeId": "A-02",
+      "agent": null,
+      "message": "New task added: Add Convex Mutation Smoke Tests"
+    },
+    {
+      "timestamp": "2026-05-23T20:31:10.074Z",
+      "event": "nodes_added",
+      "nodeId": "A-03",
+      "agent": null,
+      "message": "New task added: Consolidate Jersey Run Validation Rules"
+    },
+    {
+      "timestamp": "2026-05-23T20:31:51.260Z",
+      "event": "nodes_added",
+      "nodeId": "A-04",
+      "agent": null,
+      "message": "New task added: Consolidate Jersey Run Response Validation Rules"
+    },
+    {
+      "timestamp": "2026-05-23T20:32:49.164Z",
+      "event": "nodes_added",
+      "nodeId": "A-05",
+      "agent": null,
+      "message": "New task added: Consolidate Order Design Intake Validation Rules"
+    },
+    {
+      "timestamp": "2026-05-23T20:32:58.240Z",
+      "event": "nodes_added",
+      "nodeId": "A-06",
+      "agent": null,
+      "message": "New task added: Extract Admin Join Users By Id Helper"
+    },
+    {
+      "timestamp": "2026-05-23T20:33:05.576Z",
+      "event": "nodes_added",
+      "nodeId": "A-07",
+      "agent": null,
+      "message": "New task added: Extract Form Hooks From Large Components"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:23.274Z",
+      "event": "nodes_added",
+      "nodeId": "S-01",
+      "agent": null,
+      "message": "New task added: shadcn Compatibility Smoke Test"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:29.471Z",
+      "event": "nodes_added",
+      "nodeId": "S-02",
+      "agent": null,
+      "message": "New task added: Install shadcn Primitives and Dependencies"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:32.675Z",
+      "event": "nodes_added",
+      "nodeId": "S-03",
+      "agent": null,
+      "message": "New task added: Theme Provider, Dark Mode, and Theme Toggle Component"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:36.429Z",
+      "event": "nodes_added",
+      "nodeId": "S-04",
+      "agent": null,
+      "message": "New task added: /dev/components Showcase Page"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:39.472Z",
+      "event": "nodes_added",
+      "nodeId": "S-05",
+      "agent": null,
+      "message": "New task added: Portal Pilot — PortalShell and OrderTimeline on shadcn"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:43.119Z",
+      "event": "nodes_added",
+      "nodeId": "S-06",
+      "agent": null,
+      "message": "New task added: JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form)"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:46.258Z",
+      "event": "nodes_added",
+      "nodeId": "S-07",
+      "agent": null,
+      "message": "New task added: DesignForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-23T21:31:49.051Z",
+      "event": "nodes_added",
+      "nodeId": "S-08",
+      "agent": null,
+      "message": "New task added: OrderForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-23T21:32:00.286Z",
+      "event": "nodes_added",
+      "nodeId": "S-09",
+      "agent": null,
+      "message": "New task added: Marketing Sweep"
+    },
+    {
+      "timestamp": "2026-05-23T21:32:02.872Z",
+      "event": "nodes_added",
+      "nodeId": "S-10",
+      "agent": null,
+      "message": "New task added: IntakeForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-23T21:32:07.091Z",
+      "event": "nodes_added",
+      "nodeId": "S-11",
+      "agent": null,
+      "message": "New task added: JerseyRunPublicForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-23T21:32:10.262Z",
+      "event": "nodes_added",
+      "nodeId": "S-12",
+      "agent": null,
+      "message": "New task added: Admin Sweep"
+    },
+    {
+      "timestamp": "2026-05-23T21:32:14.095Z",
+      "event": "nodes_added",
+      "nodeId": "S-13",
+      "agent": null,
+      "message": "New task added: Layout Sweep and Migration Audit"
+    },
+    {
+      "timestamp": "2026-05-23T21:34:55.134Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s6",
+      "message": "Claude Opus 4.7 (S-01 Smoke) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-23T21:35:10.273Z",
+      "event": "task_started",
+      "nodeId": "S-01",
+      "agent": "agent-claude-opus47-s6",
+      "message": "Claude Opus 4.7 (S-01 Smoke) picked up: shadcn Compatibility Smoke Test"
     }
   ]
 }

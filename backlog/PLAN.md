@@ -84,3 +84,51 @@ Before starting these specific issues, resolve:
 - **Before 2-06** (Order Creation): What is the complete field list for the "start an order" form?
 - **Before 2-01** (Marketing Pages): Jersey photos — confirm client has provided files
 - **Before 3-03** (Data Export): Confirm CSV-only is acceptable for Phase 1, or if PDF is also needed
+
+---
+
+# Track S — shadcn/ui Migration (13 issues)
+## Source PRD: docs/prd/shadcn-migration.md
+## Generated: 2026-05-23
+
+Cross-cutting refactor track to adopt shadcn/ui primitives across every surface. Sequenced as a single pipeline — smoke test, install, theming, showcase, then portal pilot, then sweep marketing → intake → run → admin → layout.
+
+### Setup (sequential)
+| # | Issue | Type | Depends On |
+|---|-------|------|------------|
+| S-01 | shadcn Compatibility Smoke Test | infrastructure | none |
+| S-02 | Install shadcn Primitives and Dependencies | infrastructure | S-01 |
+| S-03 | Theme Provider, Dark Mode, and Theme Toggle Component | infrastructure | S-02 |
+| S-04 | /dev/components Showcase Page | infrastructure | S-02 |
+
+### Portal Pilot (sequential — proves the patterns)
+| # | Issue | Type | Depends On |
+|---|-------|------|------------|
+| S-05 | Portal Pilot — PortalShell and OrderTimeline on shadcn | improvement | S-03, S-04 |
+| S-06 | JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form) | improvement | S-05 |
+| S-07 | DesignForm → RHF + zod + shadcn Form | improvement | S-06 |
+| S-08 | OrderForm → RHF + zod + shadcn Form | improvement | S-06 |
+
+### Sweep (post-pilot, sequential per PRD order)
+| # | Issue | Type | Depends On |
+|---|-------|------|------------|
+| S-09 | Marketing Sweep | improvement | S-07, S-08 |
+| S-10 | IntakeForm → RHF + zod + shadcn Form | improvement | S-09 |
+| S-11 | JerseyRunPublicForm → RHF + zod + shadcn Form | improvement | S-10 |
+| S-12 | Admin Sweep | improvement | S-11 |
+| S-13 | Layout Sweep + Migration Audit | improvement | S-12 |
+
+### Parallelization Notes for Track S
+- S-03 and S-04 can run in parallel after S-02 (both depend only on S-02)
+- S-07 and S-08 can run in parallel after S-06 (both fan out from the pilot form pattern)
+- Everything else is strictly sequential — the sweep order matters
+
+### Critical Path
+`S-01 → S-02 → S-03 → S-05 → S-06 → S-08 → S-09 → S-10 → S-11 → S-12 → S-13`
+
+### Open Questions Affecting Track S
+- **Before S-01**: confirm appetite to spend ~30 min on the spike before committing to the rest of the track
+- **After S-08**: should the human review portal pilot end-to-end before sweep continues, or proceed straight through? (PRD Open Question)
+- **Before S-04**: gate `/dev/components` to dev-only, or leave unlinked-live? (PRD Open Question — default is unlinked-live)
+- **During each form issue (S-06, S-07, S-08, S-10, S-11)**: verify the Convex mutation's payload shape survives a clean zod schema; flag any mismatches case-by-case
+- **Before S-12**: confirm shadcn `<DropdownMenu>` / `<Tabs>` cover any custom hover/keyboard behavior in the admin checklist UI
