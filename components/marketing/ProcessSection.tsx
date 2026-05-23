@@ -30,7 +30,7 @@ export function ProcessSection() {
           <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
             Process
           </p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          <h2 className="mt-3 font-heading text-4xl font-bold tracking-tight text-zinc-900 sm:text-5xl">
             From design to delivery in three steps.
           </h2>
           <p className="mt-4 text-lg text-zinc-600">

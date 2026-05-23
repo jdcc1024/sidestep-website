@@ -21,7 +21,7 @@ export function PricingSection() {
           <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
             Pricing
           </p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          <h2 className="mt-3 font-heading text-4xl font-bold tracking-tight text-zinc-900 sm:text-5xl">
             Transparent pricing by team size.
           </h2>
           <p className="mt-4 text-lg text-zinc-600">

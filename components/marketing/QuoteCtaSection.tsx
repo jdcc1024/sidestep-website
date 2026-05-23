@@ -10,7 +10,7 @@ export function QuoteCtaSection() {
             className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.18),transparent_55%)]"
           />
           <div className="relative">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
               Ready to outfit your team?
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-teal-50">
