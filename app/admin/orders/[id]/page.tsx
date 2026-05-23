@@ -222,15 +222,25 @@ export default function AdminOrderDetailPage({
           Jersey run
         </h2>
         {jerseyRun ? (
-          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            <Field label="Status" value={jerseyRun.status} />
-            <Field label="Names mode" value={jerseyRun.namesMode} />
-            <Field
-              label="Deadline"
-              value={formatDate(jerseyRun.deadline)}
-            />
-            <Field label="Responses" value={String(jerseyRunResponseCount)} />
-          </dl>
+          <>
+            <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+              <Field label="Status" value={jerseyRun.status} />
+              <Field label="Names mode" value={jerseyRun.namesMode} />
+              <Field
+                label="Deadline"
+                value={formatDate(jerseyRun.deadline)}
+              />
+              <Field label="Responses" value={String(jerseyRunResponseCount)} />
+            </dl>
+            <p className="mt-4 text-sm">
+              <Link
+                href={`/admin/jersey-runs/${jerseyRun._id}`}
+                className="text-teal-700 hover:underline"
+              >
+                View responses and close run →
+              </Link>
+            </p>
+          </>
         ) : (
           <p className="mt-3 text-sm text-zinc-500">
             No jersey run created for this order.

@@ -3,6 +3,7 @@ import { SidebarShell, type SidebarLink } from "./SidebarShell";
 
 const adminLinks: SidebarLink[] = [
   { href: "/admin/orders", label: "All Orders" },
+  { href: "/admin/jersey-runs", label: "Jersey Runs" },
   { href: "/admin/designs", label: "All Designs" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/leads", label: "Leads" },

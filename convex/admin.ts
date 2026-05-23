@@ -132,3 +132,53 @@ export const getOrder = query({
     };
   },
 });
+
+// Every jersey run across every customer. Used by the admin oversight
+// page (issue 3-02). Joins team name from the linked order and captain
+// name/email from the user record so the list table can render without
+// follow-up queries. Response count is computed per run — fine at phase 1
+// volume; a denormalized counter on the run can come later if needed.
+export const listJerseyRuns = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+
+    const runs = await ctx.db.query("jerseyRuns").order("desc").collect();
+
+    const orderCache = new Map<string, Doc<"orders"> | null>();
+    const captainCache = new Map<string, Doc<"users"> | null>();
+
+    return Promise.all(
+      runs.map(async (run) => {
+        let order = orderCache.get(run.orderId);
+        if (order === undefined) {
+          order = await ctx.db.get(run.orderId);
+          orderCache.set(run.orderId, order);
+        }
+        let captain = captainCache.get(run.captainId);
+        if (captain === undefined) {
+          captain = await ctx.db.get(run.captainId);
+          captainCache.set(run.captainId, captain);
+        }
+
+        const responses = await ctx.db
+          .query("jerseyRunResponses")
+          .withIndex("by_jerseyRun", (q) => q.eq("jerseyRunId", run._id))
+          .collect();
+
+        return {
+          _id: run._id,
+          orderId: run.orderId,
+          status: run.status,
+          deadline: run.deadline,
+          createdAt: run.createdAt,
+          namesMode: run.namesMode,
+          teamName: order?.teamName ?? "Unknown team",
+          captainName: captain?.name ?? "Unknown",
+          captainEmail: captain?.email ?? "",
+          responseCount: responses.length,
+        };
+      }),
+    );
+  },
+});
