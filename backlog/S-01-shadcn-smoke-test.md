@@ -1,6 +1,6 @@
 # Issue: shadcn Compatibility Smoke Test
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 
@@ -17,13 +17,38 @@ This issue touches:
 Confirm shadcn/ui installs and runs cleanly against the current Next 16 + React 19 + Tailwind v4 stack before committing to the full migration. The unknown is Tailwind v4 — the shadcn CLI historically assumes v3 `tailwind.config.ts`, and the codebase uses the v4 `@theme` directive in `app/globals.css`. A short spike that runs `npx shadcn init`, adds `Button`, renders it on a throwaway route, and proves the build is still green resolves the highest-risk open question in the PRD.
 
 ## Acceptance Criteria
-- [ ] `npx shadcn init` completes without manual workarounds (or workarounds are documented)
-- [ ] `<Button>` primitive renders on a throwaway page at `/dev/smoke`
-- [ ] `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` all pass
-- [ ] Smoke-test commit can be reverted cleanly if migration is abandoned
-- [ ] Decision recorded: proceed with sweep, or document blocking incompatibility and stop
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] `npx shadcn init` completes without manual workarounds (or workarounds are documented)
+- [x] `<Button>` primitive renders on a throwaway page at `/dev/smoke`
+- [x] `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` all pass
+- [x] Smoke-test commit can be reverted cleanly if migration is abandoned
+- [x] Decision recorded: proceed with sweep, or document blocking incompatibility and stop
+- [x] All tests pass
+- [x] No regressions in existing tests
+
+## Outcome (2026-05-23)
+
+**Decision: PROCEED with the S-track migration.**
+
+### What happened
+- `npx shadcn@latest init -d -y` ran clean against Tailwind v4 + Next 16.2.6 + React 19.2.4. No manual workarounds.
+- shadcn CLI version installed: **`shadcn@^4.8.0`**.
+- The init wizard detected Tailwind v4 (`✔ Validating Tailwind CSS. Found v4.`) and chose the v4-native path: no `tailwind.config.ts` was written; instead, `app/globals.css` was rewritten with `@import "tw-animate-css"`, `@import "shadcn/tailwind.css"`, `@custom-variant dark`, an expanded `@theme inline` block, and `:root` / `.dark` token sets in `oklch`.
+- `components.json` was created with `style: "base-nova"` and `baseColor: "neutral"`.
+- `components/ui/button.tsx` and `lib/utils.ts` were created on init (the `add button` step is satisfied without a separate invocation).
+
+### Notable finding — Base UI, not Radix
+The `base-nova` style imports primitives from **`@base-ui/react`** (e.g. `import { Button as ButtonPrimitive } from "@base-ui/react/button"`), not `@radix-ui/react-*`. This is the modern shadcn registry style and is a deliberate substrate change. S-02 should install the rest of the primitives in this style; the AI-and-human reference catalog from S-04 should reflect the Base UI surface area, not the Radix one.
+
+### Carry-over for S-03 (theme/fonts)
+The old `globals.css` referenced `var(--font-geist-sans)` / `var(--font-geist-mono)` — the new file references `var(--font-sans)` / `var(--font-geist-mono)`. The layout still injects Geist as `--font-geist-sans`. Aligning the font binding (rename layout variable to `--font-sans`, or remap inside `@theme`) is an S-03 concern, not a smoke-test blocker.
+
+### Build gate
+| Gate        | Before    | After     |
+|-------------|-----------|-----------|
+| typecheck   | clean     | clean     |
+| lint        | 1 pre-existing warning | same 1 warning, 0 new |
+| test        | 261/261   | 261/261   |
+| build       | green     | green, `/dev/smoke` prerendered as static |
 
 ## Dependencies
 - Blocked by: none
