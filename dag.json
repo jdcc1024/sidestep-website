@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-24T07:24:14.919Z",
+  "lastUpdated": "2026-05-24T08:38:45.740Z",
   "phases": [
     {
       "id": "phase-1",
@@ -827,10 +827,10 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Apply the S-06 form pattern to OrderForm (team, sport, quantity, jersey specs, design linking). Closes out the portal surface migration — after this all three portal forms use the canonical form stack and the pilot is complete.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "claude-s08",
+      "startedAt": "2026-05-24T07:39:48.454Z",
+      "completedAt": "2026-05-24T08:38:45.739Z",
       "issueFile": "backlog/S-08-order-form-rhf.md",
       "prdRef": "docs/prd/shadcn-migration.md#5-scope",
       "acceptanceCriteria": [
@@ -951,7 +951,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Swap hardcoded zinc/white classes in app/portal/**/page.tsx for shadcn theme tokens so the portal renders correctly in dark mode. Closes the gap left by S-05 (shell only) — inner page bodies, loading skeletons, StageChip palette, etc.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1314,30 +1314,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "claude-s08",
+      "name": "Claude (Opus 4.7) — S-08",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-18T15:03:56.341Z",
-      "event": "nodes_added",
-      "nodeId": "2-12",
-      "agent": null,
-      "message": "New task added: Admin Stage Management"
-    },
-    {
-      "timestamp": "2026-05-18T15:04:15.955Z",
-      "event": "nodes_added",
-      "nodeId": "2-13",
-      "agent": null,
-      "message": "New task added: Admin Customer Management"
-    },
-    {
-      "timestamp": "2026-05-18T15:04:16.003Z",
-      "event": "nodes_added",
-      "nodeId": "3-01",
-      "agent": null,
-      "message": "New task added: Jersey Run Deadline Enforcement"
-    },
     {
       "timestamp": "2026-05-18T15:04:16.055Z",
       "event": "nodes_added",
@@ -2016,6 +2002,27 @@
       "nodeId": "S-06",
       "agent": "claude-s06",
       "message": "Completed: JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form)"
+    },
+    {
+      "timestamp": "2026-05-24T07:39:48.368Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "claude-s08",
+      "message": "Claude (Opus 4.7) — S-08 joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-24T07:39:48.455Z",
+      "event": "task_started",
+      "nodeId": "S-08",
+      "agent": "claude-s08",
+      "message": "Claude (Opus 4.7) — S-08 picked up: OrderForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-24T08:38:45.740Z",
+      "event": "task_completed",
+      "nodeId": "S-08",
+      "agent": "claude-s08",
+      "message": "Completed: OrderForm → RHF + zod + shadcn Form"
     }
   ]
 }

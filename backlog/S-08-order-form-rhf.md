@@ -1,6 +1,6 @@
 # Issue: OrderForm → RHF + zod + shadcn Form
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 
