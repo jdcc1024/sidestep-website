@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-24T19:09:40.314Z",
+  "lastUpdated": "2026-05-24T19:11:55.275Z",
   "phases": [
     {
       "id": "phase-1",
@@ -889,9 +889,9 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Convert the public fan submission form at /run/id to the canonical form stack. Public and unauthenticated — preserve closed-state and open-vs-fixed-mode branching exactly as today. Last form to migrate; after this success metric all 5 forms on RHF + zod is achievable.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
+      "status": "in-progress",
+      "agent": "agent-claude-opus47-s11",
+      "startedAt": "2026-05-24T19:11:55.274Z",
       "completedAt": null,
       "issueFile": "backlog/S-11-jersey-run-public-form-rhf.md",
       "prdRef": "docs/prd/shadcn-migration.md#5-scope",
@@ -1342,23 +1342,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s11",
+      "name": "Claude Opus 4.7 (S-11 Public Run Form)",
+      "status": "working",
+      "currentTask": "S-11",
+      "tasksCompleted": 0
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-18T19:26:59.599Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-sonnet46-s2",
-      "message": "Claude Sonnet 4.6 (Session 2) joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-18T19:27:05.998Z",
-      "event": "nodes_added",
-      "nodeId": "3-06",
-      "agent": null,
-      "message": "New task added: Registration Email Notification"
-    },
     {
       "timestamp": "2026-05-18T19:27:30.768Z",
       "event": "task_started",
@@ -2044,6 +2037,20 @@
       "nodeId": "S-10",
       "agent": "agent-claude-opus47-s10",
       "message": "Completed: IntakeForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-24T19:11:52.599Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s11",
+      "message": "Claude Opus 4.7 (S-11 Public Run Form) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-24T19:11:55.274Z",
+      "event": "task_started",
+      "nodeId": "S-11",
+      "agent": "agent-claude-opus47-s11",
+      "message": "Claude Opus 4.7 (S-11 Public Run Form) picked up: JerseyRunPublicForm → RHF + zod + shadcn Form"
     }
   ]
 }

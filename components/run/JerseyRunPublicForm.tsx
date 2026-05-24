@@ -1,25 +1,59 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { CheckIcon } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
   ANSWER_MAX_LENGTH,
-  EMPTY_RESPONSE,
+  EMAIL_MAX_LENGTH,
   JERSEY_NAME_MAX_LENGTH,
   JERSEY_NUMBER_MAX_LENGTH,
   RESPONDENT_NAME_MAX_LENGTH,
   hasBlankNameOrNumber,
   isJerseyRunClosed,
   toResponsePayload,
-  validateResponse,
   type JerseyRunForResponse,
-  type JerseyRunResponseErrors,
   type JerseyRunResponseInput,
 } from "@/lib/jerseyRunResponse";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
-type Status = "editing" | "confirming" | "submitting" | "submitted" | "error";
+// Matches the EMAIL_PATTERN in lib/jerseyRunResponse.ts and convex/jerseyRuns.ts —
+// three places need to agree or the server rejects what the client just let through.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function JerseyRunPublicForm({
   jerseyRunId,
@@ -56,6 +90,94 @@ export function JerseyRunPublicForm({
   );
 }
 
+type FormValues = JerseyRunResponseInput;
+
+// Schema depends on the run (sizeOptions list, namesMode branching, custom
+// question ids) so we build it once per run via useMemo. Constants reused
+// from lib/jerseyRunResponse.ts keep the client and Convex submitResponse
+// mutation in agreement on caps and patterns.
+function buildSchema(run: JerseyRunForResponse) {
+  return z
+    .object({
+      respondentName: z
+        .string()
+        .refine((v) => v.trim().length > 0, "Tell us your name.")
+        .refine(
+          (v) => v.trim().length <= RESPONDENT_NAME_MAX_LENGTH,
+          `Keep your name under ${RESPONDENT_NAME_MAX_LENGTH} characters.`,
+        ),
+      respondentEmail: z
+        .string()
+        .refine(
+          (v) => v.trim().length > 0,
+          "We need an email so your captain can reach you.",
+        )
+        .refine(
+          (v) => v.trim().length <= EMAIL_MAX_LENGTH,
+          "That email is too long.",
+        )
+        .refine(
+          (v) => EMAIL_PATTERN.test(v.trim()),
+          "That doesn't look like an email.",
+        ),
+      size: z
+        .string()
+        .min(1, "Pick a size.")
+        .refine(
+          (v) => run.sizeOptions.includes(v),
+          "Pick a size from the list.",
+        ),
+      jerseyName: z
+        .string()
+        .max(
+          JERSEY_NAME_MAX_LENGTH,
+          `Keep the jersey name under ${JERSEY_NAME_MAX_LENGTH} characters.`,
+        ),
+      jerseyNumber: z
+        .string()
+        .max(
+          JERSEY_NUMBER_MAX_LENGTH,
+          `Keep the jersey number under ${JERSEY_NUMBER_MAX_LENGTH} characters.`,
+        ),
+      rosterSelection: z.string(),
+      customAnswers: z.record(z.string(), z.string()),
+    })
+    .superRefine((data, ctx) => {
+      if (run.namesMode === "fixed") {
+        const roster = run.fixedRoster ?? [];
+        const idx = Number.parseInt(data.rosterSelection, 10);
+        if (
+          data.rosterSelection.length === 0 ||
+          !Number.isInteger(idx) ||
+          idx < 0 ||
+          idx >= roster.length
+        ) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["rosterSelection"],
+            message: "Pick your name from the list.",
+          });
+        }
+      }
+
+      // Only inspect answers tied to known question ids — extras are ignored
+      // (they could come from a stale form snapshot if the captain edited
+      // questions after sharing the link).
+      const knownIds = new Set(run.customQuestions.map((q) => q.id));
+      for (const id of knownIds) {
+        const value = data.customAnswers[id] ?? "";
+        if (value.length > ANSWER_MAX_LENGTH) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["customAnswers"],
+            message: `Keep each answer under ${ANSWER_MAX_LENGTH} characters.`,
+          });
+          break;
+        }
+      }
+    });
+}
+
 function ResponseForm({
   jerseyRunId,
   run,
@@ -68,31 +190,28 @@ function ResponseForm({
   captainName: string;
 }) {
   const submitResponse = useMutation(api.jerseyRuns.submitResponse);
-
-  const [values, setValues] = useState<JerseyRunResponseInput>(EMPTY_RESPONSE);
-  const [errors, setErrors] = useState<JerseyRunResponseErrors>({});
-  const [status, setStatus] = useState<Status>("editing");
+  const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<FormValues | null>(null);
 
-  function update<K extends keyof JerseyRunResponseInput>(
-    key: K,
-    value: JerseyRunResponseInput[K],
-  ) {
-    setValues((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
-  }
+  const schema = useMemo(() => buildSchema(run), [run]);
 
-  function setAnswer(questionId: string, value: string) {
-    setValues((prev) => ({
-      ...prev,
-      customAnswers: { ...prev.customAnswers, [questionId]: value },
-    }));
-    if (errors.customAnswers)
-      setErrors((prev) => ({ ...prev, customAnswers: undefined }));
-  }
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      respondentName: "",
+      respondentEmail: "",
+      size: "",
+      jerseyName: "",
+      jerseyNumber: "",
+      rosterSelection: "",
+      customAnswers: Object.fromEntries(
+        run.customQuestions.map((q) => [q.id, ""]),
+      ),
+    },
+  });
 
-  async function actuallySubmit() {
-    setStatus("submitting");
+  async function actuallySubmit(values: FormValues) {
     setSubmitError(null);
     try {
       const payload = toResponsePayload(values, run);
@@ -105,9 +224,8 @@ function ResponseForm({
         jerseyNumber: payload.jerseyNumber,
         customAnswers: payload.customAnswers,
       });
-      setStatus("submitted");
+      setSubmitted(true);
     } catch (err) {
-      setStatus("error");
       setSubmitError(
         err instanceof Error
           ? err.message
@@ -116,323 +234,277 @@ function ResponseForm({
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const found = validateResponse(values, run);
-    setErrors(found);
-    if (Object.keys(found).length > 0) {
-      const first = document.querySelector<HTMLElement>(
-        '[data-response-error="true"]',
-      );
-      first?.focus();
-      return;
-    }
+  async function onSubmit(values: FormValues) {
     if (hasBlankNameOrNumber(values, run)) {
-      setStatus("confirming");
+      setConfirming(values);
       return;
     }
-    void actuallySubmit();
+    await actuallySubmit(values);
   }
 
-  if (status === "submitted") {
-    return <SuccessState teamName={teamName} />;
-  }
+  if (submitted) return <SuccessState teamName={teamName} />;
 
-  const isBusy = status === "submitting";
+  const isSubmitting = form.formState.isSubmitting;
+  const customAnswersError = form.formState.errors.customAnswers?.message;
 
   return (
     <>
       <Header teamName={teamName} captainName={captainName} run={run} />
 
-      <form
-        onSubmit={handleSubmit}
-        noValidate
-        className="mt-8 space-y-8"
-        aria-busy={isBusy}
-      >
-        <Field
-          label="Your name"
-          error={errors.respondentName}
-          required
-          render={(id) => (
-            <input
-              id={id}
-              type="text"
-              value={values.respondentName}
-              onChange={(e) => update("respondentName", e.target.value)}
-              maxLength={RESPONDENT_NAME_MAX_LENGTH}
-              autoComplete="name"
-              className={inputClass(!!errors.respondentName)}
-              data-response-error={errors.respondentName ? "true" : undefined}
-            />
-          )}
-        />
-
-        <Field
-          label="Your email"
-          helper="So your captain can reach you with updates."
-          error={errors.respondentEmail}
-          required
-          render={(id) => (
-            <input
-              id={id}
-              type="email"
-              value={values.respondentEmail}
-              onChange={(e) => update("respondentEmail", e.target.value)}
-              autoComplete="email"
-              className={inputClass(!!errors.respondentEmail)}
-              data-response-error={errors.respondentEmail ? "true" : undefined}
-            />
-          )}
-        />
-
-        <Field
-          label="Jersey size"
-          error={errors.size}
-          required
-          render={() => (
-            <div className="flex flex-wrap gap-2">
-              {run.sizeOptions.map((size, idx) => {
-                const selected = values.size === size;
-                return (
-                  <label
-                    key={size}
-                    className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition ${
-                      selected
-                        ? "border-teal-500 bg-teal-50 text-teal-800 ring-2 ring-teal-500/20"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-teal-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="size"
-                      checked={selected}
-                      onChange={() => update("size", size)}
-                      className="sr-only"
-                      data-response-error={
-                        errors.size && idx === 0 ? "true" : undefined
-                      }
-                    />
-                    {size}
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        />
-
-        {run.namesMode === "open" ? (
-          <OpenNameFields
-            values={values}
-            errors={errors}
-            update={update}
-          />
-        ) : (
-          <FixedRosterField
-            values={values}
-            errors={errors}
-            roster={run.fixedRoster ?? []}
-            update={update}
-          />
-        )}
-
-        {run.customQuestions.length > 0 && (
-          <div className="space-y-6">
-            {run.customQuestions.map((q) => (
-              <Field
-                key={q.id}
-                label={q.label}
-                error={undefined}
-                render={(id) => (
-                  <textarea
-                    id={id}
-                    value={values.customAnswers[q.id] ?? ""}
-                    onChange={(e) => setAnswer(q.id, e.target.value)}
-                    maxLength={ANSWER_MAX_LENGTH}
-                    rows={3}
-                    className={inputClass(false)}
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          noValidate
+          className="mt-8 space-y-8"
+          aria-busy={isSubmitting}
+        >
+          <FormField
+            control={form.control}
+            name="respondentName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Your name
+                  <RequiredMark />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    autoComplete="name"
+                    maxLength={RESPONDENT_NAME_MAX_LENGTH}
+                    {...field}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="respondentEmail"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Your email
+                  <RequiredMark />
+                </FormLabel>
+                <FormDescription>
+                  So your captain can reach you with updates.
+                </FormDescription>
+                <FormControl>
+                  <Input type="email" autoComplete="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="size"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Jersey size
+                  <RequiredMark />
+                </FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                    className="flex flex-wrap gap-2"
+                  >
+                    {run.sizeOptions.map((size) => (
+                      <SizeOption key={size} value={size} />
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {run.namesMode === "open" ? (
+            <div className="grid gap-5 sm:grid-cols-[1fr_140px]">
+              <FormField
+                control={form.control}
+                name="jerseyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name on jersey</FormLabel>
+                    <FormDescription>Leave blank for no name.</FormDescription>
+                    <FormControl>
+                      <Input maxLength={JERSEY_NAME_MAX_LENGTH} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            ))}
-            {errors.customAnswers && (
-              <p role="alert" className="text-xs text-rose-600">
-                {errors.customAnswers}
-              </p>
-            )}
+              <FormField
+                control={form.control}
+                name="jerseyNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number</FormLabel>
+                    <FormDescription>Leave blank for none.</FormDescription>
+                    <FormControl>
+                      <Input
+                        inputMode="numeric"
+                        maxLength={JERSEY_NUMBER_MAX_LENGTH}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          ) : (
+            <FormField
+              control={form.control}
+              name="rosterSelection"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Pick your name
+                    <RequiredMark />
+                  </FormLabel>
+                  <FormDescription>
+                    Your captain set the roster in advance.
+                  </FormDescription>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select your name…" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {(run.fixedRoster ?? []).map((entry, idx) => (
+                        <SelectItem key={idx} value={String(idx)}>
+                          {entry.name}
+                          {entry.number ? ` · #${entry.number}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {run.customQuestions.length > 0 && (
+            <div className="space-y-6">
+              {run.customQuestions.map((q) => (
+                <FormField
+                  key={q.id}
+                  control={form.control}
+                  name={`customAnswers.${q.id}` as const}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{q.label}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          rows={3}
+                          maxLength={ANSWER_MAX_LENGTH}
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              ))}
+              {customAnswersError && (
+                <p
+                  role="alert"
+                  className="text-[0.8rem] font-medium text-destructive"
+                >
+                  {String(customAnswersError)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {submitError && (
+            <p role="alert" className="text-sm text-destructive">
+              {submitError}
+            </p>
+          )}
+
+          <Separator />
+
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Your captain will see your submission right away.
+            </p>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting…" : "Submit"}
+            </Button>
           </div>
-        )}
+        </form>
+      </Form>
 
-        {submitError && (
-          <p role="alert" className="text-sm text-rose-600">
-            {submitError}
-          </p>
-        )}
-
-        <div className="flex flex-col items-stretch gap-3 border-t border-zinc-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-zinc-500">
-            Your captain will see your submission right away.
-          </p>
-          <button
-            type="submit"
-            disabled={isBusy}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isBusy ? "Submitting…" : "Submit"}
-            <span aria-hidden>→</span>
-          </button>
-        </div>
-      </form>
-
-      {status === "confirming" && (
-        <BlankNameNumberDialog
-          onConfirm={() => void actuallySubmit()}
-          onCancel={() => setStatus("editing")}
-        />
-      )}
+      <BlankNameNumberDialog
+        open={confirming !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirming(null);
+        }}
+        onConfirm={() => {
+          const values = confirming;
+          setConfirming(null);
+          if (values) void actuallySubmit(values);
+        }}
+      />
     </>
   );
 }
 
-function OpenNameFields({
-  values,
-  errors,
-  update,
-}: {
-  values: JerseyRunResponseInput;
-  errors: JerseyRunResponseErrors;
-  update: <K extends keyof JerseyRunResponseInput>(
-    key: K,
-    value: JerseyRunResponseInput[K],
-  ) => void;
-}) {
+function SizeOption({ value }: { value: string }) {
   return (
-    <div className="grid gap-5 sm:grid-cols-[1fr_140px]">
-      <Field
-        label="Name on jersey"
-        helper="Leave blank for no name."
-        error={errors.jerseyName}
-        render={(id) => (
-          <input
-            id={id}
-            type="text"
-            value={values.jerseyName}
-            onChange={(e) => update("jerseyName", e.target.value)}
-            maxLength={JERSEY_NAME_MAX_LENGTH}
-            className={inputClass(!!errors.jerseyName)}
-            data-response-error={errors.jerseyName ? "true" : undefined}
-          />
-        )}
-      />
-      <Field
-        label="Number"
-        helper="Leave blank for none."
-        error={errors.jerseyNumber}
-        render={(id) => (
-          <input
-            id={id}
-            type="text"
-            inputMode="numeric"
-            value={values.jerseyNumber}
-            onChange={(e) => update("jerseyNumber", e.target.value)}
-            maxLength={JERSEY_NUMBER_MAX_LENGTH}
-            className={inputClass(!!errors.jerseyNumber)}
-            data-response-error={errors.jerseyNumber ? "true" : undefined}
-          />
-        )}
-      />
-    </div>
+    <label className="flex cursor-pointer items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:border-ring has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/10 has-[[data-checked]]:text-primary">
+      <RadioGroupItem value={value} className="sr-only" />
+      {value}
+    </label>
   );
 }
 
-function FixedRosterField({
-  values,
-  errors,
-  roster,
-  update,
-}: {
-  values: JerseyRunResponseInput;
-  errors: JerseyRunResponseErrors;
-  roster: { name: string; number?: string }[];
-  update: <K extends keyof JerseyRunResponseInput>(
-    key: K,
-    value: JerseyRunResponseInput[K],
-  ) => void;
-}) {
+function RequiredMark() {
   return (
-    <Field
-      label="Pick your name"
-      helper="Your captain set the roster in advance."
-      error={errors.rosterSelection}
-      required
-      render={(id) => (
-        <select
-          id={id}
-          value={values.rosterSelection}
-          onChange={(e) => update("rosterSelection", e.target.value)}
-          className={inputClass(!!errors.rosterSelection)}
-          data-response-error={errors.rosterSelection ? "true" : undefined}
-        >
-          <option value="">Select your name…</option>
-          {roster.map((entry, idx) => (
-            <option key={idx} value={String(idx)}>
-              {entry.name}
-              {entry.number ? ` · #${entry.number}` : ""}
-            </option>
-          ))}
-        </select>
-      )}
-    />
+    <span aria-hidden className="ml-0.5 text-destructive">
+      *
+    </span>
   );
 }
 
 function BlankNameNumberDialog({
+  open,
+  onOpenChange,
   onConfirm,
-  onCancel,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-  onCancel: () => void;
 }) {
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="blank-name-dialog-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 p-4"
-      onClick={onCancel}
-    >
-      <div
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2
-          id="blank-name-dialog-title"
-          className="text-lg font-semibold text-zinc-900"
-        >
-          Leave the jersey blank?
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          You haven&apos;t filled in your jersey name or number. Your jersey
-          will be plain — is that what you want?
-        </p>
-        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:border-zinc-300"
-          >
-            Go back
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
-          >
-            Yes, submit
-          </button>
-        </div>
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Leave the jersey blank?</DialogTitle>
+          <DialogDescription>
+            You haven&apos;t filled in your jersey name or number. Your jersey
+            will be plain — is that what you want?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose render={<Button variant="ghost">Go back</Button>} />
+          <Button onClick={onConfirm}>Yes, submit</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -447,17 +519,17 @@ function Header({
 }) {
   return (
     <header>
-      <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
+      <p className="text-sm font-semibold uppercase tracking-wider text-primary">
         Jersey run
       </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+      <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
         {teamName || "Your team"}
       </h1>
-      <p className="mt-3 text-zinc-600">
+      <p className="mt-3 text-muted-foreground">
         {captainName ? `${captainName} is ordering` : "Your captain is ordering"}{" "}
         custom jerseys. Tell us your size and how you&apos;d like yours.
       </p>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted-foreground">
         Submissions close {formatDeadline(run.deadline)}.
       </p>
     </header>
@@ -466,25 +538,16 @@ function Header({
 
 function SuccessState({ teamName }: { teamName: string }) {
   return (
-    <div className="text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-teal-700">
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-          aria-hidden
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
+    <div
+      role="status"
+      aria-live="polite"
+      className="rounded-2xl border border-primary/30 bg-primary/5 p-10 text-center"
+    >
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <CheckIcon className="h-6 w-6" aria-hidden="true" />
       </div>
-      <h1 className="mt-4 text-2xl font-bold text-zinc-900">You&apos;re in!</h1>
-      <p className="mt-2 text-zinc-600">
+      <h1 className="text-2xl font-bold text-foreground">You&apos;re in!</h1>
+      <p className="mt-2 text-muted-foreground">
         Your captain at {teamName || "your team"} will be in touch.
       </p>
     </div>
@@ -500,13 +563,13 @@ function ClosedState({
 }) {
   return (
     <div className="text-center">
-      <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
+      <p className="text-sm font-semibold uppercase tracking-wider text-primary">
         Jersey run
       </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">
+      <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
         {teamName || "This jersey run"} is closed.
       </h1>
-      <p className="mt-3 text-zinc-600">
+      <p className="mt-3 text-muted-foreground">
         Submissions are no longer being accepted.
         {captainName
           ? ` Reach out to ${captainName} if you think this is a mistake.`
@@ -519,10 +582,10 @@ function ClosedState({
 function NotFound() {
   return (
     <div className="text-center">
-      <h1 className="text-2xl font-bold text-zinc-900">
+      <h1 className="text-2xl font-bold text-foreground">
         We couldn&apos;t find that jersey run.
       </h1>
-      <p className="mt-2 text-zinc-600">
+      <p className="mt-2 text-muted-foreground">
         Double-check the link your captain shared with you.
       </p>
     </div>
@@ -532,57 +595,12 @@ function NotFound() {
 function Skeleton() {
   return (
     <div className="space-y-4">
-      <div className="h-6 w-32 animate-pulse rounded bg-zinc-100" />
-      <div className="h-10 w-2/3 animate-pulse rounded bg-zinc-100" />
-      <div className="h-32 animate-pulse rounded bg-zinc-100" />
-      <div className="h-10 w-full animate-pulse rounded bg-zinc-100" />
+      <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+      <div className="h-10 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="h-32 animate-pulse rounded bg-muted" />
+      <div className="h-10 w-full animate-pulse rounded bg-muted" />
     </div>
   );
-}
-
-function Field({
-  label,
-  helper,
-  error,
-  required,
-  render,
-}: {
-  label: string;
-  helper?: string;
-  error?: string;
-  required?: boolean;
-  render: (id: string) => React.ReactNode;
-}) {
-  const id = useId();
-  return (
-    <div>
-      <div className="mb-1.5 flex items-baseline justify-between">
-        <label htmlFor={id} className="text-sm font-medium text-zinc-800">
-          {label}
-          {required && (
-            <span aria-hidden className="ml-0.5 text-rose-500">
-              *
-            </span>
-          )}
-        </label>
-        {helper && <span className="text-xs text-zinc-400">{helper}</span>}
-      </div>
-      {render(id)}
-      {error && (
-        <p role="alert" className="mt-1 text-xs text-rose-600">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function inputClass(hasError: boolean) {
-  const base =
-    "block w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:ring-2";
-  return hasError
-    ? `${base} border-rose-400 focus:border-rose-500 focus:ring-rose-500/30`
-    : `${base} border-zinc-300 focus:border-teal-600 focus:ring-teal-600/30`;
 }
 
 function formatDeadline(ms: number): string {
