@@ -1,19 +1,35 @@
 "use client";
 
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { UploadCloudIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
   BRIEF_MAX_LENGTH,
+  CANVA_LINK_MAX_LENGTH,
   TITLE_MAX_LENGTH,
-  EMPTY_DESIGN,
+  isHttpUrl,
   toDesignPayload,
-  validateDesign,
-  type DesignErrors,
-  type DesignInput,
 } from "@/lib/design";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 type Mode =
   | { kind: "create" }
@@ -26,8 +42,6 @@ type Mode =
       existingFileCount: number;
     };
 
-type Status = "editing" | "uploading" | "submitting" | "submitted" | "error";
-
 type UploadStatus = "pending" | "uploading" | "done" | "failed";
 
 type PendingUpload = {
@@ -38,47 +52,90 @@ type PendingUpload = {
   storageId?: Id<"_storage">;
 };
 
+// Colocated zod schema. Field rules mirror lib/design.ts so the client and
+// the convex/designs.ts mutation reject the same inputs with the same
+// wording. fileCount lives inside the form so the upload dropzone can use
+// the same error rendering as every other field — it's mutated via
+// form.setValue from the file picker handlers.
+const formSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Give your design a title.")
+    .max(
+      TITLE_MAX_LENGTH,
+      `Please keep the title under ${TITLE_MAX_LENGTH} characters.`,
+    ),
+  brief: z
+    .string()
+    .trim()
+    .min(1, "Add a brief so Sidestep knows what you want.")
+    .max(
+      BRIEF_MAX_LENGTH,
+      `Please keep the brief under ${BRIEF_MAX_LENGTH} characters.`,
+    ),
+  canvaLink: z.string().superRefine((value, ctx) => {
+    const link = value.trim();
+    if (!link) return;
+    if (link.length > CANVA_LINK_MAX_LENGTH) {
+      ctx.addIssue({ code: "custom", message: "That link is too long." });
+      return;
+    }
+    if (!isHttpUrl(link)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Paste a full link starting with https://",
+      });
+    }
+  }),
+  fileCount: z
+    .number()
+    .int()
+    .min(
+      1,
+      "Upload at least one file (logo, mood board, reference image).",
+    ),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
 export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
   const router = useRouter();
   const generateUploadUrl = useMutation(api.designs.generateUploadUrl);
   const createDesign = useMutation(api.designs.createDesign);
   const updateDesign = useMutation(api.designs.updateDesign);
 
-  const initialInput: DesignInput =
-    mode.kind === "edit"
-      ? {
-          title: mode.initialTitle,
-          brief: mode.initialBrief,
-          canvaLink: mode.initialCanvaLink,
-          fileCount: mode.existingFileCount,
-        }
-      : EMPTY_DESIGN;
+  const existingFileCount =
+    mode.kind === "edit" ? mode.existingFileCount : 0;
 
-  const [values, setValues] = useState<DesignInput>(initialInput);
-  const [errors, setErrors] = useState<DesignErrors>({});
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues:
+      mode.kind === "edit"
+        ? {
+            title: mode.initialTitle,
+            brief: mode.initialBrief,
+            canvaLink: mode.initialCanvaLink,
+            fileCount: mode.existingFileCount,
+          }
+        : { title: "", brief: "", canvaLink: "", fileCount: 0 },
+  });
+
+  // Pending uploads stay in local state — each entry has live upload
+  // status (pending/uploading/done/failed) that RHF doesn't need to know
+  // about. fileCount is mirrored into the form below so validation and
+  // FormMessage rendering work the same as every other field.
   const [pending, setPending] = useState<PendingUpload[]>([]);
-  const [status, setStatus] = useState<Status>("editing");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const existingFileCount =
-    mode.kind === "edit" ? mode.existingFileCount : 0;
   const attachedCount = existingFileCount + pending.length;
 
-  function recalcFileCount(nextPending: PendingUpload[]) {
-    setValues((prev) => ({
-      ...prev,
-      fileCount: existingFileCount + nextPending.length,
-    }));
-    if (errors.fileCount && existingFileCount + nextPending.length > 0) {
-      setErrors((prev) => ({ ...prev, fileCount: undefined }));
-    }
-  }
-
-  function update<K extends keyof DesignInput>(key: K, value: DesignInput[K]) {
-    setValues((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
-  }
+  useEffect(() => {
+    form.setValue("fileCount", attachedCount, {
+      shouldValidate: form.formState.isSubmitted,
+    });
+  }, [attachedCount, form]);
 
   function onFilesPicked(picked: FileList | null) {
     if (!picked || picked.length === 0) return;
@@ -87,16 +144,12 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
       file,
       status: "pending",
     }));
-    const next = [...pending, ...added];
-    setPending(next);
-    recalcFileCount(next);
+    setPending((prev) => [...prev, ...added]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function removePending(id: string) {
-    const next = pending.filter((p) => p.id !== id);
-    setPending(next);
-    recalcFileCount(next);
+    setPending((prev) => prev.filter((p) => p.id !== id));
   }
 
   async function uploadOne(item: PendingUpload): Promise<Id<"_storage">> {
@@ -136,25 +189,12 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const found = validateDesign(values);
-    setErrors(found);
-    if (Object.keys(found).length > 0) {
-      const first = document.querySelector<HTMLElement>(
-        '[data-design-error="true"]',
-      );
-      first?.focus();
-      return;
-    }
-
-    setStatus("uploading");
+  async function onSubmit(values: FormValues) {
     setSubmitError(null);
 
-    // Upload any pending files that haven't been uploaded yet (including
-    // retries of previously-failed ones). Done sequentially so the UI's
-    // progress list reads top-to-bottom — Convex storage handles the
-    // throughput either way.
+    // Upload pending files sequentially so the UI progress list reads
+    // top-to-bottom. Already-uploaded items (e.g. from a retry) are
+    // reused via their stored storageId.
     const storageIds: Id<"_storage">[] = [];
     try {
       for (const item of pending) {
@@ -165,14 +205,19 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
         storageIds.push(await uploadOne(item));
       }
     } catch {
-      setStatus("error");
-      setSubmitError("One or more files failed to upload. Try again.");
+      const message = "One or more files failed to upload. Try again.";
+      setSubmitError(message);
+      toast.error("Upload failed", { description: message });
       return;
     }
 
-    setStatus("submitting");
     try {
-      const payload = toDesignPayload(values);
+      const payload = toDesignPayload({
+        title: values.title,
+        brief: values.brief,
+        canvaLink: values.canvaLink,
+        fileCount: values.fileCount,
+      });
       if (mode.kind === "edit") {
         await updateDesign({
           designId: mode.designId,
@@ -181,7 +226,7 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
           canvaLink: payload.canvaLink,
           addFileIds: storageIds,
         });
-        setStatus("submitted");
+        toast.success("Design updated");
         router.push(`/portal/designs/${mode.designId}`);
       } else {
         const designId = await createDesign({
@@ -190,139 +235,182 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
           canvaLink: payload.canvaLink,
           fileIds: storageIds,
         });
-        setStatus("submitted");
+        toast.success("Design saved", {
+          description: "Sidestep will see it next time they review your account.",
+        });
         router.push(`/portal/designs/${designId}`);
       }
     } catch (err) {
-      setStatus("error");
-      setSubmitError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Something went wrong saving your design.",
-      );
+          : "Something went wrong saving your design.";
+      setSubmitError(message);
+      toast.error("Could not save your design", { description: message });
     }
   }
 
-  const isBusy = status === "uploading" || status === "submitting";
+  const isSubmitting = form.formState.isSubmitting;
   const submitLabel =
-    status === "uploading"
-      ? "Uploading files…"
-      : status === "submitting"
-        ? "Saving…"
-        : mode.kind === "edit"
-          ? "Save changes"
-          : "Save design";
+    isSubmitting
+      ? "Saving…"
+      : mode.kind === "edit"
+        ? "Save changes"
+        : "Save design";
+  const fileError = form.formState.errors.fileCount?.message;
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-10" aria-busy={isBusy}>
-      <FieldSection
-        eyebrow="01"
-        title="About this design"
-        description="A clear title and brief make it easier for Sidestep to nail your vibe on the first pass."
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        noValidate
+        className="space-y-10"
+        aria-busy={isSubmitting}
       >
-        <TextField
-          label="Title"
-          placeholder="Spring 2026 jerseys"
-          value={values.title}
-          onChange={(v) => update("title", v)}
-          error={errors.title}
-          maxLength={TITLE_MAX_LENGTH}
-          required
-        />
-        <TextareaField
-          label="Brief"
-          placeholder="Theme, colors, references, anything we should know."
-          value={values.brief}
-          onChange={(v) => update("brief", v)}
-          error={errors.brief}
-          maxLength={BRIEF_MAX_LENGTH}
-          rows={6}
-          required
-        />
-        <TextField
-          label="Canva share link"
-          placeholder="https://www.canva.com/design/…"
-          helper="Optional — we'll open it in a new tab when we review."
-          type="url"
-          value={values.canvaLink}
-          onChange={(v) => update("canvaLink", v)}
-          error={errors.canvaLink}
-        />
-      </FieldSection>
+        <FieldSection
+          eyebrow="01"
+          title="About this design"
+          description="A clear title and brief make it easier for Sidestep to nail your vibe on the first pass."
+        >
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Spring 2026 jerseys"
+                    maxLength={TITLE_MAX_LENGTH}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      <FieldSection
-        eyebrow="02"
-        title="Files"
-        description="Logos, mood boards, reference photos, sketches — any file type works."
-      >
-        {mode.kind === "edit" && existingFileCount > 0 && (
-          <p className="text-sm text-zinc-600">
-            {existingFileCount} file{existingFileCount === 1 ? "" : "s"} already
-            attached. Add more below.
+          <FormField
+            control={form.control}
+            name="brief"
+            render={({ field }) => {
+              const remaining = BRIEF_MAX_LENGTH - field.value.length;
+              return (
+                <FormItem>
+                  <FormLabel>Brief</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Theme, colors, references, anything we should know."
+                      maxLength={BRIEF_MAX_LENGTH}
+                      rows={6}
+                      {...field}
+                    />
+                  </FormControl>
+                  <div className="flex items-center justify-between">
+                    <FormMessage />
+                    <p className="ml-auto text-[0.75rem] text-muted-foreground">
+                      {remaining} characters left
+                    </p>
+                  </div>
+                </FormItem>
+              );
+            }}
+          />
+
+          <FormField
+            control={form.control}
+            name="canvaLink"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Canva share link</FormLabel>
+                <FormDescription>
+                  Optional — we&apos;ll open it in a new tab when we review.
+                </FormDescription>
+                <FormControl>
+                  <Input
+                    type="url"
+                    placeholder="https://www.canva.com/design/…"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </FieldSection>
+
+        <FieldSection
+          eyebrow="02"
+          title="Files"
+          description="Logos, mood boards, reference photos, sketches — any file type works."
+        >
+          {mode.kind === "edit" && existingFileCount > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {existingFileCount} file{existingFileCount === 1 ? "" : "s"} already
+              attached. Add more below.
+            </p>
+          )}
+
+          <FileDropzone
+            inputRef={fileInputRef}
+            onPicked={onFilesPicked}
+            disabled={isSubmitting}
+            error={fileError}
+            attachedCount={attachedCount}
+          />
+
+          {pending.length > 0 && (
+            <ul className="space-y-2" aria-label="Files to upload">
+              {pending.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {item.file.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatBytes(item.file.size)} ·{" "}
+                      <UploadStatusLabel status={item.status} error={item.error} />
+                    </p>
+                  </div>
+                  {item.status !== "uploading" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePending(item.id)}
+                      disabled={isSubmitting}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </FieldSection>
+
+        <Separator />
+
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Your design saves to your portal — Sidestep will see it next time
+            they review your account.
+          </p>
+          <Button type="submit" disabled={isSubmitting}>
+            {submitLabel}
+          </Button>
+        </div>
+
+        {submitError && (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {submitError}
           </p>
         )}
-
-        <FileDropzone
-          inputRef={fileInputRef}
-          onPicked={onFilesPicked}
-          disabled={isBusy}
-          error={errors.fileCount}
-          attachedCount={attachedCount}
-        />
-
-        {pending.length > 0 && (
-          <ul className="space-y-2" aria-label="Files to upload">
-            {pending.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-zinc-900">
-                    {item.file.name}
-                  </p>
-                  <p className="text-xs text-zinc-500">
-                    {formatBytes(item.file.size)} ·{" "}
-                    <UploadStatusLabel status={item.status} error={item.error} />
-                  </p>
-                </div>
-                {item.status !== "uploading" && (
-                  <button
-                    type="button"
-                    onClick={() => removePending(item.id)}
-                    className="text-xs font-medium text-zinc-500 hover:text-rose-600"
-                    disabled={isBusy}
-                  >
-                    Remove
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </FieldSection>
-
-      <div className="flex flex-col items-stretch gap-3 border-t border-zinc-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">
-          Your design saves to your portal — Sidestep will see it next time
-          they review your account.
-        </p>
-        <button
-          type="submit"
-          disabled={isBusy}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitLabel}
-          <span aria-hidden>→</span>
-        </button>
-      </div>
-
-      {status === "error" && submitError && (
-        <p role="alert" className="text-sm text-rose-600">
-          {submitError}
-        </p>
-      )}
-    </form>
+      </form>
+    </Form>
   );
 }
 
@@ -335,14 +423,14 @@ function UploadStatusLabel({
 }) {
   switch (status) {
     case "pending":
-      return <span className="text-zinc-500">Ready to upload</span>;
+      return <span className="text-muted-foreground">Ready to upload</span>;
     case "uploading":
-      return <span className="text-teal-700">Uploading…</span>;
+      return <span className="text-primary">Uploading…</span>;
     case "done":
-      return <span className="text-emerald-700">Uploaded</span>;
+      return <span className="text-emerald-700 dark:text-emerald-400">Uploaded</span>;
     case "failed":
       return (
-        <span className="text-rose-600">{error ?? "Upload failed"}</span>
+        <span className="text-destructive">{error ?? "Upload failed"}</span>
       );
   }
 }
@@ -366,31 +454,19 @@ function FileDropzone({
     <div>
       <label
         htmlFor={id}
-        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-white px-6 py-10 text-center transition ${
+        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-card px-6 py-10 text-center transition ${
           error
-            ? "border-rose-300 hover:border-rose-400"
-            : "border-zinc-300 hover:border-teal-500"
+            ? "border-destructive hover:border-destructive"
+            : "border-border hover:border-ring"
         } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
       >
-        <svg
-          className="h-8 w-8 text-zinc-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          aria-hidden
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4m4-4v12"
-          />
-        </svg>
-        <span className="text-sm font-medium text-zinc-700">
+        <UploadCloudIcon className="h-8 w-8 text-muted-foreground" aria-hidden />
+        <span className="text-sm font-medium text-foreground">
           Click to choose files or drop them here
         </span>
-        <span className="text-xs text-zinc-500">
-          Any file type. {attachedCount > 0
+        <span className="text-xs text-muted-foreground">
+          Any file type.{" "}
+          {attachedCount > 0
             ? `${attachedCount} attached.`
             : "Add at least one."}
         </span>
@@ -404,11 +480,14 @@ function FileDropzone({
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          data-design-error={error ? "true" : undefined}
         />
       </label>
       {error && (
-        <p id={errorId} role="alert" className="mt-1 text-xs text-rose-600">
+        <p
+          id={errorId}
+          role="alert"
+          className="mt-1 text-[0.8rem] font-medium text-destructive"
+        >
           {error}
         </p>
       )}
@@ -430,156 +509,15 @@ function FieldSection({
   return (
     <section className="grid gap-6 md:grid-cols-[200px_1fr]">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">
           Step {eyebrow}
         </p>
-        <h2 className="mt-2 text-lg font-semibold text-zinc-900">{title}</h2>
-        <p className="mt-1 text-sm text-zinc-500">{description}</p>
+        <h2 className="mt-2 text-lg font-semibold text-foreground">{title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </header>
       <div className="space-y-5">{children}</div>
     </section>
   );
-}
-
-type TextFieldProps = {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  required?: boolean;
-  type?: string;
-  placeholder?: string;
-  helper?: string;
-  maxLength?: number;
-};
-
-function TextField({
-  label,
-  value,
-  onChange,
-  error,
-  required,
-  type = "text",
-  placeholder,
-  helper,
-  maxLength,
-}: TextFieldProps) {
-  const id = useId();
-  const errorId = `${id}-err`;
-  return (
-    <div>
-      <FieldLabel htmlFor={id} required={required} helper={helper}>
-        {label}
-      </FieldLabel>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        data-design-error={error ? "true" : undefined}
-        className={inputClass(!!error)}
-      />
-      <FieldError id={errorId} error={error} />
-    </div>
-  );
-}
-
-function TextareaField({
-  label,
-  value,
-  onChange,
-  error,
-  required,
-  placeholder,
-  helper,
-  maxLength,
-  rows = 4,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  required?: boolean;
-  placeholder?: string;
-  helper?: string;
-  maxLength: number;
-  rows?: number;
-}) {
-  const id = useId();
-  const errorId = `${id}-err`;
-  const remaining = maxLength - value.length;
-  return (
-    <div>
-      <FieldLabel htmlFor={id} required={required} helper={helper}>
-        {label}
-      </FieldLabel>
-      <textarea
-        id={id}
-        rows={rows}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        data-design-error={error ? "true" : undefined}
-        className={inputClass(!!error)}
-      />
-      <div className="mt-1 flex items-center justify-between">
-        <FieldError id={errorId} error={error} />
-        <p className="ml-auto text-xs text-zinc-400">
-          {remaining} characters left
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function FieldLabel({
-  htmlFor,
-  required,
-  helper,
-  children,
-}: {
-  htmlFor: string;
-  required?: boolean;
-  helper?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mb-1.5 flex items-baseline justify-between">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-zinc-800">
-        {children}
-        {required && (
-          <span aria-hidden className="ml-0.5 text-rose-500">
-            *
-          </span>
-        )}
-      </label>
-      {helper && <span className="text-xs text-zinc-400">{helper}</span>}
-    </div>
-  );
-}
-
-function FieldError({ id, error }: { id: string; error?: string }) {
-  if (!error) return null;
-  return (
-    <p id={id} role="alert" className="mt-1 text-xs text-rose-600">
-      {error}
-    </p>
-  );
-}
-
-function inputClass(hasError: boolean) {
-  const base =
-    "block w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:ring-2";
-  return hasError
-    ? `${base} border-rose-400 focus:border-rose-500 focus:ring-rose-500/30`
-    : `${base} border-zinc-300 focus:border-teal-600 focus:ring-teal-600/30`;
 }
 
 function formatBytes(bytes: number): string {
