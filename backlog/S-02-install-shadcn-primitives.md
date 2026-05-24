@@ -1,6 +1,6 @@
 # Issue: Install shadcn Primitives and Dependencies
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 

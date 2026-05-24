@@ -1,6 +1,6 @@
 # Issue: Theme Provider, Dark Mode, and Theme Toggle Component
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 

@@ -3,6 +3,7 @@
 import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient, useMutation, useQuery } from "convex/react";
+import { ThemeProvider } from "next-themes";
 import { useEffect } from "react";
 import { api } from "@/convex/_generated/api";
 
@@ -35,11 +36,18 @@ function UserSync() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <UserSync />
-        {children}
-      </ConvexProviderWithClerk>
-    </ClerkProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          <UserSync />
+          {children}
+        </ConvexProviderWithClerk>
+      </ClerkProvider>
+    </ThemeProvider>
   );
 }
