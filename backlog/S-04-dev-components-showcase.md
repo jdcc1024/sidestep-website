@@ -1,6 +1,6 @@
 # Issue: /dev/components Showcase Page
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 

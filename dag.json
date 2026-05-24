@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-23T21:40:01.224Z",
+  "lastUpdated": "2026-05-24T04:26:03.869Z",
   "phases": [
     {
       "id": "phase-1",
@@ -702,10 +702,10 @@
       "phase": "phase-3",
       "type": "infrastructure",
       "description": "Single commit that runs npx shadcn add for the full primitive set and installs lucide-react, next-themes, sonner, react-hook-form, zod, and @hookform/resolvers. No application code references these yet — this populates the menu so the AI sees the full primitive vocabulary before refactoring begins.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-s02",
+      "startedAt": "2026-05-23T22:02:21.519Z",
+      "completedAt": "2026-05-23T22:07:43.044Z",
       "issueFile": "backlog/S-02-install-shadcn-primitives.md",
       "prdRef": "docs/prd/shadcn-migration.md#5-scope",
       "acceptanceCriteria": [
@@ -722,7 +722,7 @@
       "phase": "phase-3",
       "type": "infrastructure",
       "description": "Wire next-themes ThemeProvider into the root layout, define shadcn dark-mode CSS variables in app/globals.css using Tailwind v4 @theme directive, and build a reusable ThemeToggle component. Toggle is not mounted in any header yet — each surface sweep will drop it in.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -742,10 +742,10 @@
       "phase": "phase-3",
       "type": "infrastructure",
       "description": "Single page at /dev/components renders every shadcn primitive with usage examples. Serves as the AI agent and developer reference catalog: one URL, one file, all primitives. Includes a canonical RHF + zod + shadcn Form example that S-06 mirrors.",
-      "status": "blocked",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-s04",
+      "startedAt": "2026-05-23T22:13:43.544Z",
+      "completedAt": "2026-05-24T04:26:03.868Z",
       "issueFile": "backlog/S-04-dev-components-showcase.md",
       "prdRef": "docs/prd/shadcn-migration.md#5-scope",
       "acceptanceCriteria": [
@@ -1257,44 +1257,23 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s02",
+      "name": "Claude Opus 4.7 (S-02)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s04",
+      "name": "Claude Opus 4.7 (S-04 Showcase)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-18T15:01:14.603Z",
-      "event": "nodes_added",
-      "nodeId": "1-01",
-      "agent": null,
-      "message": "New task added: Project Scaffolding"
-    },
-    {
-      "timestamp": "2026-05-18T15:01:14.649Z",
-      "event": "nodes_added",
-      "nodeId": "1-02",
-      "agent": null,
-      "message": "New task added: Database Schema"
-    },
-    {
-      "timestamp": "2026-05-18T15:01:14.697Z",
-      "event": "nodes_added",
-      "nodeId": "1-03",
-      "agent": null,
-      "message": "New task added: Authentication Flows"
-    },
-    {
-      "timestamp": "2026-05-18T15:01:14.745Z",
-      "event": "nodes_added",
-      "nodeId": "1-04",
-      "agent": null,
-      "message": "New task added: Application Shell"
-    },
-    {
-      "timestamp": "2026-05-18T15:03:02.342Z",
-      "event": "nodes_added",
-      "nodeId": "2-01",
-      "agent": null,
-      "message": "New task added: Marketing Pages"
-    },
     {
       "timestamp": "2026-05-18T15:03:02.395Z",
       "event": "nodes_added",
@@ -1952,6 +1931,48 @@
       "nodeId": "S-01",
       "agent": "agent-claude-opus47-s6",
       "message": "Completed: shadcn Compatibility Smoke Test"
+    },
+    {
+      "timestamp": "2026-05-23T22:02:10.096Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s02",
+      "message": "Claude Opus 4.7 (S-02) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-23T22:02:21.520Z",
+      "event": "task_started",
+      "nodeId": "S-02",
+      "agent": "agent-claude-opus47-s02",
+      "message": "Claude Opus 4.7 (S-02) picked up: Install shadcn Primitives and Dependencies"
+    },
+    {
+      "timestamp": "2026-05-23T22:07:43.044Z",
+      "event": "task_completed",
+      "nodeId": "S-02",
+      "agent": "agent-claude-opus47-s02",
+      "message": "Completed: Install shadcn Primitives and Dependencies"
+    },
+    {
+      "timestamp": "2026-05-23T22:13:40.976Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s04",
+      "message": "Claude Opus 4.7 (S-04 Showcase) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-23T22:13:43.545Z",
+      "event": "task_started",
+      "nodeId": "S-04",
+      "agent": "agent-claude-opus47-s04",
+      "message": "Claude Opus 4.7 (S-04 Showcase) picked up: /dev/components Showcase Page"
+    },
+    {
+      "timestamp": "2026-05-24T04:26:03.869Z",
+      "event": "task_completed",
+      "nodeId": "S-04",
+      "agent": "agent-claude-opus47-s04",
+      "message": "Completed: /dev/components Showcase Page"
     }
   ]
 }
