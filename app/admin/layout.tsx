@@ -12,12 +12,12 @@ export default async function AdminLayout({
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen flex-1 items-center justify-center">
+      <div className="flex min-h-screen flex-1 items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-xl font-semibold text-zinc-900">
+          <p className="text-xl font-semibold text-foreground">
             403 — Access Denied
           </p>
-          <p className="mt-2 text-zinc-600">
+          <p className="mt-2 text-muted-foreground">
             You do not have permission to access this area.
           </p>
         </div>

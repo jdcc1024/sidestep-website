@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+
 import { api } from "@/convex/_generated/api";
 import { describeDeadline } from "@/lib/jerseyRunDashboard";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type SortKey =
   | "teamName"
@@ -46,95 +51,93 @@ export default function AdminJerseyRunsPage() {
       setDirection(direction === "asc" ? "desc" : "asc");
     } else {
       setSortKey(key);
-      setDirection(key === "createdAt" || key === "deadline" || key === "responseCount" ? "desc" : "asc");
+      setDirection(
+        key === "createdAt" || key === "deadline" || key === "responseCount"
+          ? "desc"
+          : "asc",
+      );
     }
   };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <header>
-        <p className="text-sm font-semibold uppercase tracking-wider text-rose-700">
+        <Badge
+          variant="secondary"
+          className="bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
+        >
           Admin
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        </Badge>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           All jersey runs
         </h1>
-        <p className="mt-2 max-w-2xl text-zinc-600">
+        <p className="mt-2 max-w-2xl text-muted-foreground">
           Every jersey run across every customer. Open one to see all responses
           and close it manually if needed.
         </p>
       </header>
 
-      <div className="mt-8 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+      <Card className="mt-8 gap-0 p-0">
         {runs === undefined ? (
-          <TableSkeleton />
+          <TableSkeleton label="Loading jersey runs" />
         ) : rows.length === 0 ? (
-          <EmptyRuns />
+          <EmptyState
+            title="No jersey runs yet"
+            body="Runs appear here as captains create them on their orders."
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-zinc-200">
-              <thead className="bg-zinc-50">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted/50">
                 <tr>
                   {COLUMNS.map((col) => (
-                    <th
+                    <SortableHeader
                       key={col.key}
-                      scope="col"
-                      aria-sort={
-                        sortKey === col.key
-                          ? direction === "asc"
-                            ? "ascending"
-                            : "descending"
-                          : "none"
-                      }
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggleSort(col.key)}
-                        className="inline-flex items-center gap-1 hover:text-zinc-900"
-                      >
-                        {col.label}
-                        <SortIndicator
-                          active={sortKey === col.key}
-                          direction={direction}
-                        />
-                      </button>
-                    </th>
+                      label={col.label}
+                      active={sortKey === col.key}
+                      direction={direction}
+                      onClick={() => toggleSort(col.key)}
+                    />
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y divide-border">
                 {rows.map((row) => {
                   const deadlineStatus = describeDeadline(row.deadline);
                   return (
-                    <tr key={row._id} className="hover:bg-zinc-50">
-                      <td className="px-4 py-3 text-sm font-medium text-zinc-900">
+                    <tr
+                      key={row._id}
+                      className="transition-colors hover:bg-muted/40"
+                    >
+                      <td className="px-4 py-3 text-sm font-medium">
                         <Link
                           href={`/admin/jersey-runs/${row._id}`}
-                          className="text-teal-700 hover:underline"
+                          className="text-teal-700 hover:underline dark:text-teal-300"
                         >
                           {row.teamName}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-sm text-zinc-700">
-                        <div>{row.captainName}</div>
-                        <div className="text-xs text-zinc-500">
+                      <td className="px-4 py-3 text-sm">
+                        <div className="text-foreground">{row.captainName}</div>
+                        <div className="text-xs text-muted-foreground">
                           {row.captainEmail}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-zinc-700">
+                      <td className="px-4 py-3 text-sm text-foreground">
                         {row.responseCount}
                       </td>
-                      <td className="px-4 py-3 text-sm text-zinc-700">
-                        <div>{formatDate(row.deadline)}</div>
-                        <div className="text-xs text-zinc-500">
+                      <td className="px-4 py-3 text-sm">
+                        <div className="text-foreground">
+                          {formatDate(row.deadline)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
                           {deadlineStatus.label}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <StatusBadge status={row.status} />
+                        <RunStatusBadge status={row.status} />
                       </td>
-                      <td className="px-4 py-3 text-sm text-zinc-700">
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
                         {formatDate(row.createdAt)}
                       </td>
                     </tr>
@@ -144,61 +147,79 @@ export default function AdminJerseyRunsPage() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: "open" | "closed" }) {
+function RunStatusBadge({ status }: { status: "open" | "closed" }) {
   if (status === "open") {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+      <Badge
+        variant="secondary"
+        className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200"
+      >
         Open
-      </span>
+      </Badge>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-600">
+    <Badge variant="secondary" className="bg-muted text-muted-foreground">
       Closed
-    </span>
+    </Badge>
   );
 }
 
-function SortIndicator({
+function SortableHeader({
+  label,
   active,
   direction,
+  onClick,
 }: {
+  label: string;
   active: boolean;
   direction: SortDirection;
+  onClick: () => void;
 }) {
-  if (!active)
-    return (
-      <span aria-hidden className="text-zinc-300">
-        ↕
-      </span>
-    );
-  return <span aria-hidden>{direction === "asc" ? "↑" : "↓"}</span>;
+  const Icon = !active ? ArrowUpDown : direction === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <th
+      scope="col"
+      aria-sort={
+        active ? (direction === "asc" ? "ascending" : "descending") : "none"
+      }
+      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+      >
+        {label}
+        <Icon
+          aria-hidden
+          className={`size-3 ${active ? "text-foreground" : "text-muted-foreground/60"}`}
+        />
+      </button>
+    </th>
+  );
 }
 
-function TableSkeleton() {
+function TableSkeleton({ label }: { label: string }) {
   return (
-    <div className="space-y-2 p-4" aria-label="Loading jersey runs">
+    <div className="space-y-2 p-4" aria-label={label}>
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-10 animate-pulse rounded bg-zinc-100" />
+        <Skeleton key={i} className="h-10 w-full" />
       ))}
     </div>
   );
 }
 
-function EmptyRuns() {
+function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="px-6 py-12 text-center">
-      <p className="text-base font-semibold text-zinc-900">
-        No jersey runs yet
-      </p>
-      <p className="mt-2 text-sm text-zinc-600">
-        Runs appear here as captains create them on their orders.
-      </p>
+      <p className="text-base font-semibold text-foreground">{title}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{body}</p>
     </div>
   );
 }

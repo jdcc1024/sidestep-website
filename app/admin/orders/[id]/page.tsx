@@ -3,9 +3,19 @@
 import Link from "next/link";
 import { use } from "react";
 import { useQuery } from "convex/react";
+import { ArrowLeft, CheckCircle2, Circle, FileDown } from "lucide-react";
+
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { INTERNAL_STAGES } from "@/lib/orderStages";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminOrderDetailPage({
   params,
@@ -31,222 +41,229 @@ export default function AdminOrderDetailPage({
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <Link
         href="/admin/orders"
-        className="text-sm text-teal-700 hover:underline"
+        className="inline-flex items-center gap-1 text-sm text-teal-700 hover:underline dark:text-teal-300"
       >
-        ← All orders
+        <ArrowLeft className="size-4" aria-hidden /> All orders
       </Link>
 
       <header className="mt-4">
-        <p className="text-sm font-semibold uppercase tracking-wider text-rose-700">
+        <Badge
+          variant="secondary"
+          className="bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
+        >
           Admin · Order
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        </Badge>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           {order.teamName}
         </h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mt-2 text-muted-foreground">
           Created {formatDate(order.createdAt)} · {order.sport} ·{" "}
           {order.estimatedQuantity} jerseys
         </p>
       </header>
 
-      <section
-        aria-labelledby="captain-heading"
-        className="mt-8 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
-      >
-        <h2
-          id="captain-heading"
-          className="text-base font-semibold text-zinc-900"
-        >
-          Captain
-        </h2>
-        {captain ? (
-          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            <Field label="Name" value={captain.name} />
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Captain</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {captain ? (
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <Field label="Name" value={captain.name} />
+              <Field
+                label="Email"
+                value={
+                  <a
+                    href={`mailto:${captain.email}`}
+                    className="text-teal-700 hover:underline dark:text-teal-300"
+                  >
+                    {captain.email}
+                  </a>
+                }
+              />
+            </dl>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Captain record missing.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Order specs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <Field label="Team name" value={order.teamName} />
+            <Field label="Sport" value={order.sport} />
+            <Field label="Quantity" value={String(order.estimatedQuantity)} />
+            <Field label="Jersey style" value={order.jerseyStyle} />
+            <Field label="Neckline" value={order.neckline} />
+            <Field label="Sleeve style" value={order.sleeveStyle} />
             <Field
-              label="Email"
-              value={
-                <a
-                  href={`mailto:${captain.email}`}
-                  className="text-teal-700 hover:underline"
-                >
-                  {captain.email}
-                </a>
-              }
+              label="Customer has own design"
+              value={order.hasOwnDesign ? "Yes" : "No"}
+            />
+            <Field
+              label="Last updated"
+              value={formatDate(order.updatedAt)}
             />
           </dl>
-        ) : (
-          <p className="mt-3 text-sm text-zinc-500">
-            Captain record missing.
-          </p>
-        )}
-      </section>
+        </CardContent>
+      </Card>
 
-      <section
-        aria-labelledby="specs-heading"
-        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
-      >
-        <h2 id="specs-heading" className="text-base font-semibold text-zinc-900">
-          Order specs
-        </h2>
-        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-          <Field label="Team name" value={order.teamName} />
-          <Field label="Sport" value={order.sport} />
-          <Field label="Quantity" value={String(order.estimatedQuantity)} />
-          <Field label="Jersey style" value={order.jerseyStyle} />
-          <Field label="Neckline" value={order.neckline} />
-          <Field label="Sleeve style" value={order.sleeveStyle} />
-          <Field
-            label="Customer has own design"
-            value={order.hasOwnDesign ? "Yes" : "No"}
-          />
-          <Field
-            label="Last updated"
-            value={formatDate(order.updatedAt)}
-          />
-        </dl>
-      </section>
-
-      <section
-        aria-labelledby="designs-heading"
-        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
-      >
-        <h2
-          id="designs-heading"
-          className="text-base font-semibold text-zinc-900"
-        >
-          Linked designs
-        </h2>
-        {designs.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">
-            No designs linked yet.
-          </p>
-        ) : (
-          <ul className="mt-4 space-y-4">
-            {designs.map((design) => (
-              <li
-                key={design._id}
-                className="rounded-md border border-zinc-200 p-4"
-              >
-                <h3 className="text-sm font-semibold text-zinc-900">
-                  {design.title}
-                </h3>
-                {design.brief && (
-                  <p className="mt-1 text-sm text-zinc-600">{design.brief}</p>
-                )}
-                {design.canvaLink && (
-                  <p className="mt-2 text-xs">
-                    <a
-                      href={design.canvaLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-teal-700 hover:underline"
-                    >
-                      Canva link ↗
-                    </a>
-                  </p>
-                )}
-                {design.fileUrls.length > 0 && (
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {design.fileUrls.map((file, idx) =>
-                      file.url ? (
-                        <li key={file.storageId}>
-                          <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-md bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
-                          >
-                            File {idx + 1} ↓
-                          </a>
-                        </li>
-                      ) : null,
-                    )}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section
-        aria-labelledby="stages-heading"
-        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
-      >
-        <h2
-          id="stages-heading"
-          className="text-base font-semibold text-zinc-900"
-        >
-          Internal stages
-        </h2>
-        <p className="mt-1 text-xs text-zinc-500">
-          Read-only here — editable checklist with timestamps ships in 2-12.
-        </p>
-        <ul className="mt-4 space-y-2">
-          {INTERNAL_STAGES.map((name) => {
-            const stage = order.internalStages.find((s) => s.name === name);
-            const completed = stage?.completedAt != null;
-            return (
-              <li
-                key={name}
-                className="flex items-center justify-between gap-3 rounded-md bg-zinc-50 px-3 py-2 text-sm"
-              >
-                <span className="flex items-center gap-2">
-                  <StageDot completed={completed} />
-                  <span
-                    className={
-                      completed
-                        ? "font-medium text-zinc-900"
-                        : "text-zinc-600"
-                    }
-                  >
-                    {name}
-                  </span>
-                </span>
-                <span className="text-xs text-zinc-500">
-                  {completed && stage?.completedAt
-                    ? formatDate(stage.completedAt)
-                    : "Pending"}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <section
-        aria-labelledby="run-heading"
-        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
-      >
-        <h2 id="run-heading" className="text-base font-semibold text-zinc-900">
-          Jersey run
-        </h2>
-        {jerseyRun ? (
-          <>
-            <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-              <Field label="Status" value={jerseyRun.status} />
-              <Field label="Names mode" value={jerseyRun.namesMode} />
-              <Field
-                label="Deadline"
-                value={formatDate(jerseyRun.deadline)}
-              />
-              <Field label="Responses" value={String(jerseyRunResponseCount)} />
-            </dl>
-            <p className="mt-4 text-sm">
-              <Link
-                href={`/admin/jersey-runs/${jerseyRun._id}`}
-                className="text-teal-700 hover:underline"
-              >
-                View responses and close run →
-              </Link>
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Linked designs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {designs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No designs linked yet.
             </p>
-          </>
-        ) : (
-          <p className="mt-3 text-sm text-zinc-500">
-            No jersey run created for this order.
+          ) : (
+            <ul className="space-y-4">
+              {designs.map((design) => (
+                <li
+                  key={design._id}
+                  className="rounded-md border border-border p-4"
+                >
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {design.title}
+                  </h3>
+                  {design.brief && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {design.brief}
+                    </p>
+                  )}
+                  {design.canvaLink && (
+                    <p className="mt-2 text-xs">
+                      <a
+                        href={design.canvaLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-teal-700 hover:underline dark:text-teal-300"
+                      >
+                        Canva link ↗
+                      </a>
+                    </p>
+                  )}
+                  {design.fileUrls.length > 0 && (
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {design.fileUrls.map((file, idx) =>
+                        file.url ? (
+                          <li key={file.storageId}>
+                            <Badge
+                              variant="secondary"
+                              render={
+                                <a
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                />
+                              }
+                            >
+                              <FileDown aria-hidden />
+                              File {idx + 1}
+                            </Badge>
+                          </li>
+                        ) : null,
+                      )}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Internal stages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="-mt-1 text-xs text-muted-foreground">
+            Read-only here — editable checklist with timestamps ships in 2-12.
           </p>
-        )}
-      </section>
+          <ul className="mt-4 space-y-2">
+            {INTERNAL_STAGES.map((name) => {
+              const stage = order.internalStages.find((s) => s.name === name);
+              const completed = stage?.completedAt != null;
+              const Icon = completed ? CheckCircle2 : Circle;
+              return (
+                <li
+                  key={name}
+                  className="flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2 text-sm"
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon
+                      aria-hidden
+                      className={`size-4 ${
+                        completed
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground/60"
+                      }`}
+                    />
+                    <span
+                      className={
+                        completed
+                          ? "font-medium text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {name}
+                    </span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {completed && stage?.completedAt
+                      ? formatDate(stage.completedAt)
+                      : "Pending"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Jersey run</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {jerseyRun ? (
+            <>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <Field label="Status" value={jerseyRun.status} />
+                <Field label="Names mode" value={jerseyRun.namesMode} />
+                <Field
+                  label="Deadline"
+                  value={formatDate(jerseyRun.deadline)}
+                />
+                <Field
+                  label="Responses"
+                  value={String(jerseyRunResponseCount)}
+                />
+              </dl>
+              <p className="mt-4 text-sm">
+                <Link
+                  href={`/admin/jersey-runs/${jerseyRun._id}`}
+                  className="text-teal-700 hover:underline dark:text-teal-300"
+                >
+                  View responses and close run →
+                </Link>
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No jersey run created for this order.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -260,35 +277,21 @@ function Field({
 }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-zinc-500">
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="mt-0.5 text-zinc-900">{value}</dd>
+      <dd className="mt-0.5 text-foreground">{value}</dd>
     </div>
-  );
-}
-
-function StageDot({ completed }: { completed: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-block h-2 w-2 rounded-full ${
-        completed ? "bg-emerald-500" : "bg-zinc-300"
-      }`}
-    />
   );
 }
 
 function DetailSkeleton() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-      <div className="h-6 w-32 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-4 h-10 w-72 animate-pulse rounded bg-zinc-100" />
+      <Skeleton className="h-6 w-32" />
+      <Skeleton className="mt-4 h-10 w-72" />
       {[0, 1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="mt-6 h-40 animate-pulse rounded-lg bg-zinc-100"
-        />
+        <Skeleton key={i} className="mt-6 h-40 w-full" />
       ))}
     </div>
   );
@@ -297,14 +300,14 @@ function DetailSkeleton() {
 function NotFound() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <p className="text-2xl font-semibold text-zinc-900">Order not found</p>
-      <p className="mt-2 text-zinc-600">
+      <p className="text-2xl font-semibold text-foreground">Order not found</p>
+      <p className="mt-2 text-muted-foreground">
         The order you&apos;re looking for doesn&apos;t exist or has been
         deleted.
       </p>
       <Link
         href="/admin/orders"
-        className="mt-6 inline-block text-sm text-teal-700 hover:underline"
+        className="mt-6 inline-block text-sm text-teal-700 hover:underline dark:text-teal-300"
       >
         ← Back to all orders
       </Link>

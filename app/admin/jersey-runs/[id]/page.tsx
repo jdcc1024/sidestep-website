@@ -4,9 +4,21 @@ import Link from "next/link";
 import { use, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
+import { ArrowLeft } from "lucide-react";
+
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { describeDeadline } from "@/lib/jerseyRunDashboard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -56,52 +68,56 @@ export default function AdminJerseyRunDetailPage({ params }: PageProps) {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <Link
         href="/admin/jersey-runs"
-        className="text-sm text-teal-700 hover:underline"
+        className="inline-flex items-center gap-1 text-sm text-teal-700 hover:underline dark:text-teal-300"
       >
-        ← All jersey runs
+        <ArrowLeft className="size-4" aria-hidden /> All jersey runs
       </Link>
 
       <header className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-rose-700">
+          <Badge
+            variant="secondary"
+            className="bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
+          >
             Admin · Jersey run
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          </Badge>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {order.teamName}
           </h1>
-          <p className="mt-2 text-zinc-600">
+          <p className="mt-2 text-muted-foreground">
             <Link
               href={`/admin/orders/${order._id}`}
-              className="text-teal-700 hover:underline"
+              className="text-teal-700 hover:underline dark:text-teal-300"
             >
               Open order →
             </Link>
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <StatusBadge status={run.status} />
+          <RunStatusBadge status={run.status} />
           {isClosed ? (
-            <span className="text-xs text-zinc-500">Close emails sent</span>
+            <span className="text-xs text-muted-foreground">
+              Close emails sent
+            </span>
           ) : (
-            <button
+            <Button
               type="button"
+              variant="destructive"
               onClick={handleClose}
               disabled={closing}
-              className="inline-flex items-center gap-2 rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {closing ? "Closing…" : "Close run"}
-            </button>
+            </Button>
           )}
           {closeError && (
-            <p className="text-xs text-rose-700">{closeError}</p>
+            <Alert variant="destructive" className="max-w-xs">
+              <AlertDescription>{closeError}</AlertDescription>
+            </Alert>
           )}
         </div>
       </header>
 
-      <section
-        aria-label="Summary"
-        className="mt-8 grid gap-3 sm:grid-cols-4"
-      >
+      <section aria-label="Summary" className="mt-8 grid gap-3 sm:grid-cols-4">
         <SummaryCard
           label="Responses"
           value={String(responses.length)}
@@ -133,27 +149,21 @@ export default function AdminJerseyRunDetailPage({ params }: PageProps) {
         />
       </section>
 
-      <section
-        aria-labelledby="responses-heading"
-        className="mt-8 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm"
-      >
-        <div className="border-b border-zinc-200 px-4 py-3">
-          <h2
-            id="responses-heading"
-            className="text-base font-semibold text-zinc-900"
-          >
-            Responses
-          </h2>
-        </div>
-        {responses.length === 0 ? (
-          <EmptyResponses />
-        ) : (
-          <ResponseTable
-            responses={responses}
-            customQuestions={run.customQuestions}
-          />
-        )}
-      </section>
+      <Card className="mt-8 gap-0 p-0">
+        <CardHeader className="border-b px-4 py-3">
+          <CardTitle>Responses</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {responses.length === 0 ? (
+            <EmptyResponses />
+          ) : (
+            <ResponseTable
+              responses={responses}
+              customQuestions={run.customQuestions}
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -178,8 +188,8 @@ function ResponseTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 text-sm">
-        <thead className="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+      <table className="min-w-full divide-y divide-border text-sm">
+        <thead className="bg-muted/50 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <tr>
             <th scope="col" className="px-4 py-3">Name</th>
             <th scope="col" className="px-4 py-3">Email</th>
@@ -194,37 +204,41 @@ function ResponseTable({
             <th scope="col" className="px-4 py-3">Submitted</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-200">
+        <tbody className="divide-y divide-border">
           {responses.map((r) => (
-            <tr key={r._id}>
-              <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-900">
+            <tr key={r._id} className="hover:bg-muted/40">
+              <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">
                 {r.respondentName}
               </td>
-              <td className="px-4 py-3 text-zinc-700">
+              <td className="px-4 py-3">
                 <a
                   href={`mailto:${r.respondentEmail}`}
-                  className="text-teal-700 hover:underline"
+                  className="text-teal-700 hover:underline dark:text-teal-300"
                 >
                   {r.respondentEmail}
                 </a>
               </td>
-              <td className="px-4 py-3 text-zinc-700">{r.size}</td>
-              <td className="px-4 py-3 text-zinc-700">
-                {r.jerseyName ?? <span className="text-zinc-400">—</span>}
+              <td className="px-4 py-3 text-foreground">{r.size}</td>
+              <td className="px-4 py-3 text-foreground">
+                {r.jerseyName ?? (
+                  <span className="text-muted-foreground/60">—</span>
+                )}
               </td>
-              <td className="px-4 py-3 text-zinc-700">
-                {r.jerseyNumber ?? <span className="text-zinc-400">—</span>}
+              <td className="px-4 py-3 text-foreground">
+                {r.jerseyNumber ?? (
+                  <span className="text-muted-foreground/60">—</span>
+                )}
               </td>
               {customQuestions.map((q) => (
-                <td key={q.id} className="px-4 py-3 text-zinc-700">
+                <td key={q.id} className="px-4 py-3 text-foreground">
                   {r.customAnswers[q.id]?.trim() ? (
                     r.customAnswers[q.id]
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-muted-foreground/60">—</span>
                   )}
                 </td>
               ))}
-              <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+              <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                 {formatTimestamp(r.submittedAt)}
               </td>
             </tr>
@@ -235,18 +249,21 @@ function ResponseTable({
   );
 }
 
-function StatusBadge({ status }: { status: "open" | "closed" }) {
+function RunStatusBadge({ status }: { status: "open" | "closed" }) {
   if (status === "open") {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+      <Badge
+        variant="secondary"
+        className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200"
+      >
         Open
-      </span>
+      </Badge>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-zinc-200 px-3 py-1 text-xs font-semibold text-zinc-700">
+    <Badge variant="secondary" className="bg-muted text-muted-foreground">
       Closed
-    </span>
+    </Badge>
   );
 }
 
@@ -262,29 +279,31 @@ function SummaryCard({
   tone?: "active" | "muted";
 }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-        {label}
-      </p>
-      <p
-        className={`mt-2 text-xl font-bold ${
-          tone === "muted" ? "text-zinc-500" : "text-zinc-900"
-        }`}
-      >
-        {value}
-      </p>
-      <p className="mt-1 text-sm text-zinc-500">{caption}</p>
-    </div>
+    <Card>
+      <CardContent>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p
+          className={`mt-2 text-xl font-bold ${
+            tone === "muted" ? "text-muted-foreground" : "text-foreground"
+          }`}
+        >
+          {value}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{caption}</p>
+      </CardContent>
+    </Card>
   );
 }
 
 function EmptyResponses() {
   return (
     <div className="px-6 py-12 text-center">
-      <p className="text-base font-semibold text-zinc-900">
+      <p className="text-base font-semibold text-foreground">
         No responses yet
       </p>
-      <p className="mt-2 text-sm text-zinc-600">
+      <p className="mt-2 text-sm text-muted-foreground">
         Submissions show up here as fans fill out the public form.
       </p>
     </div>
@@ -294,14 +313,14 @@ function EmptyResponses() {
 function Loading() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-      <div className="h-6 w-32 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-4 h-10 w-72 animate-pulse rounded bg-zinc-100" />
+      <Skeleton className="h-6 w-32" />
+      <Skeleton className="mt-4 h-10 w-72" />
       <div className="mt-8 grid gap-3 sm:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-24 animate-pulse rounded bg-zinc-100" />
+          <Skeleton key={i} className="h-24 w-full" />
         ))}
       </div>
-      <div className="mt-8 h-64 animate-pulse rounded-lg bg-zinc-100" />
+      <Skeleton className="mt-8 h-64 w-full" />
     </div>
   );
 }
@@ -309,15 +328,15 @@ function Loading() {
 function NotFound() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <p className="text-2xl font-semibold text-zinc-900">
+      <p className="text-2xl font-semibold text-foreground">
         Jersey run not found
       </p>
-      <p className="mt-2 text-zinc-600">
+      <p className="mt-2 text-muted-foreground">
         The run you&apos;re looking for doesn&apos;t exist or has been deleted.
       </p>
       <Link
         href="/admin/jersey-runs"
-        className="mt-6 inline-block text-sm text-teal-700 hover:underline"
+        className="mt-6 inline-block text-sm text-teal-700 hover:underline dark:text-teal-300"
       >
         ← Back to all jersey runs
       </Link>
