@@ -18,10 +18,10 @@ export default function NewOrderPage() {
         <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
           New order
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Tell us about your team.
         </h1>
-        <p className="mt-2 max-w-2xl text-zinc-600">
+        <p className="mt-2 max-w-2xl text-muted-foreground">
           A few details about the jerseys and your team is all we need to get
           started. You can link existing designs to this order, or add them
           after.

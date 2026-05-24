@@ -56,10 +56,10 @@ export default function JerseyRunResponsesPage({ params }: PageProps) {
         <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
           Jersey run · {teamName}
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Responses
         </h1>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           Updates live as your team submits — no need to refresh.
         </p>
       </header>
@@ -96,7 +96,7 @@ export default function JerseyRunResponsesPage({ params }: PageProps) {
 
       <section
         aria-label="Response table"
-        className="mt-8 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm"
+        className="mt-8 overflow-hidden rounded-lg border border-border bg-card shadow-sm"
       >
         {responses.length === 0 ? (
           <EmptyState jerseyRunId={run._id} />
@@ -131,8 +131,8 @@ function ResponseTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 text-sm">
-        <thead className="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+      <table className="min-w-full divide-y divide-border text-sm">
+        <thead className="bg-muted/50 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <tr>
             <th scope="col" className="px-4 py-3">Name</th>
             <th scope="col" className="px-4 py-3">Email</th>
@@ -147,30 +147,30 @@ function ResponseTable({
             <th scope="col" className="px-4 py-3">Submitted</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-200">
+        <tbody className="divide-y divide-border">
           {responses.map((r) => (
             <tr key={r._id}>
-              <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-900">
+              <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">
                 {r.respondentName}
               </td>
-              <td className="px-4 py-3 text-zinc-700">{r.respondentEmail}</td>
-              <td className="px-4 py-3 text-zinc-700">{r.size}</td>
-              <td className="px-4 py-3 text-zinc-700">
-                {r.jerseyName ?? <span className="text-zinc-400">—</span>}
+              <td className="px-4 py-3 text-foreground/90">{r.respondentEmail}</td>
+              <td className="px-4 py-3 text-foreground/90">{r.size}</td>
+              <td className="px-4 py-3 text-foreground/90">
+                {r.jerseyName ?? <span className="text-muted-foreground">—</span>}
               </td>
-              <td className="px-4 py-3 text-zinc-700">
-                {r.jerseyNumber ?? <span className="text-zinc-400">—</span>}
+              <td className="px-4 py-3 text-foreground/90">
+                {r.jerseyNumber ?? <span className="text-muted-foreground">—</span>}
               </td>
               {customQuestions.map((q) => (
-                <td key={q.id} className="px-4 py-3 text-zinc-700">
+                <td key={q.id} className="px-4 py-3 text-foreground/90">
                   {r.customAnswers[q.id]?.trim() ? (
                     r.customAnswers[q.id]
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </td>
               ))}
-              <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+              <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                 {formatTimestamp(r.submittedAt)}
               </td>
             </tr>
@@ -193,18 +193,18 @@ function SummaryCard({
   tone?: "active" | "muted";
 }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+    <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
       <p
         className={`mt-2 text-2xl font-bold ${
-          tone === "muted" ? "text-zinc-500" : "text-zinc-900"
+          tone === "muted" ? "text-muted-foreground" : "text-foreground"
         }`}
       >
         {value}
       </p>
-      <p className="mt-1 text-sm text-zinc-500">{caption}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{caption}</p>
     </div>
   );
 }
@@ -216,14 +216,14 @@ function EmptyState({ jerseyRunId }: { jerseyRunId: Id<"jerseyRuns"> }) {
       : `/run/${jerseyRunId}`;
   return (
     <div className="px-6 py-12 text-center">
-      <h2 className="text-lg font-semibold text-zinc-900">
+      <h2 className="text-lg font-semibold text-foreground">
         No responses yet
       </h2>
-      <p className="mt-2 text-sm text-zinc-600">
+      <p className="mt-2 text-sm text-muted-foreground">
         Share your link to get started — submissions show up here in
         real-time.
       </p>
-      <p className="mt-4 inline-block break-all rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">
+      <p className="mt-4 inline-block break-all rounded-lg border border-border bg-muted px-3 py-2 text-xs text-foreground/90">
         {shareUrl}
       </p>
     </div>
@@ -233,8 +233,8 @@ function EmptyState({ jerseyRunId }: { jerseyRunId: Id<"jerseyRuns"> }) {
 function NoRunYet({ orderId }: { orderId: Id<"orders"> }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-zinc-900">No jersey run yet</h1>
-      <p className="mt-2 text-zinc-600">
+      <h1 className="text-2xl font-bold text-foreground">No jersey run yet</h1>
+      <p className="mt-2 text-muted-foreground">
         Set up a jersey run on the order page to start collecting responses.
       </p>
       <Link
@@ -250,10 +250,10 @@ function NoRunYet({ orderId }: { orderId: Id<"orders"> }) {
 function NotFound({ orderId }: { orderId: Id<"orders"> }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-zinc-900">
+      <h1 className="text-2xl font-bold text-foreground">
         We couldn&apos;t find that jersey run
       </h1>
-      <p className="mt-2 text-zinc-600">
+      <p className="mt-2 text-muted-foreground">
         It may have been removed, or you don&apos;t have access to it.
       </p>
       <Link
@@ -275,13 +275,13 @@ function Loading({ orderId }: { orderId: Id<"orders"> }) {
       >
         ← Back to order
       </Link>
-      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-zinc-100" />
+      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-muted" />
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
-        <div className="h-24 animate-pulse rounded bg-zinc-100" />
-        <div className="h-24 animate-pulse rounded bg-zinc-100" />
-        <div className="h-24 animate-pulse rounded bg-zinc-100" />
+        <div className="h-24 animate-pulse rounded bg-muted" />
+        <div className="h-24 animate-pulse rounded bg-muted" />
+        <div className="h-24 animate-pulse rounded bg-muted" />
       </div>
-      <div className="mt-8 h-60 animate-pulse rounded bg-zinc-100" />
+      <div className="mt-8 h-60 animate-pulse rounded bg-muted" />
     </div>
   );
 }

@@ -26,10 +26,10 @@ export default function PortalDashboardPage() {
         <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
           Dashboard
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           {isUserLoaded ? `Welcome back, ${greetingName}.` : "Welcome back."}
         </h1>
-        <p className="mt-2 max-w-2xl text-zinc-600">
+        <p className="mt-2 max-w-2xl text-muted-foreground">
           Your orders and designs at a glance. Everything here updates in
           real-time as Sidestep moves your work forward.
         </p>
@@ -40,11 +40,11 @@ export default function PortalDashboardPage() {
           <div>
             <h2
               id="orders-heading"
-              className="text-xl font-semibold text-zinc-900"
+              className="text-xl font-semibold text-foreground"
             >
               My Orders
             </h2>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-muted-foreground">
               Track every order you&apos;ve placed.
             </p>
           </div>
@@ -79,11 +79,11 @@ export default function PortalDashboardPage() {
           <div>
             <h2
               id="designs-heading"
-              className="text-xl font-semibold text-zinc-900"
+              className="text-xl font-semibold text-foreground"
             >
               My Designs
             </h2>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-muted-foreground">
               Briefs, mood boards, and reference files.
             </p>
           </div>
@@ -123,19 +123,19 @@ function OrderCard({ order }: { order: Doc<"orders"> }) {
   return (
     <Link
       href={`/portal/orders/${order._id}`}
-      className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+      className="flex h-full flex-col rounded-lg border border-border bg-card p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold text-zinc-900">
+        <h3 className="text-lg font-semibold text-foreground">
           {order.teamName}
         </h3>
         <StageChip stage={stage} tone={tone} />
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
-        <dt className="text-zinc-500">Sport</dt>
-        <dd className="text-zinc-900">{order.sport}</dd>
-        <dt className="text-zinc-500">Quantity</dt>
-        <dd className="text-zinc-900">{order.estimatedQuantity} jerseys</dd>
+        <dt className="text-muted-foreground">Sport</dt>
+        <dd className="text-foreground">{order.sport}</dd>
+        <dt className="text-muted-foreground">Quantity</dt>
+        <dd className="text-foreground">{order.estimatedQuantity} jerseys</dd>
       </dl>
     </Link>
   );
@@ -148,13 +148,13 @@ function DesignCard({ design }: { design: Doc<"designs"> }) {
   return (
     <Link
       href={`/portal/designs/${design._id}`}
-      className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+      className="flex h-full flex-col rounded-lg border border-border bg-card p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
     >
-      <h3 className="text-lg font-semibold text-zinc-900">{design.title}</h3>
+      <h3 className="text-lg font-semibold text-foreground">{design.title}</h3>
       {briefPreview && (
-        <p className="mt-2 text-sm text-zinc-600">{briefPreview}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{briefPreview}</p>
       )}
-      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {fileCount === 0
           ? "No files yet"
           : `${fileCount} file${fileCount === 1 ? "" : "s"}`}
@@ -172,9 +172,9 @@ function StageChip({
 }) {
   const label = stage ?? "Pending";
   const palette: Record<ChipTone, string> = {
-    pending: "bg-zinc-100 text-zinc-700",
-    "in-progress": "bg-amber-100 text-amber-800",
-    complete: "bg-emerald-100 text-emerald-800",
+    pending: "bg-muted text-muted-foreground",
+    "in-progress": "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
+    complete: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
   };
   return (
     <span
@@ -223,9 +223,9 @@ function EmptyState({
   ctaHref: string;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-zinc-300 bg-white px-6 py-10 text-center">
+    <div className="rounded-lg border border-dashed border-border bg-card px-6 py-10 text-center">
       <svg
-        className="mx-auto h-10 w-10 text-zinc-400"
+        className="mx-auto h-10 w-10 text-muted-foreground"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -238,8 +238,8 @@ function EmptyState({
           d={iconPath}
         />
       </svg>
-      <h3 className="mt-4 text-base font-semibold text-zinc-900">{title}</h3>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-600">{body}</p>
+      <h3 className="mt-4 text-base font-semibold text-foreground">{title}</h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{body}</p>
       <Link
         href={ctaHref}
         className="mt-5 inline-flex items-center gap-1 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
@@ -256,7 +256,7 @@ function SectionSkeleton() {
       {[0, 1].map((i) => (
         <li
           key={i}
-          className="h-32 animate-pulse rounded-lg border border-zinc-200 bg-zinc-100"
+          className="h-32 animate-pulse rounded-lg border border-border bg-muted"
         />
       ))}
     </ul>

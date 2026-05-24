@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-24T08:38:45.740Z",
+  "lastUpdated": "2026-05-24T10:27:30.358Z",
   "phases": [
     {
       "id": "phase-1",
@@ -951,10 +951,10 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Swap hardcoded zinc/white classes in app/portal/**/page.tsx for shadcn theme tokens so the portal renders correctly in dark mode. Closes the gap left by S-05 (shell only) — inner page bodies, loading skeletons, StageChip palette, etc.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-s14",
+      "startedAt": "2026-05-24T08:59:34.263Z",
+      "completedAt": "2026-05-24T10:27:30.357Z",
       "issueFile": "backlog/S-14-portal-page-dark-mode-sweep.md",
       "prdRef": "docs/prd/shadcn-migration.md#8-success-metrics",
       "acceptanceCriteria": [
@@ -1321,30 +1321,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s14",
+      "name": "Claude Opus 4.7 (S-14 Dark Mode)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-18T15:04:16.055Z",
-      "event": "nodes_added",
-      "nodeId": "3-02",
-      "agent": null,
-      "message": "New task added: Admin Jersey Run Oversight"
-    },
-    {
-      "timestamp": "2026-05-18T15:04:16.109Z",
-      "event": "nodes_added",
-      "nodeId": "3-03",
-      "agent": null,
-      "message": "New task added: Admin Data Export"
-    },
-    {
-      "timestamp": "2026-05-18T15:04:26.507Z",
-      "event": "nodes_added",
-      "nodeId": "3-04",
-      "agent": null,
-      "message": "New task added: Customer Participation History"
-    },
     {
       "timestamp": "2026-05-18T15:04:26.560Z",
       "event": "nodes_added",
@@ -2023,6 +2009,27 @@
       "nodeId": "S-08",
       "agent": "claude-s08",
       "message": "Completed: OrderForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-24T08:59:05.996Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s14",
+      "message": "Claude Opus 4.7 (S-14 Dark Mode) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-24T08:59:34.264Z",
+      "event": "task_started",
+      "nodeId": "S-14",
+      "agent": "agent-claude-opus47-s14",
+      "message": "Claude Opus 4.7 (S-14 Dark Mode) picked up: Portal Page Dark-Mode Sweep"
+    },
+    {
+      "timestamp": "2026-05-24T10:27:30.358Z",
+      "event": "task_completed",
+      "nodeId": "S-14",
+      "agent": "agent-claude-opus47-s14",
+      "message": "Completed: Portal Page Dark-Mode Sweep"
     }
   ]
 }

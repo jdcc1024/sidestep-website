@@ -18,10 +18,10 @@ export default function NewDesignPage() {
         <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
           New design
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Tell us what you&apos;re thinking.
         </h1>
-        <p className="mt-2 max-w-2xl text-zinc-600">
+        <p className="mt-2 max-w-2xl text-muted-foreground">
           Upload logos, mood boards, or reference photos — and write a brief so
           Sidestep can start with your vibe in mind.
         </p>

@@ -42,7 +42,7 @@ export default function DesignDetailPage({ params }: PageProps) {
           <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
             Edit design
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {design.title}
           </h1>
         </header>
@@ -76,10 +76,10 @@ export default function DesignDetailPage({ params }: PageProps) {
           <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
             Design
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {design.title}
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             Created {formatDate(design.createdAt)}
             {design.updatedAt !== design.createdAt && (
               <span> · Updated {formatDate(design.updatedAt)}</span>
@@ -89,22 +89,22 @@ export default function DesignDetailPage({ params }: PageProps) {
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="inline-flex items-center gap-1 rounded-md border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+          className="inline-flex items-center gap-1 rounded-md border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/40"
         >
           Edit design
         </button>
       </header>
 
       <section className="mt-10">
-        <h2 className="text-base font-semibold text-zinc-900">Brief</h2>
-        <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700">
+        <h2 className="text-base font-semibold text-foreground">Brief</h2>
+        <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/90">
           {design.brief}
         </p>
       </section>
 
       {design.canvaLink && (
         <section className="mt-8">
-          <h2 className="text-base font-semibold text-zinc-900">Canva</h2>
+          <h2 className="text-base font-semibold text-foreground">Canva</h2>
           <a
             href={design.canvaLink}
             target="_blank"
@@ -118,19 +118,19 @@ export default function DesignDetailPage({ params }: PageProps) {
       )}
 
       <section className="mt-8">
-        <h2 className="text-base font-semibold text-zinc-900">
+        <h2 className="text-base font-semibold text-foreground">
           Files ({design.files.length})
         </h2>
         {design.files.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">No files attached.</p>
+          <p className="mt-2 text-sm text-muted-foreground">No files attached.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
+          <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card">
             {design.files.map((file, idx) => (
               <li
                 key={file.storageId}
                 className="flex items-center justify-between gap-3 px-4 py-3"
               >
-                <span className="truncate text-sm text-zinc-700">
+                <span className="truncate text-sm text-foreground/90">
                   File {idx + 1}
                 </span>
                 {file.url ? (
@@ -138,12 +138,12 @@ export default function DesignDetailPage({ params }: PageProps) {
                     href={file.url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-sm font-medium text-teal-700 hover:text-teal-800"
+                    className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
                   >
                     Download
                   </a>
                 ) : (
-                  <span className="text-sm text-zinc-400">Unavailable</span>
+                  <span className="text-sm text-muted-foreground">Unavailable</span>
                 )}
               </li>
             ))}
@@ -157,9 +157,9 @@ export default function DesignDetailPage({ params }: PageProps) {
 function Loading() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-      <div className="h-6 w-32 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-8 h-32 animate-pulse rounded bg-zinc-100" />
+      <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="mt-8 h-32 animate-pulse rounded bg-muted" />
     </div>
   );
 }
@@ -167,8 +167,8 @@ function Loading() {
 function NotFound() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-zinc-900">Design not found</h1>
-      <p className="mt-2 text-zinc-600">
+      <h1 className="text-2xl font-bold text-foreground">Design not found</h1>
+      <p className="mt-2 text-muted-foreground">
         We couldn&apos;t find that design — it may have been removed.
       </p>
       <Link

@@ -44,10 +44,10 @@ export default function OrderDetailPage({ params }: PageProps) {
           <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
             Order
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {order.teamName}
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             Created {formatDate(order.createdAt)} · {order.sport} ·{" "}
             {order.estimatedQuantity} jerseys
           </p>
@@ -57,15 +57,15 @@ export default function OrderDetailPage({ params }: PageProps) {
 
       <section
         aria-labelledby="timeline-heading"
-        className="mt-10 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
+        className="mt-10 rounded-lg border border-border bg-card p-6 shadow-sm"
       >
         <h2
           id="timeline-heading"
-          className="text-base font-semibold text-zinc-900"
+          className="text-base font-semibold text-foreground"
         >
           Progress
         </h2>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Updates live as Sidestep moves your order forward.
         </p>
         <div className="mt-6">
@@ -75,9 +75,9 @@ export default function OrderDetailPage({ params }: PageProps) {
 
       <section
         aria-labelledby="specs-heading"
-        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
+        className="mt-6 rounded-lg border border-border bg-card p-6 shadow-sm"
       >
-        <h2 id="specs-heading" className="text-base font-semibold text-zinc-900">
+        <h2 id="specs-heading" className="text-base font-semibold text-foreground">
           Order details
         </h2>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
@@ -99,15 +99,15 @@ export default function OrderDetailPage({ params }: PageProps) {
 
       <section
         aria-labelledby="jersey-run-heading"
-        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
+        className="mt-6 rounded-lg border border-border bg-card p-6 shadow-sm"
       >
         <h2
           id="jersey-run-heading"
-          className="text-base font-semibold text-zinc-900"
+          className="text-base font-semibold text-foreground"
         >
           Jersey run
         </h2>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Collect sizes, names, and numbers from your team with one shareable
           link.
         </p>
@@ -118,16 +118,16 @@ export default function OrderDetailPage({ params }: PageProps) {
 
       <section
         aria-labelledby="designs-heading"
-        className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
+        className="mt-6 rounded-lg border border-border bg-card p-6 shadow-sm"
       >
         <h2
           id="designs-heading"
-          className="text-base font-semibold text-zinc-900"
+          className="text-base font-semibold text-foreground"
         >
           Linked designs
         </h2>
         {designs.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">
+          <p className="mt-3 text-sm text-muted-foreground">
             No designs linked to this order yet.
           </p>
         ) : (
@@ -136,12 +136,12 @@ export default function OrderDetailPage({ params }: PageProps) {
               <li key={design._id}>
                 <Link
                   href={`/portal/designs/${design._id}`}
-                  className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                  className="flex h-full flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
                 >
-                  <h3 className="text-sm font-semibold text-zinc-900">
+                  <h3 className="text-sm font-semibold text-foreground">
                     {design.title}
                   </h3>
-                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {design.fileCount === 0
                       ? "No files yet"
                       : `${design.fileCount} file${
@@ -161,8 +161,8 @@ export default function OrderDetailPage({ params }: PageProps) {
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-zinc-500">{label}</dt>
-      <dd className="mt-0.5 text-zinc-900">{value}</dd>
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-foreground">{value}</dd>
     </div>
   );
 }
@@ -175,9 +175,9 @@ function StageChip({
   tone: ChipTone;
 }) {
   const palette: Record<ChipTone, string> = {
-    pending: "bg-zinc-100 text-zinc-700",
-    "in-progress": "bg-amber-100 text-amber-800",
-    complete: "bg-emerald-100 text-emerald-800",
+    pending: "bg-muted text-muted-foreground",
+    "in-progress": "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
+    complete: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
   };
   return (
     <span
@@ -191,10 +191,10 @@ function StageChip({
 function Loading() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-      <div className="h-6 w-32 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-8 h-32 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-6 h-40 animate-pulse rounded bg-zinc-100" />
+      <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="mt-8 h-32 animate-pulse rounded bg-muted" />
+      <div className="mt-6 h-40 animate-pulse rounded bg-muted" />
     </div>
   );
 }
@@ -202,8 +202,8 @@ function Loading() {
 function NotFound() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-zinc-900">Order not found</h1>
-      <p className="mt-2 text-zinc-600">
+      <h1 className="text-2xl font-bold text-foreground">Order not found</h1>
+      <p className="mt-2 text-muted-foreground">
         We couldn&apos;t find that order — it may have been removed.
       </p>
       <Link
