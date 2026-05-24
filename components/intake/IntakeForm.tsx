@@ -1,31 +1,51 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { CheckIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
   BRIEF_MAX_LENGTH,
-  EMPTY_INTAKE,
+  DESIGN_PREFERENCES,
   MIN_QUANTITY,
   QUESTIONS_MAX_LENGTH,
+  USAGE_CONTEXTS,
+  parseDeadlineToMs,
   toIntakePayload,
-  validateIntake,
-  type IntakeErrors,
-  type IntakeInput,
+  type DesignPreference,
 } from "@/lib/intake";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
-function todayIso(): string {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
+const NAME_MAX = 200;
+const TEAM_MAX = 200;
+const SPORT_MAX = 200;
+const PHONE_MAX = 40;
 
-type Status = "editing" | "submitting" | "submitted" | "error";
+// Matches the EMAIL_PATTERN in lib/intake.ts and convex/intakes.ts — three
+// places need to agree on what we accept or the server will reject what the
+// client just let through.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const designOptions: Array<{
-  value: "own-design" | "needs-help" | "undecided";
+  value: DesignPreference;
   label: string;
   hint: string;
 }> = [
@@ -47,7 +67,7 @@ const designOptions: Array<{
 ];
 
 const usageOptions: Array<{
-  value: "event" | "league";
+  value: (typeof USAGE_CONTEXTS)[number];
   label: string;
   hint: string;
 }> = [
@@ -63,205 +83,495 @@ const usageOptions: Array<{
   },
 ];
 
+// Colocated zod schema. Constants reused from lib/intake.ts so the client
+// and Convex submitIntake mutation agree on caps and patterns. The deadline
+// refine combines parse + past-date checks into one message to keep the
+// form simple — the lib helper does both jobs.
+const formSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Please share your name.")
+    .max(NAME_MAX, `Please keep your name under ${NAME_MAX} characters.`),
+  teamName: z
+    .string()
+    .trim()
+    .min(1, "Tell us your team or organization name.")
+    .max(
+      TEAM_MAX,
+      `Please keep the team name under ${TEAM_MAX} characters.`,
+    ),
+  email: z
+    .string()
+    .refine((v) => v.trim().length > 0, "We need an email to follow up.")
+    .refine(
+      (v) => EMAIL_PATTERN.test(v.trim()),
+      "That email doesn't look right.",
+    ),
+  phone: z
+    .string()
+    .max(PHONE_MAX, `Please keep this under ${PHONE_MAX} characters.`),
+  sport: z
+    .string()
+    .trim()
+    .min(1, "Let us know the sport or activity.")
+    .max(SPORT_MAX, `Please keep this under ${SPORT_MAX} characters.`),
+  estimatedQuantity: z.string().refine((value) => {
+    const n = Number.parseInt(value.trim(), 10);
+    return Number.isFinite(n) && n >= MIN_QUANTITY;
+  }, `Our minimum order is ${MIN_QUANTITY} jerseys.`),
+  designPreference: z.enum(DESIGN_PREFERENCES, {
+    message: "Pick the option that fits best.",
+  }),
+  usageContext: z.array(z.enum(USAGE_CONTEXTS)),
+  deadline: z.string().refine((value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return true;
+    const ts = parseDeadlineToMs(trimmed);
+    if (ts === null) return false;
+    return ts >= startOfTodayUtcMs();
+  }, "Pick a valid date today or later."),
+  brief: z
+    .string()
+    .trim()
+    .min(1, "Tell us a bit about your team.")
+    .max(
+      BRIEF_MAX_LENGTH,
+      `Please keep this under ${BRIEF_MAX_LENGTH} characters.`,
+    ),
+  questions: z
+    .string()
+    .max(
+      QUESTIONS_MAX_LENGTH,
+      `Please keep this under ${QUESTIONS_MAX_LENGTH} characters.`,
+    ),
+  newsletterOptIn: z.boolean(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+function startOfTodayUtcMs(): number {
+  const now = new Date();
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+}
+
+function todayIso(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function IntakeForm() {
   const submitIntake = useMutation(api.intakes.submitIntake);
-  const [values, setValues] = useState<IntakeInput>(EMPTY_INTAKE);
-  const [errors, setErrors] = useState<IntakeErrors>({});
-  const [status, setStatus] = useState<Status>("editing");
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
-  const update = <K extends keyof IntakeInput>(key: K, value: IntakeInput[K]) => {
-    setValues((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
-  };
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      teamName: "",
+      email: "",
+      phone: "",
+      sport: "",
+      estimatedQuantity: "",
+      // designPreference starts unselected. zod rejects undefined with the
+      // "Pick the option that fits best." message; the cast satisfies the
+      // typed RadioGroup binding.
+      designPreference: undefined as unknown as DesignPreference,
+      usageContext: [],
+      deadline: "",
+      brief: "",
+      questions: "",
+      newsletterOptIn: false,
+    },
+  });
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const found = validateIntake(values);
-    setErrors(found);
-    if (Object.keys(found).length > 0) {
-      const first = document.querySelector<HTMLElement>('[data-intake-error="true"]');
-      first?.focus();
-      return;
-    }
-
-    setStatus("submitting");
-    setSubmitError(null);
+  async function onSubmit(values: FormValues) {
     try {
-      await submitIntake(toIntakePayload(values));
-      setStatus("submitted");
+      const payload = toIntakePayload({
+        name: values.name,
+        teamName: values.teamName,
+        email: values.email,
+        phone: values.phone,
+        sport: values.sport,
+        estimatedQuantity: values.estimatedQuantity,
+        designPreference: values.designPreference,
+        usageContext: values.usageContext,
+        deadline: values.deadline,
+        brief: values.brief,
+        questions: values.questions,
+        newsletterOptIn: values.newsletterOptIn,
+      });
+      await submitIntake(payload);
+      setSubmitted(true);
+      toast.success("Inquiry sent", {
+        description: "We'll be in touch within one business day.",
+      });
     } catch (err) {
-      setStatus("error");
-      setSubmitError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      toast.error("Could not send your inquiry", {
+        description:
+          err instanceof Error
+            ? err.message
+            : "Please try again in a moment.",
+      });
     }
   }
 
-  if (status === "submitted") {
-    return <SuccessState />;
-  }
+  if (submitted) return <SuccessState />;
+
+  const isSubmitting = form.formState.isSubmitting;
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      className="space-y-12"
-      aria-busy={status === "submitting"}
-    >
-      <FieldSection
-        eyebrow="01"
-        title="About you"
-        description="So we know how to reach you."
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        noValidate
+        className="space-y-12"
+        aria-busy={isSubmitting}
       >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField
-            label="Your name"
-            value={values.name}
-            onChange={(v) => update("name", v)}
-            error={errors.name}
-            autoComplete="name"
-            required
-          />
-          <TextField
-            label="Team or organization"
-            placeholder="Sidestep Sports"
-            value={values.teamName}
-            onChange={(v) => update("teamName", v)}
-            error={errors.teamName}
-            autoComplete="organization"
-            required
-          />
-          <TextField
-            label="Email"
-            type="email"
-            placeholder="you@team.com"
-            value={values.email}
-            onChange={(v) => update("email", v)}
-            error={errors.email}
-            autoComplete="email"
-            required
-          />
-          <TextField
-            label="Phone"
-            type="tel"
-            helper="Optional"
-            placeholder="604 555 0144"
-            value={values.phone}
-            onChange={(v) => update("phone", v)}
-            error={errors.phone}
-            autoComplete="tel"
-          />
-        </div>
-      </FieldSection>
-
-      <FieldSection
-        eyebrow="02"
-        title="Your project"
-        description="The basics we need to give you a real quote."
-      >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField
-            label="Sport or activity"
-            placeholder="Ultimate Frisbee, Hockey, Bowling…"
-            value={values.sport}
-            onChange={(v) => update("sport", v)}
-            error={errors.sport}
-            required
-          />
-          <NumberField
-            label="Estimated jersey count"
-            placeholder={String(MIN_QUANTITY)}
-            helper={`Minimum ${MIN_QUANTITY}`}
-            min={MIN_QUANTITY}
-            value={values.estimatedQuantity}
-            onChange={(v) => update("estimatedQuantity", v)}
-            error={errors.estimatedQuantity}
-            required
-          />
-        </div>
-
-        <RadioGroup
-          label="Where are you with design?"
-          options={designOptions}
-          value={values.designPreference}
-          onChange={(v) => update("designPreference", v)}
-          error={errors.designPreference}
-        />
-
-        <CheckboxGroup
-          label="What's this for?"
-          helper="Pick any that apply"
-          options={usageOptions}
-          values={values.usageContext}
-          onChange={(v) => update("usageContext", v)}
-          error={errors.usageContext}
-        />
-
-        <DateField
-          label="Deadline or key date"
-          helper="Optional — when do you need these in hand?"
-          value={values.deadline}
-          onChange={(v) => update("deadline", v)}
-          error={errors.deadline}
-          min={todayIso()}
-        />
-      </FieldSection>
-
-      <FieldSection
-        eyebrow="03"
-        title="Anything else"
-        description="Help us start the conversation off right."
-      >
-        <TextareaField
-          label="Tell us about your team and inspiration"
-          placeholder="Theme, history, vibe, colors you love, jerseys you admire…"
-          value={values.brief}
-          onChange={(v) => update("brief", v)}
-          error={errors.brief}
-          maxLength={BRIEF_MAX_LENGTH}
-          required
-          rows={5}
-        />
-        <TextareaField
-          label="Questions or concerns"
-          helper="Optional"
-          placeholder="Anything you want us to know up front."
-          value={values.questions}
-          onChange={(v) => update("questions", v)}
-          error={errors.questions}
-          maxLength={QUESTIONS_MAX_LENGTH}
-          rows={3}
-        />
-        <CheckboxField
-          label="Send me occasional updates from Sidestep"
-          checked={values.newsletterOptIn}
-          onChange={(v) => update("newsletterOptIn", v)}
-        />
-      </FieldSection>
-
-      <div className="flex flex-col items-stretch gap-3 border-t border-zinc-200 pt-8 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">
-          We&apos;ll reply within five business days.
-        </p>
-        <button
-          type="submit"
-          disabled={status === "submitting"}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        <FieldSection
+          eyebrow="01"
+          title="About you"
+          description="So we know how to reach you."
         >
-          {status === "submitting" ? "Sending…" : "Send my inquiry"}
-          <span aria-hidden="true">→</span>
-        </button>
-      </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Your name</FormLabel>
+                  <FormControl>
+                    <Input autoComplete="name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="teamName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Team or organization</FormLabel>
+                  <FormControl>
+                    <Input
+                      autoComplete="organization"
+                      placeholder="Sidestep Sports"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@team.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormDescription>Optional</FormDescription>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="604 555 0144"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </FieldSection>
 
-      {status === "error" && submitError && (
-        <p role="alert" className="text-sm text-rose-600">
-          {submitError}
-        </p>
-      )}
-    </form>
+        <FieldSection
+          eyebrow="02"
+          title="Your project"
+          description="The basics we need to give you a real quote."
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="sport"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sport or activity</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ultimate Frisbee, Hockey, Bowling…"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="estimatedQuantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estimated jersey count</FormLabel>
+                  <FormDescription>
+                    Minimum {MIN_QUANTITY}.
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={MIN_QUANTITY}
+                      step={1}
+                      placeholder={String(MIN_QUANTITY)}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="designPreference"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Where are you with design?</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    value={field.value ?? ""}
+                    onValueChange={(value) => field.onChange(value)}
+                    className="grid gap-3 sm:grid-cols-3"
+                  >
+                    {designOptions.map((opt) => (
+                      <ChoiceCard
+                        key={opt.value}
+                        value={opt.value}
+                        label={opt.label}
+                        hint={opt.hint}
+                      />
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="usageContext"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>What&apos;s this for?</FormLabel>
+                <FormDescription>Pick any that apply.</FormDescription>
+                <FormControl>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {usageOptions.map((opt) => {
+                      const checked = field.value.includes(opt.value);
+                      return (
+                        <label
+                          key={opt.value}
+                          className="flex cursor-pointer items-start gap-3 rounded-md border border-input bg-background p-4 transition hover:border-ring has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(next) => {
+                              field.onChange(
+                                next
+                                  ? [...field.value, opt.value]
+                                  : field.value.filter((v) => v !== opt.value),
+                              );
+                            }}
+                            className="mt-0.5"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium text-foreground">
+                              {opt.label}
+                            </span>
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {opt.hint}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="deadline"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Deadline or key date</FormLabel>
+                <FormDescription>
+                  Optional — when do you need these in hand?
+                </FormDescription>
+                <FormControl>
+                  <Input type="date" min={todayIso()} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </FieldSection>
+
+        <FieldSection
+          eyebrow="03"
+          title="Anything else"
+          description="Help us start the conversation off right."
+        >
+          <FormField
+            control={form.control}
+            name="brief"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tell us about your team and inspiration</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={5}
+                    maxLength={BRIEF_MAX_LENGTH}
+                    placeholder="Theme, history, vibe, colors you love, jerseys you admire…"
+                    {...field}
+                  />
+                </FormControl>
+                <CharacterCounter
+                  control={form.control}
+                  name="brief"
+                  max={BRIEF_MAX_LENGTH}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="questions"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Questions or concerns</FormLabel>
+                <FormDescription>
+                  Optional — anything you want us to know up front.
+                </FormDescription>
+                <FormControl>
+                  <Textarea
+                    rows={3}
+                    maxLength={QUESTIONS_MAX_LENGTH}
+                    {...field}
+                  />
+                </FormControl>
+                <CharacterCounter
+                  control={form.control}
+                  name="questions"
+                  max={QUESTIONS_MAX_LENGTH}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="newsletterOptIn"
+            render={({ field }) => (
+              <FormItem>
+                <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(next) => field.onChange(next === true)}
+                      className="mt-0.5"
+                    />
+                  </FormControl>
+                  <span>Send me occasional updates from Sidestep</span>
+                </label>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </FieldSection>
+
+        <Separator />
+
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            We&apos;ll reply within one business day.
+          </p>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Sending…" : "Send my inquiry"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+}
+
+function ChoiceCard({
+  value,
+  label,
+  hint,
+}: {
+  value: string;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-md border border-input bg-background p-4 transition hover:border-ring has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5">
+      <RadioGroupItem value={value} className="mt-0.5" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium text-foreground">
+          {label}
+        </span>
+        <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>
+      </span>
+    </label>
+  );
+}
+
+function CharacterCounter({
+  control,
+  name,
+  max,
+}: {
+  control: ReturnType<typeof useForm<FormValues>>["control"];
+  name: "brief" | "questions";
+  max: number;
+}) {
+  const value = useWatch({ control, name }) ?? "";
+  const remaining = Math.max(0, max - value.length);
+  return (
+    <p className="text-right text-xs text-muted-foreground">
+      {remaining} characters left
+    </p>
   );
 }
 
@@ -270,15 +580,15 @@ function SuccessState() {
     <div
       role="status"
       aria-live="polite"
-      className="rounded-2xl border border-teal-200 bg-teal-50 p-10 text-center"
+      className="rounded-2xl border border-primary/30 bg-primary/5 p-10 text-center"
     >
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-600 text-2xl text-white">
-        ✓
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <CheckIcon className="h-6 w-6" aria-hidden="true" />
       </div>
-      <h2 className="text-2xl font-bold text-zinc-900">
+      <h2 className="text-2xl font-bold text-foreground">
         Thanks — we&apos;ve got it.
       </h2>
-      <p className="mx-auto mt-3 max-w-md text-zinc-600">
+      <p className="mx-auto mt-3 max-w-md text-muted-foreground">
         We&apos;ll be in touch within one business day with ideas and a quote.
         Keep an eye on your inbox.
       </p>
@@ -300,379 +610,13 @@ function FieldSection({
   return (
     <section className="grid gap-8 md:grid-cols-[200px_1fr]">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">
           Step {eyebrow}
         </p>
-        <h2 className="mt-2 text-xl font-semibold text-zinc-900">{title}</h2>
-        <p className="mt-1 text-sm text-zinc-500">{description}</p>
+        <h2 className="mt-2 text-xl font-semibold text-foreground">{title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </header>
       <div className="space-y-5">{children}</div>
     </section>
   );
-}
-
-type TextFieldProps = {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  required?: boolean;
-  type?: string;
-  placeholder?: string;
-  helper?: string;
-  autoComplete?: string;
-};
-
-function TextField({
-  label,
-  value,
-  onChange,
-  error,
-  required,
-  type = "text",
-  placeholder,
-  helper,
-  autoComplete,
-}: TextFieldProps) {
-  const id = useId();
-  const errorId = `${id}-err`;
-  return (
-    <div>
-      <FieldLabel htmlFor={id} required={required} helper={helper}>
-        {label}
-      </FieldLabel>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        data-intake-error={error ? "true" : undefined}
-        className={inputClass(!!error)}
-      />
-      <FieldError id={errorId} error={error} />
-    </div>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  onChange,
-  error,
-  required,
-  placeholder,
-  helper,
-  min = 1,
-}: {
-  label: string;
-  value: number | string;
-  onChange: (v: string) => void;
-  error?: string;
-  required?: boolean;
-  placeholder?: string;
-  helper?: string;
-  min?: number;
-}) {
-  const id = useId();
-  const errorId = `${id}-err`;
-  return (
-    <div>
-      <FieldLabel htmlFor={id} required={required} helper={helper}>
-        {label}
-      </FieldLabel>
-      <input
-        id={id}
-        type="number"
-        inputMode="numeric"
-        min={min}
-        step={1}
-        value={String(value)}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        data-intake-error={error ? "true" : undefined}
-        className={inputClass(!!error)}
-      />
-      <FieldError id={errorId} error={error} />
-    </div>
-  );
-}
-
-function DateField({
-  label,
-  value,
-  onChange,
-  error,
-  required,
-  helper,
-  min,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  required?: boolean;
-  helper?: string;
-  min?: string;
-}) {
-  const id = useId();
-  const errorId = `${id}-err`;
-  return (
-    <div>
-      <FieldLabel htmlFor={id} required={required} helper={helper}>
-        {label}
-      </FieldLabel>
-      <input
-        id={id}
-        type="date"
-        value={value}
-        min={min}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        data-intake-error={error ? "true" : undefined}
-        className={inputClass(!!error)}
-      />
-      <FieldError id={errorId} error={error} />
-    </div>
-  );
-}
-
-function TextareaField({
-  label,
-  value,
-  onChange,
-  error,
-  required,
-  placeholder,
-  helper,
-  maxLength,
-  rows = 4,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  required?: boolean;
-  placeholder?: string;
-  helper?: string;
-  maxLength: number;
-  rows?: number;
-}) {
-  const id = useId();
-  const errorId = `${id}-err`;
-  const remaining = maxLength - value.length;
-  return (
-    <div>
-      <FieldLabel htmlFor={id} required={required} helper={helper}>
-        {label}
-      </FieldLabel>
-      <textarea
-        id={id}
-        rows={rows}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        data-intake-error={error ? "true" : undefined}
-        className={inputClass(!!error)}
-      />
-      <div className="mt-1 flex items-center justify-between">
-        <FieldError id={errorId} error={error} />
-        <p className="ml-auto text-xs text-zinc-400">
-          {remaining} characters left
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function RadioGroup({
-  label,
-  options,
-  value,
-  onChange,
-  error,
-}: {
-  label: string;
-  options: Array<{ value: string; label: string; hint: string }>;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-}) {
-  const groupId = useId();
-  const errorId = `${groupId}-err`;
-  return (
-    <fieldset aria-describedby={error ? errorId : undefined}>
-      <legend className="text-sm font-medium text-zinc-800">
-        {label} <span aria-hidden="true" className="text-rose-500">*</span>
-      </legend>
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
-        {options.map((opt, idx) => {
-          const selected = value === opt.value;
-          return (
-            <label
-              key={opt.value}
-              className={`cursor-pointer rounded-xl border p-4 text-sm transition ${
-                selected
-                  ? "border-teal-600 bg-teal-50 ring-2 ring-teal-600/30"
-                  : "border-zinc-200 hover:border-zinc-300"
-              }`}
-            >
-              <input
-                type="radio"
-                name={groupId}
-                value={opt.value}
-                checked={selected}
-                onChange={() => onChange(opt.value)}
-                className="sr-only"
-                data-intake-error={error && idx === 0 ? "true" : undefined}
-              />
-              <span className="block font-semibold text-zinc-900">
-                {opt.label}
-              </span>
-              <span className="mt-1 block text-xs text-zinc-500">{opt.hint}</span>
-            </label>
-          );
-        })}
-      </div>
-      <FieldError id={errorId} error={error} />
-    </fieldset>
-  );
-}
-
-function CheckboxGroup({
-  label,
-  helper,
-  options,
-  values,
-  onChange,
-  error,
-}: {
-  label: string;
-  helper?: string;
-  options: Array<{ value: string; label: string; hint: string }>;
-  values: string[];
-  onChange: (next: string[]) => void;
-  error?: string;
-}) {
-  const groupId = useId();
-  const errorId = `${groupId}-err`;
-  const toggle = (value: string) => {
-    onChange(
-      values.includes(value)
-        ? values.filter((v) => v !== value)
-        : [...values, value],
-    );
-  };
-  return (
-    <fieldset aria-describedby={error ? errorId : undefined}>
-      <div className="flex items-baseline justify-between">
-        <legend className="text-sm font-medium text-zinc-800">{label}</legend>
-        {helper && <span className="text-xs text-zinc-400">{helper}</span>}
-      </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {options.map((opt, idx) => {
-          const selected = values.includes(opt.value);
-          return (
-            <label
-              key={opt.value}
-              className={`cursor-pointer rounded-xl border p-4 text-sm transition ${
-                selected
-                  ? "border-teal-600 bg-teal-50 ring-2 ring-teal-600/30"
-                  : "border-zinc-200 hover:border-zinc-300"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={selected}
-                onChange={() => toggle(opt.value)}
-                className="sr-only"
-                data-intake-error={error && idx === 0 ? "true" : undefined}
-              />
-              <span className="block font-semibold text-zinc-900">
-                {opt.label}
-              </span>
-              <span className="mt-1 block text-xs text-zinc-500">{opt.hint}</span>
-            </label>
-          );
-        })}
-      </div>
-      <FieldError id={errorId} error={error} />
-    </fieldset>
-  );
-}
-
-function CheckboxField({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  const id = useId();
-  return (
-    <label htmlFor={id} className="flex items-start gap-3 text-sm text-zinc-700">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-600"
-      />
-      <span>{label}</span>
-    </label>
-  );
-}
-
-function FieldLabel({
-  htmlFor,
-  required,
-  helper,
-  children,
-}: {
-  htmlFor: string;
-  required?: boolean;
-  helper?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mb-1.5 flex items-baseline justify-between">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-zinc-800">
-        {children}
-        {required && (
-          <span aria-hidden="true" className="ml-0.5 text-rose-500">
-            *
-          </span>
-        )}
-      </label>
-      {helper && <span className="text-xs text-zinc-400">{helper}</span>}
-    </div>
-  );
-}
-
-function FieldError({ id, error }: { id: string; error?: string }) {
-  if (!error) return null;
-  return (
-    <p id={id} role="alert" className="mt-1 text-xs text-rose-600">
-      {error}
-    </p>
-  );
-}
-
-function inputClass(hasError: boolean) {
-  const base =
-    "block w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:ring-2";
-  return hasError
-    ? `${base} border-rose-400 focus:border-rose-500 focus:ring-rose-500/30`
-    : `${base} border-zinc-300 focus:border-teal-600 focus:ring-teal-600/30`;
 }
