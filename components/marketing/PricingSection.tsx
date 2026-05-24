@@ -1,3 +1,5 @@
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { PRICING_TIERS } from "@/lib/pricing";
 import { PricingCalculator } from "./PricingCalculator";
 
@@ -14,17 +16,17 @@ export function PricingSection() {
   return (
     <section
       id="pricing"
-      className="border-b border-zinc-200 bg-white py-20 sm:py-24"
+      className="border-b border-border bg-background py-20 sm:py-24"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
+          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
             Pricing
           </p>
-          <h2 className="mt-3 font-heading text-4xl font-bold tracking-tight text-zinc-900 sm:text-5xl">
+          <h2 className="mt-3 font-heading text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Transparent pricing by team size.
           </h2>
-          <p className="mt-4 text-lg text-zinc-600">
+          <p className="mt-4 text-lg text-muted-foreground">
             The bigger your order, the lower the per-jersey cost. Use the
             calculator below for a live estimate.
           </p>
@@ -33,32 +35,37 @@ export function PricingSection() {
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {PRICING_TIERS.map((tier) => {
             const highlight = tier.label === POPULAR_TIER_LABEL;
-            const cardClasses = highlight
-              ? "ring-2 ring-teal-600 shadow-lg"
-              : "border border-zinc-200";
             return (
-              <article
+              <Card
                 key={tier.label}
-                className={`flex flex-col rounded-xl bg-white p-6 ${cardClasses}`}
+                className={
+                  highlight
+                    ? "ring-2 ring-teal-600 shadow-lg"
+                    : undefined
+                }
               >
-                {highlight && (
-                  <span className="mb-3 inline-flex w-fit rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-teal-700">
-                    Most popular
-                  </span>
-                )}
-                <p className="text-sm font-semibold text-zinc-500">
-                  {taglines[tier.label]}
-                </p>
-                <h3 className="mt-1 text-xl font-bold text-zinc-900">
-                  {tier.label}
-                </h3>
-                <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold tracking-tight text-zinc-900">
-                    ${tier.pricePerUnit}
-                  </span>
-                  <span className="text-sm text-zinc-500">per jersey</span>
-                </div>
-              </article>
+                <CardContent className="flex flex-col gap-1">
+                  {highlight && (
+                    <Badge className="mb-3 w-fit bg-teal-50 text-teal-700 hover:bg-teal-50 dark:bg-teal-950/40 dark:text-teal-300">
+                      Most popular
+                    </Badge>
+                  )}
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {taglines[tier.label]}
+                  </p>
+                  <h3 className="mt-1 text-xl font-bold text-foreground">
+                    {tier.label}
+                  </h3>
+                  <div className="mt-6 flex items-baseline gap-1">
+                    <span className="text-4xl font-bold tracking-tight text-foreground">
+                      ${tier.pricePerUnit}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      per jersey
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

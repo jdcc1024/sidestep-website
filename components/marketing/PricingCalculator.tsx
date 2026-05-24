@@ -2,6 +2,14 @@
 
 import Link from "next/link";
 import { useId, useState } from "react";
+import { ArrowRightIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { calculateEstimate, DESIGN_FEE } from "@/lib/pricing";
 
 const currency = new Intl.NumberFormat("en-CA", {
@@ -22,26 +30,21 @@ export function PricingCalculator() {
   const outputId = useId();
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+    <Card className="gap-6 p-6 sm:p-8">
       <div className="grid gap-8 md:grid-cols-2">
         <div className="space-y-5">
           <div>
-            <h3 className="text-lg font-semibold text-zinc-900">
+            <h3 className="text-lg font-semibold text-foreground">
               Estimate your order
             </h3>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-muted-foreground">
               Enter your jersey count to see live pricing.
             </p>
           </div>
 
-          <div>
-            <label
-              htmlFor={quantityId}
-              className="block text-sm font-medium text-zinc-700"
-            >
-              Number of jerseys
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor={quantityId}>Number of jerseys</Label>
+            <Input
               id={quantityId}
               type="number"
               inputMode="numeric"
@@ -49,86 +52,94 @@ export function PricingCalculator() {
               step={1}
               value={quantityText}
               onChange={(event) => setQuantityText(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-lg font-semibold text-zinc-900 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+              className="h-11 text-lg font-semibold"
               aria-describedby={outputId}
             />
           </div>
 
           <div className="flex items-start gap-3">
-            <input
+            <Checkbox
               id={designFeeId}
-              type="checkbox"
               checked={hasDesignFee}
-              onChange={(event) => setHasDesignFee(event.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-600"
+              onCheckedChange={(checked) => setHasDesignFee(checked === true)}
+              className="mt-1"
             />
-            <label htmlFor={designFeeId} className="text-sm text-zinc-700">
-              <span className="font-medium text-zinc-900">
+            <Label
+              htmlFor={designFeeId}
+              className="flex flex-col items-start gap-0.5 text-sm font-normal text-muted-foreground"
+            >
+              <span className="font-medium text-foreground">
                 Add design help
               </span>
-              <span className="block text-zinc-600">
+              <span>
                 I don&apos;t have my own design — add a flat{" "}
                 {currency.format(DESIGN_FEE)} design fee.
               </span>
-            </label>
+            </Label>
           </div>
         </div>
 
         <div
           id={outputId}
           aria-live="polite"
-          className="flex flex-col justify-between rounded-xl bg-zinc-50 p-6"
+          className="flex flex-col justify-between rounded-xl bg-muted/60 p-6"
         >
           <dl className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
-              <dt className="text-zinc-600">Per jersey</dt>
-              <dd className="font-semibold text-zinc-900">
+              <dt className="text-muted-foreground">Per jersey</dt>
+              <dd className="font-semibold text-foreground">
                 {currency.format(estimate.perUnitPrice)}
               </dd>
             </div>
             <div className="flex items-center justify-between">
-              <dt className="text-zinc-600">
+              <dt className="text-muted-foreground">
                 Jerseys subtotal ({estimate.quantity})
               </dt>
-              <dd className="font-semibold text-zinc-900">
+              <dd className="font-semibold text-foreground">
                 {currency.format(estimate.subtotal)}
               </dd>
             </div>
             {estimate.designFee > 0 && (
               <div className="flex items-center justify-between">
-                <dt className="text-zinc-600">Design fee</dt>
-                <dd className="font-semibold text-zinc-900">
+                <dt className="text-muted-foreground">Design fee</dt>
+                <dd className="font-semibold text-foreground">
                   {currency.format(estimate.designFee)}
                 </dd>
               </div>
             )}
-            <div className="flex items-baseline justify-between border-t border-zinc-200 pt-3">
-              <dt className="text-base font-semibold text-zinc-900">
+            <Separator />
+            <div className="flex items-baseline justify-between">
+              <dt className="text-base font-semibold text-foreground">
                 Estimated total
               </dt>
-              <dd className="text-2xl font-bold tracking-tight text-teal-700">
+              <dd className="text-2xl font-bold tracking-tight text-teal-700 dark:text-teal-300">
                 {currency.format(estimate.total)}
               </dd>
             </div>
           </dl>
-          <p className="mt-4 text-xs text-zinc-500">
+          <p className="mt-4 text-xs text-muted-foreground">
             Estimated cost — final quote confirmed by Sidestep.
           </p>
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col items-start gap-3 border-t border-zinc-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-600">
+      <Separator />
+
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
           Ready to lock in your numbers?
         </p>
-        <Link
-          href="/intake"
-          className="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
-        >
-          Get your official quote
-          <span aria-hidden="true">→</span>
-        </Link>
+        <Button
+          size="lg"
+          className="h-11 bg-teal-600 px-5 text-sm text-white shadow-sm hover:bg-teal-700"
+          render={
+            <Link href="/intake">
+              Get your official quote
+              <ArrowRightIcon aria-hidden="true" />
+            </Link>
+          }
+        />
       </div>
-    </div>
+    </Card>
   );
 }

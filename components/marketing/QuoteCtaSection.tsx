@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
+
 export function QuoteCtaSection() {
   return (
-    <section id="quote" className="bg-white py-20 sm:py-24">
+    <section id="quote" className="bg-background py-20 sm:py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-700 via-teal-600 to-teal-500 px-8 py-14 text-center shadow-xl sm:px-12 sm:py-16">
           <div
@@ -18,18 +20,17 @@ export function QuoteCtaSection() {
               We&apos;ll come back with ideas, mock-ups, and a quote.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/intake"
-                className="rounded-md bg-white px-5 py-3 text-sm font-semibold text-teal-700 shadow-sm hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-teal-600"
-              >
-                Get a quote
-              </Link>
-              <a
-                href="mailto:info@sidestep.design"
-                className="rounded-md border border-white/40 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-teal-600"
-              >
-                info@sidestep.design
-              </a>
+              <Button
+                size="lg"
+                className="h-11 bg-white px-5 text-sm text-teal-700 shadow-sm hover:bg-teal-50"
+                render={<Link href="/intake">Get a quote</Link>}
+              />
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-11 border-white/40 bg-transparent px-5 text-sm text-white hover:bg-white/10 hover:text-white"
+                render={<a href="mailto:info@sidestep.design">info@sidestep.design</a>}
+              />
             </div>
           </div>
         </div>
