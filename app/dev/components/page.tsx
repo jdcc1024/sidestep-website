@@ -98,7 +98,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -167,7 +166,6 @@ export default function ComponentsShowcasePage() {
           <ToastSection />
           <FormSection />
         </div>
-        <Toaster />
       </main>
     </TooltipProvider>
   );
@@ -730,7 +728,7 @@ function TooltipSection() {
 
 function ToastSection() {
   return (
-    <Section title="Toast (sonner)" description="Mounted via <Toaster /> at the root of the page.">
+    <Section title="Toast (sonner)" description="Mounted globally via <Toaster /> in app/providers.tsx — available on every route.">
       <div className="flex flex-wrap gap-3">
         <Button onClick={() => toast("Order saved")}>Default</Button>
         <Button

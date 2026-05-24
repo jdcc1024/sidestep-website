@@ -1,6 +1,6 @@
 # Issue: JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form)
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 

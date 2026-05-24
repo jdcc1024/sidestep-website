@@ -6,6 +6,7 @@ import { ConvexReactClient, useMutation, useQuery } from "convex/react";
 import { ThemeProvider } from "next-themes";
 import { useEffect } from "react";
 import { api } from "@/convex/_generated/api";
+import { Toaster } from "@/components/ui/sonner";
 
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 if (!PUBLISHABLE_KEY) {
@@ -46,6 +47,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
           <UserSync />
           {children}
+          <Toaster />
         </ConvexProviderWithClerk>
       </ClerkProvider>
     </ThemeProvider>
