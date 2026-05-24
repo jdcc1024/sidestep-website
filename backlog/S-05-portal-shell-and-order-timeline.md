@@ -1,6 +1,6 @@
 # Issue: Portal Pilot — PortalShell and OrderTimeline on shadcn
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 

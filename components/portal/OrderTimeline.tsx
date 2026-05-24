@@ -1,5 +1,9 @@
 "use client";
 
+import { CheckIcon } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { buildTimeline, type CustomerStageName } from "@/lib/orderStages";
 
 type Props = {
@@ -30,7 +34,7 @@ export function OrderTimeline({ currentStage }: Props) {
             <div className="flex items-center sm:flex-col sm:items-stretch">
               <StepDot state={step.state} index={idx} />
               {idx < steps.length - 1 && (
-                <span
+                <Separator
                   aria-hidden
                   className={`hidden h-0.5 flex-1 sm:block ${
                     isComplete ? "bg-teal-600" : "bg-zinc-200"
@@ -38,21 +42,28 @@ export function OrderTimeline({ currentStage }: Props) {
                 />
               )}
             </div>
-            <div className="min-w-0 flex-1 sm:flex-none">
+            <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none">
               <p
                 className={`text-sm font-medium ${
                   isCurrent
                     ? "text-teal-700"
                     : isComplete
-                    ? "text-zinc-900"
-                    : "text-zinc-500"
+                      ? "text-zinc-900"
+                      : "text-zinc-500"
                 }`}
               >
                 {step.name}
               </p>
-              <p className="text-xs text-zinc-500 sm:hidden">
+              <Badge
+                variant={
+                  isCurrent ? "default" : isComplete ? "secondary" : "outline"
+                }
+                className={`w-fit sm:hidden ${
+                  isCurrent ? "bg-teal-600 text-white" : ""
+                }`}
+              >
                 {isCurrent ? "In progress" : isComplete ? "Complete" : "Upcoming"}
-              </p>
+              </Badge>
             </div>
           </li>
         );
@@ -76,7 +87,7 @@ function StepDot({
         aria-hidden
         className={`${base} border-teal-600 bg-teal-600 text-white`}
       >
-        ✓
+        <CheckIcon className="h-3.5 w-3.5" strokeWidth={3} />
       </span>
     );
   }

@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-24T04:39:07.518Z",
+  "lastUpdated": "2026-05-24T05:12:24.126Z",
   "phases": [
     {
       "id": "phase-1",
@@ -763,10 +763,10 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "First refactor surface. Replace inline UI in PortalShell and OrderTimeline with shadcn primitives. Mount the ThemeToggle in the portal header. Composite APIs preserved; only internal JSX changes. Improve while you are in there.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-s5",
+      "startedAt": "2026-05-24T05:03:25.825Z",
+      "completedAt": "2026-05-24T05:12:24.125Z",
       "issueFile": "backlog/S-05-portal-shell-and-order-timeline.md",
       "prdRef": "docs/prd/shadcn-migration.md#5-scope",
       "acceptanceCriteria": [
@@ -784,7 +784,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "First form conversion. Rewrites JerseyRunSetup to use react-hook-form for state, zod for validation, and shadcn Form wrapper for fields. Proves the integration pattern with the existing Convex mutation. Becomes the template for every other form (S-07, S-08, S-10, S-11).",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1204,10 +1204,10 @@
     },
     {
       "id": "agent-claude-opus47-s5",
-      "name": "Claude Opus 4.7 (Session 5)",
-      "status": "working",
-      "currentTask": "1-05",
-      "tasksCompleted": 0
+      "name": "S-05 Agent",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     },
     {
       "id": "agent-claude-opus47-design",
@@ -1281,27 +1281,6 @@
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-18T15:03:36.109Z",
-      "event": "nodes_added",
-      "nodeId": "2-05",
-      "agent": null,
-      "message": "New task added: Design Creation"
-    },
-    {
-      "timestamp": "2026-05-18T15:03:36.158Z",
-      "event": "nodes_added",
-      "nodeId": "2-06",
-      "agent": null,
-      "message": "New task added: Order Creation"
-    },
-    {
-      "timestamp": "2026-05-18T15:03:36.207Z",
-      "event": "nodes_added",
-      "nodeId": "2-07",
-      "agent": null,
-      "message": "New task added: Order Status Tracking"
-    },
     {
       "timestamp": "2026-05-18T15:03:36.258Z",
       "event": "nodes_added",
@@ -1980,6 +1959,27 @@
       "nodeId": "S-03",
       "agent": "s-03-agent",
       "message": "Completed: Theme Provider, Dark Mode, and Theme Toggle Component"
+    },
+    {
+      "timestamp": "2026-05-24T05:03:22.256Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s5",
+      "message": "S-05 Agent joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-24T05:03:25.826Z",
+      "event": "task_started",
+      "nodeId": "S-05",
+      "agent": "agent-claude-opus47-s5",
+      "message": "S-05 Agent picked up: Portal Pilot — PortalShell and OrderTimeline on shadcn"
+    },
+    {
+      "timestamp": "2026-05-24T05:12:24.125Z",
+      "event": "task_completed",
+      "nodeId": "S-05",
+      "agent": "agent-claude-opus47-s5",
+      "message": "Completed: Portal Pilot — PortalShell and OrderTimeline on shadcn"
     }
   ]
 }

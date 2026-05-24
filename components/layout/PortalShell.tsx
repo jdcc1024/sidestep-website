@@ -1,25 +1,129 @@
-import { UserButton } from "@clerk/nextjs";
-import { SidebarShell, type SidebarLink } from "./SidebarShell";
+"use client";
 
-const portalLinks: SidebarLink[] = [
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
+import { MenuIcon } from "lucide-react";
+
+import { Logo } from "./Logo";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
+
+type PortalLink = {
+  href: string;
+  label: string;
+  exact?: boolean;
+};
+
+const portalLinks: PortalLink[] = [
   { href: "/portal", label: "My Orders", exact: true },
   { href: "/portal/designs", label: "My Designs" },
   { href: "/portal/runs", label: "Jersey Runs" },
 ];
 
 export function PortalShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isActive = (link: PortalLink) =>
+    link.exact
+      ? pathname === link.href
+      : pathname === link.href || pathname.startsWith(`${link.href}/`);
+
+  const navList = (
+    <ul className="flex flex-col gap-1">
+      {portalLinks.map((link) => {
+        const active = isActive(link);
+        return (
+          <li key={link.href}>
+            <Link
+              href={link.href}
+              onClick={() => setMobileOpen(false)}
+              aria-current={active ? "page" : undefined}
+              className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-teal-50 text-teal-700"
+                  : "text-zinc-700 hover:bg-zinc-100"
+              }`}
+            >
+              {link.label}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const accountFooter = (
+    <div className="flex items-center gap-3">
+      <UserButton />
+      <span className="text-sm text-zinc-600">Account</span>
+    </div>
+  );
+
   return (
-    <SidebarShell
-      label="Portal"
-      links={portalLinks}
-      footerSlot={
-        <div className="flex items-center gap-3">
-          <UserButton />
-          <span className="text-sm text-zinc-600">Account</span>
+    <div className="relative flex min-h-screen flex-1 bg-zinc-50">
+      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 lg:hidden">
+        <Logo />
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger
+            render={
+              <Button variant="ghost" size="icon" aria-label="Open menu">
+                <MenuIcon />
+              </Button>
+            }
+          />
+          <SheetContent side="left" className="flex w-72 flex-col gap-0 bg-white p-0 text-zinc-900">
+            <SheetHeader className="px-4 py-4">
+              <SheetTitle>Portal</SheetTitle>
+            </SheetHeader>
+            <Separator />
+            <nav
+              className="flex-1 overflow-y-auto p-4"
+              aria-label="Portal navigation"
+            >
+              {navList}
+            </nav>
+            <Separator />
+            <div className="flex items-center justify-between gap-3 p-4">
+              {accountFooter}
+              <ThemeToggle />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <aside
+        aria-label="Portal"
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-zinc-200 bg-white lg:flex"
+      >
+        <div className="flex h-16 items-center justify-between gap-2 px-4">
+          <Logo />
+          <ThemeToggle />
         </div>
-      }
-    >
-      {children}
-    </SidebarShell>
+        <Separator />
+        <nav
+          className="flex-1 overflow-y-auto p-4"
+          aria-label="Portal navigation"
+        >
+          {navList}
+        </nav>
+        <Separator />
+        <div className="p-4">{accountFooter}</div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col pt-14 lg:ml-64 lg:pt-0">
+        <main className="flex-1">{children}</main>
+      </div>
+    </div>
   );
 }
