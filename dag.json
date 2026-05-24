@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-24T05:12:24.126Z",
+  "lastUpdated": "2026-05-24T05:16:19.117Z",
   "phases": [
     {
       "id": "phase-1",
@@ -944,6 +944,27 @@
         "dev showcase still renders every primitive",
         "build typecheck lint test pass"
       ]
+    },
+    {
+      "id": "S-14",
+      "title": "Portal Page Dark-Mode Sweep",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Swap hardcoded zinc/white classes in app/portal/**/page.tsx for shadcn theme tokens so the portal renders correctly in dark mode. Closes the gap left by S-05 (shell only) — inner page bodies, loading skeletons, StageChip palette, etc.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/S-14-portal-page-dark-mode-sweep.md",
+      "prdRef": "docs/prd/shadcn-migration.md#8-success-metrics",
+      "acceptanceCriteria": [
+        "Every app/portal/**/page.tsx renders correctly in both light and dark mode",
+        "Hardcoded zinc/white classes replaced with shadcn tokens (bg-background, bg-card, text-foreground, text-muted-foreground, border-border) where appropriate",
+        "Brand teal accents preserved",
+        "Loading/empty/not-found states all theme-aware",
+        "Manual smoke of every portal route in both themes at 375px/768px/1280px",
+        "npm run build/typecheck/lint/test pass"
+      ]
     }
   ],
   "edges": [
@@ -1150,6 +1171,14 @@
     {
       "from": "S-12",
       "to": "S-13"
+    },
+    {
+      "from": "S-08",
+      "to": "S-14"
+    },
+    {
+      "from": "S-14",
+      "to": "S-13"
     }
   ],
   "agents": [
@@ -1281,13 +1310,6 @@
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-18T15:03:36.258Z",
-      "event": "nodes_added",
-      "nodeId": "2-08",
-      "agent": null,
-      "message": "New task added: Jersey Run Creation"
-    },
     {
       "timestamp": "2026-05-18T15:03:56.171Z",
       "event": "nodes_added",
@@ -1980,6 +2002,13 @@
       "nodeId": "S-05",
       "agent": "agent-claude-opus47-s5",
       "message": "Completed: Portal Pilot — PortalShell and OrderTimeline on shadcn"
+    },
+    {
+      "timestamp": "2026-05-24T05:16:16.186Z",
+      "event": "nodes_added",
+      "nodeId": "S-14",
+      "agent": null,
+      "message": "New task added: Portal Page Dark-Mode Sweep"
     }
   ]
 }
