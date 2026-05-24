@@ -48,6 +48,14 @@ export default function PortalDashboardPage() {
               Track every order you&apos;ve placed.
             </p>
           </div>
+          {orders && orders.length > 0 && (
+            <Link
+              href="/portal/orders/new"
+              className="inline-flex items-center gap-1 rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+            >
+              New order <span aria-hidden>→</span>
+            </Link>
+          )}
         </div>
         <div className="mt-4">
           {orders === undefined ? (
