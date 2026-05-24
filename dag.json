@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-24T16:27:59.456Z",
+  "lastUpdated": "2026-05-24T19:09:40.314Z",
   "phases": [
     {
       "id": "phase-1",
@@ -868,10 +868,10 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Apply the canonical form pattern to the public intake form. Same Convex mutation, same payload; only form mechanics change. Public-facing and unauthenticated — extra care on a11y and dark-mode error visibility.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus47-s10",
+      "startedAt": "2026-05-24T16:43:22.532Z",
+      "completedAt": "2026-05-24T19:09:40.313Z",
       "issueFile": "backlog/S-10-intake-form-rhf.md",
       "prdRef": "docs/prd/shadcn-migration.md#5-scope",
       "acceptanceCriteria": [
@@ -889,7 +889,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Convert the public fan submission form at /run/id to the canonical form stack. Public and unauthenticated — preserve closed-state and open-vs-fixed-mode branching exactly as today. Last form to migrate; after this success metric all 5 forms on RHF + zod is achievable.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1335,30 +1335,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus47-s10",
+      "name": "Claude Opus 4.7 (S-10 Intake Form)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-18T16:55:52.729Z",
-      "event": "task_completed",
-      "nodeId": "1-01",
-      "agent": "agent-claude-opus47-s1",
-      "message": "Completed: Project Scaffolding"
-    },
-    {
-      "timestamp": "2026-05-18T17:40:11.675Z",
-      "event": "task_started",
-      "nodeId": "1-02",
-      "agent": "agent-claude-opus47-s1",
-      "message": "Claude Opus 4.7 (Session 1) picked up: Database Schema"
-    },
-    {
-      "timestamp": "2026-05-18T19:17:19.533Z",
-      "event": "task_completed",
-      "nodeId": "1-02",
-      "agent": "agent-claude-opus47-s1",
-      "message": "Completed: Database Schema"
-    },
     {
       "timestamp": "2026-05-18T19:26:59.599Z",
       "event": "agent_joined",
@@ -2037,6 +2023,27 @@
       "nodeId": "S-09",
       "agent": "agent-claude-opus47-s09",
       "message": "Completed: Marketing Sweep"
+    },
+    {
+      "timestamp": "2026-05-24T16:43:09.840Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus47-s10",
+      "message": "Claude Opus 4.7 (S-10 Intake Form) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-24T16:43:22.532Z",
+      "event": "task_started",
+      "nodeId": "S-10",
+      "agent": "agent-claude-opus47-s10",
+      "message": "Claude Opus 4.7 (S-10 Intake Form) picked up: IntakeForm → RHF + zod + shadcn Form"
+    },
+    {
+      "timestamp": "2026-05-24T19:09:40.313Z",
+      "event": "task_completed",
+      "nodeId": "S-10",
+      "agent": "agent-claude-opus47-s10",
+      "message": "Completed: IntakeForm → RHF + zod + shadcn Form"
     }
   ]
 }
