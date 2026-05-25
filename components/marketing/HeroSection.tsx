@@ -23,17 +23,15 @@ export function HeroSection() {
             delivery.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="h-11 bg-teal-600 px-5 text-sm text-white shadow-sm hover:bg-teal-700"
-              render={<Link href="/intake">Start your order</Link>}
-            />
+            <Button size="lg" className="h-11 bg-teal-600 px-5 text-sm text-white shadow-sm hover:bg-teal-700">
+                <Link href="/intake">Start your order</Link>
+              </Button>
             <Button
               variant="outline"
               size="lg"
-              className="h-11 px-5 text-sm"
-              render={<Link href="#process">See our process</Link>}
-            />
+              className="h-11 px-5 text-sm">
+                <Link href="#process">See our process</Link>
+              </Button>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
             Serving the Greater Vancouver area. Most orders ship in around 4

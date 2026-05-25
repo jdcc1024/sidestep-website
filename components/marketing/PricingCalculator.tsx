@@ -132,13 +132,12 @@ export function PricingCalculator() {
         <Button
           size="lg"
           className="h-11 bg-teal-600 px-5 text-sm text-white shadow-sm hover:bg-teal-700"
-          render={
-            <Link href="/intake">
-              Get your official quote
-              <ArrowRightIcon aria-hidden="true" />
-            </Link>
-          }
-        />
+        >
+          <Link href="/intake">
+            Get your official quote
+            <ArrowRightIcon aria-hidden="true" />
+          </Link>
+        </Button>
       </div>
     </Card>
   );

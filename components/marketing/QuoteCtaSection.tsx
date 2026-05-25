@@ -23,14 +23,16 @@ export function QuoteCtaSection() {
               <Button
                 size="lg"
                 className="h-11 bg-white px-5 text-sm text-teal-700 shadow-sm hover:bg-teal-50"
-                render={<Link href="/intake">Get a quote</Link>}
-              />
+              >
+                <Link href="/intake">Get a quote</Link>
+              </Button>
               <Button
                 variant="outline"
                 size="lg"
                 className="h-11 border-white/40 bg-transparent px-5 text-sm text-white hover:bg-white/10 hover:text-white"
-                render={<a href="mailto:info@sidestep.design">info@sidestep.design</a>}
-              />
+              >
+                <a href="mailto:info@sidestep.design">info@sidestep.design</a>
+              </Button>
             </div>
           </div>
         </div>
