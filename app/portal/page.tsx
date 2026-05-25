@@ -53,9 +53,10 @@ export default function PortalDashboardPage() {
             <Button
               size="lg"
               className="bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-              render={<Link href="/portal/orders/new" />}
             >
-              New order <span aria-hidden>→</span>
+              <Link href="/portal/orders/new">
+                New order <span aria-hidden>→</span>
+              </Link>
             </Button>
           )}
         </div>
@@ -93,9 +94,10 @@ export default function PortalDashboardPage() {
             <Button
               size="lg"
               className="bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-              render={<Link href="/portal/designs/new" />}
             >
-              New design <span aria-hidden>→</span>
+              <Link href="/portal/designs/new">
+                New design <span aria-hidden>→</span>
+              </Link>
             </Button>
           )}
         </div>
@@ -166,18 +168,14 @@ function DesignCard({ design }: { design: Doc<"designs"> }) {
   );
 }
 
-function StageChip({
-  stage,
-  tone,
-}: {
-  stage: string | null;
-  tone: ChipTone;
-}) {
+function StageChip({ stage, tone }: { stage: string | null; tone: ChipTone }) {
   const label = stage ?? "Pending";
   const palette: Record<ChipTone, string> = {
     pending: "bg-muted text-muted-foreground",
-    "in-progress": "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
-    complete: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
+    "in-progress":
+      "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
+    complete:
+      "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
   };
   return (
     <span
@@ -242,13 +240,16 @@ function EmptyState({
         />
       </svg>
       <h3 className="mt-4 text-base font-semibold text-foreground">{title}</h3>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{body}</p>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+        {body}
+      </p>
       <Button
         size="lg"
         className="mt-5 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={<Link href={ctaHref} />}
       >
-        {ctaLabel} <span aria-hidden>→</span>
+        <Link href={ctaHref}>
+          {ctaLabel} <span aria-hidden>→</span>
+        </Link>
       </Button>
     </div>
   );
