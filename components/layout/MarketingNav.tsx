@@ -7,8 +7,9 @@ import { UserButton } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { MenuIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -66,16 +67,21 @@ export function MarketingNav() {
         >
           {desktopSectionLinks}
           <Unauthenticated>
-            <Button
-              variant="ghost"
-              size="sm"
-              render={<Link href="/sign-in">Sign in</Link>}
-            />
-            <Button
-              size="sm"
-              className="ml-1 bg-teal-600 text-white hover:bg-teal-700"
-              render={<Link href="/intake">Get a Quote</Link>}
-            />
+            <Link
+              href="/sign-in"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/intake"
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "ml-1 bg-teal-600 text-white hover:bg-teal-700",
+              )}
+            >
+              Get a Quote
+            </Link>
           </Unauthenticated>
           <Authenticated>
             <Link

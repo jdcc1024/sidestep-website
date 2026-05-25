@@ -5,7 +5,8 @@ import { use } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   describeDeadline,
   estimateForResponses,
@@ -238,13 +239,15 @@ function NoRunYet({ orderId }: { orderId: Id<"orders"> }) {
       <p className="mt-2 text-muted-foreground">
         Set up a jersey run on the order page to start collecting responses.
       </p>
-      <Button
-        size="lg"
-        className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={<Link href={`/portal/orders/${orderId}`} />}
+      <Link
+        href={`/portal/orders/${orderId}`}
+        className={cn(
+          buttonVariants({ size: "lg" }),
+          "mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700",
+        )}
       >
         Back to order
-      </Button>
+      </Link>
     </div>
   );
 }
@@ -258,13 +261,15 @@ function NotFound({ orderId }: { orderId: Id<"orders"> }) {
       <p className="mt-2 text-muted-foreground">
         It may have been removed, or you don&apos;t have access to it.
       </p>
-      <Button
-        size="lg"
-        className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={<Link href={`/portal/orders/${orderId}`} />}
+      <Link
+        href={`/portal/orders/${orderId}`}
+        className={cn(
+          buttonVariants({ size: "lg" }),
+          "mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700",
+        )}
       >
         Back to order
-      </Button>
+      </Link>
     </div>
   );
 }

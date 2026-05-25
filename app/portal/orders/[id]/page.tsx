@@ -5,7 +5,8 @@ import { use } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { JerseyRunSetup } from "@/components/portal/JerseyRunSetup";
 import { OrderTimeline } from "@/components/portal/OrderTimeline";
 import {
@@ -207,13 +208,15 @@ function NotFound() {
       <p className="mt-2 text-muted-foreground">
         We couldn&apos;t find that order — it may have been removed.
       </p>
-      <Button
-        size="lg"
-        className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={<Link href="/portal" />}
+      <Link
+        href="/portal"
+        className={cn(
+          buttonVariants({ size: "lg" }),
+          "mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700",
+        )}
       >
         Back to dashboard
-      </Button>
+      </Link>
     </div>
   );
 }

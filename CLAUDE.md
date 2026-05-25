@@ -152,23 +152,60 @@ Issues live in `/backlog/` as markdown files. Each file represents one task:
 
 ### shadcn primitives with `render` prop
 
-When a shadcn primitive (`<Button>`, `<Badge>`, `<SheetTrigger>`, etc.) needs to render as another element — typically `<Link>` for navigation — put the **label/content between the primitive's tags** and pass only the **self-closing wrapper element** to `render`. The primitive's children are what get composed into the rendered element.
+`render` is Base UI's composition prop. The primitive (e.g. `<Button>`) outputs the element you pass in `render` instead of its default tag, while still applying its own classes, variants, slots, and event handlers. It's the modern replacement for Radix's `asChild` / Slot pattern.
+
+#### For navigation CTAs ("link styled as a button"), don't use `<Button render={<Link/>}>` — use `buttonVariants` on the Link directly.
+
+`@base-ui/react/button` defaults `nativeButton={true}` and warns in dev when the rendered element isn't a real `<button>` ("A component that acts as a button expected a native `<button>`…"). For a Next.js `<Link>` CTA the right semantics are link-anyway — screen readers should announce "link", not "button". So skip the wrapper entirely:
 
 Do:
 
 ```tsx
-<Button render={<Link href="/portal" />}>
-  Back to dashboard
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+<Link
+  href="/portal/orders/new"
+  className={cn(buttonVariants({ size: "lg" }), "bg-teal-600 text-white hover:bg-teal-700")}
+>
+  New order
+</Link>
+```
+
+Don't (triggers the `nativeButton` warning, and lies about semantics if you silence it):
+
+```tsx
+<Button render={<Link href="/portal/orders/new" />}>New order</Button>
+```
+
+Don't (invalid HTML: `<button><a/></button>`, hydration error):
+
+```tsx
+<Button>
+  <Link href="/portal/orders/new">New order</Link>
 </Button>
+```
+
+#### When you do use `render` (non-anchor targets — e.g. `<SheetTrigger render={<Button>...}/>`, `<Badge render={<span/>}>`)
+
+Label content goes between the **outer primitive's** tags as children. `render` takes a **self-closing wrapper**. The primitive composes its children into the rendered element.
+
+Do:
+
+```tsx
+<Badge variant="secondary" render={<a href={url} target="_blank" rel="noreferrer" />}>
+  <FileDown aria-hidden />
+  File 1
+</Badge>
 ```
 
 Don't:
 
 ```tsx
-<Button render={<Link href="/portal">Back to dashboard</Link>} />
+<Badge variant="secondary" render={<a href={url}>File 1</a>} />
 ```
 
-Why: keeping label content as the primitive's children means the primitive's styling, icon slots, and variants apply to the label the same way they would for a plain `<Button>`. Moving label into `render` bypasses that composition — it looks similar but breaks the data-slot / variant story the primitive is built around.
+Why: keeping content as the primitive's children means the primitive's classes, icon slots, and variants apply to that content. Moving it into the `render` element bypasses that composition — visually similar but breaks the slot/variant story.
 
 ### Testing
 
