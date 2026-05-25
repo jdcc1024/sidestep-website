@@ -13,7 +13,16 @@ import { internal } from "./_generated/api";
 // Server-side guards. Mirror lib/jerseyRun.ts and lib/jerseyRunResponse.ts
 // so the client and server cap values the same way — defense in depth
 // against a hand-rolled client that posts past the form's UI guards.
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"] as const;
+const SIZE_OPTIONS = [
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL",
+  "4XL",
+] as const;
 const MAX_CUSTOM_QUESTIONS = 5;
 const QUESTION_LABEL_MAX_LENGTH = 200;
 const ROSTER_NAME_MAX_LENGTH = 80;

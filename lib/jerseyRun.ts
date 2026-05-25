@@ -2,8 +2,40 @@
 // enforced again server-side in convex/jerseyRuns.ts so a hand-rolled
 // client can't bypass them — see the matching constants there.
 
-export const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"] as const;
+export const SIZE_OPTIONS = [
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL",
+  "4XL",
+] as const;
 export type SizeOption = (typeof SIZE_OPTIONS)[number];
+
+// Sort a list of sizes (from a jersey run) into canonical display order.
+// Legacy "XXL" runs created before the XXL → 2XL rename are slotted
+// where 2XL would appear so they still render in the right spot.
+const SIZE_DISPLAY_INDEX: Record<string, number> = {
+  XS: 0,
+  S: 1,
+  M: 2,
+  L: 3,
+  XL: 4,
+  "2XL": 5,
+  XXL: 5,
+  "3XL": 6,
+  "4XL": 7,
+};
+
+export function sortSizes(sizes: readonly string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const ia = SIZE_DISPLAY_INDEX[a] ?? Number.POSITIVE_INFINITY;
+    const ib = SIZE_DISPLAY_INDEX[b] ?? Number.POSITIVE_INFINITY;
+    return ia - ib;
+  });
+}
 
 export const NAMES_MODES = ["open", "fixed"] as const;
 export type NamesMode = (typeof NAMES_MODES)[number];

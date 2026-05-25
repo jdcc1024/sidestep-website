@@ -20,6 +20,7 @@ import {
   type JerseyRunForResponse,
   type JerseyRunResponseInput,
 } from "@/lib/jerseyRunResponse";
+import { sortSizes } from "@/lib/jerseyRun";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -312,9 +313,9 @@ function ResponseForm({
                   <RadioGroup
                     value={field.value}
                     onValueChange={(value) => field.onChange(value)}
-                    className="flex flex-wrap gap-2"
+                    className="flex flex-wrap justify-center gap-2"
                   >
-                    {run.sizeOptions.map((size) => (
+                    {sortSizes(run.sizeOptions).map((size) => (
                       <SizeOption key={size} value={size} />
                     ))}
                   </RadioGroup>
