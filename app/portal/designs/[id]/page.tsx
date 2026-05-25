@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
 import { DesignForm } from "@/components/portal/DesignForm";
 
 type PageProps = {
@@ -34,12 +35,12 @@ export default function DesignDetailPage({ params }: PageProps) {
             e.preventDefault();
             setEditing(false);
           }}
-          className="text-sm font-medium text-teal-700 hover:text-teal-800"
+          className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
         >
           ← Cancel edit
         </Link>
         <header className="mt-3">
-          <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
+          <p className="text-sm font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
             Edit design
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -66,14 +67,14 @@ export default function DesignDetailPage({ params }: PageProps) {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <Link
         href="/portal"
-        className="text-sm font-medium text-teal-700 hover:text-teal-800"
+        className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
       >
         ← Back to dashboard
       </Link>
 
       <header className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
+          <p className="text-sm font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
             Design
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -109,7 +110,7 @@ export default function DesignDetailPage({ params }: PageProps) {
             href={design.canvaLink}
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-2 inline-flex items-center gap-1 break-all text-sm font-medium text-teal-700 hover:text-teal-800"
+            className="mt-2 inline-flex items-center gap-1 break-all text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
           >
             {design.canvaLink}
             <span aria-hidden>↗</span>
@@ -171,12 +172,11 @@ function NotFound() {
       <p className="mt-2 text-muted-foreground">
         We couldn&apos;t find that design — it may have been removed.
       </p>
-      <Link
-        href="/portal"
-        className="mt-6 inline-flex items-center gap-1 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
-      >
-        Back to dashboard
-      </Link>
+      <Button
+        size="lg"
+        className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
+        render={<Link href="/portal">Back to dashboard</Link>}
+      />
     </div>
   );
 }

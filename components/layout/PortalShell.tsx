@@ -51,8 +51,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               aria-current={active ? "page" : undefined}
               className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-zinc-700 hover:bg-zinc-100"
+                  ? "bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-200"
+                  : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
               }`}
             >
               {link.label}
@@ -66,13 +66,13 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   const accountFooter = (
     <div className="flex items-center gap-3">
       <UserButton />
-      <span className="text-sm text-zinc-600">Account</span>
+      <span className="text-sm text-zinc-600 dark:text-zinc-400">Account</span>
     </div>
   );
 
   return (
-    <div className="relative flex min-h-screen flex-1 bg-zinc-50">
-      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 lg:hidden">
+    <div className="relative flex min-h-screen flex-1 bg-zinc-50 dark:bg-zinc-950">
+      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
         <Logo />
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger
@@ -82,7 +82,10 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               </Button>
             }
           />
-          <SheetContent side="left" className="flex w-72 flex-col gap-0 bg-white p-0 text-zinc-900">
+          <SheetContent
+            side="left"
+            className="flex w-72 flex-col gap-0 bg-white p-0 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"
+          >
             <SheetHeader className="px-4 py-4">
               <SheetTitle>Portal</SheetTitle>
             </SheetHeader>
@@ -104,7 +107,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
       <aside
         aria-label="Portal"
-        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-zinc-200 bg-white lg:flex"
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 lg:flex"
       >
         <div className="flex h-16 items-center justify-between gap-2 px-4">
           <Logo />

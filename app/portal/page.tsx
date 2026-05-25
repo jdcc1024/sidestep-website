@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
 import {
   chipToneForStage,
   deriveCustomerStage,
@@ -23,7 +24,7 @@ export default function PortalDashboardPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <header>
-        <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
+        <p className="text-sm font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
           Dashboard
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -49,12 +50,15 @@ export default function PortalDashboardPage() {
             </p>
           </div>
           {orders && orders.length > 0 && (
-            <Link
-              href="/portal/orders/new"
-              className="inline-flex items-center gap-1 rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
-            >
-              New order <span aria-hidden>→</span>
-            </Link>
+            <Button
+              size="lg"
+              className="bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
+              render={
+                <Link href="/portal/orders/new">
+                  New order <span aria-hidden>→</span>
+                </Link>
+              }
+            />
           )}
         </div>
         <div className="mt-4">
@@ -88,12 +92,15 @@ export default function PortalDashboardPage() {
             </p>
           </div>
           {designs && designs.length > 0 && (
-            <Link
-              href="/portal/designs/new"
-              className="inline-flex items-center gap-1 rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
-            >
-              New design <span aria-hidden>→</span>
-            </Link>
+            <Button
+              size="lg"
+              className="bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
+              render={
+                <Link href="/portal/designs/new">
+                  New design <span aria-hidden>→</span>
+                </Link>
+              }
+            />
           )}
         </div>
         <div className="mt-4">
@@ -240,12 +247,15 @@ function EmptyState({
       </svg>
       <h3 className="mt-4 text-base font-semibold text-foreground">{title}</h3>
       <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{body}</p>
-      <Link
-        href={ctaHref}
-        className="mt-5 inline-flex items-center gap-1 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
-      >
-        {ctaLabel} <span aria-hidden>→</span>
-      </Link>
+      <Button
+        size="lg"
+        className="mt-5 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
+        render={
+          <Link href={ctaHref}>
+            {ctaLabel} <span aria-hidden>→</span>
+          </Link>
+        }
+      />
     </div>
   );
 }

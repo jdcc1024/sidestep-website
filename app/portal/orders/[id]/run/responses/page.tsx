@@ -5,6 +5,7 @@ import { use } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
 import {
   describeDeadline,
   estimateForResponses,
@@ -47,13 +48,13 @@ export default function JerseyRunResponsesPage({ params }: PageProps) {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <Link
         href={`/portal/orders/${orderId}`}
-        className="text-sm font-medium text-teal-700 hover:text-teal-800"
+        className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
       >
         ← Back to order
       </Link>
 
       <header className="mt-3">
-        <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
+        <p className="text-sm font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
           Jersey run · {teamName}
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -237,12 +238,13 @@ function NoRunYet({ orderId }: { orderId: Id<"orders"> }) {
       <p className="mt-2 text-muted-foreground">
         Set up a jersey run on the order page to start collecting responses.
       </p>
-      <Link
-        href={`/portal/orders/${orderId}`}
-        className="mt-6 inline-flex items-center gap-1 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
-      >
-        Back to order
-      </Link>
+      <Button
+        size="lg"
+        className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
+        render={
+          <Link href={`/portal/orders/${orderId}`}>Back to order</Link>
+        }
+      />
     </div>
   );
 }
@@ -256,12 +258,13 @@ function NotFound({ orderId }: { orderId: Id<"orders"> }) {
       <p className="mt-2 text-muted-foreground">
         It may have been removed, or you don&apos;t have access to it.
       </p>
-      <Link
-        href={`/portal/orders/${orderId}`}
-        className="mt-6 inline-flex items-center gap-1 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
-      >
-        Back to order
-      </Link>
+      <Button
+        size="lg"
+        className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
+        render={
+          <Link href={`/portal/orders/${orderId}`}>Back to order</Link>
+        }
+      />
     </div>
   );
 }
@@ -271,7 +274,7 @@ function Loading({ orderId }: { orderId: Id<"orders"> }) {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <Link
         href={`/portal/orders/${orderId}`}
-        className="text-sm font-medium text-teal-700 hover:text-teal-800"
+        className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
       >
         ← Back to order
       </Link>

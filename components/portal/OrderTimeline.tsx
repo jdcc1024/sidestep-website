@@ -37,7 +37,7 @@ export function OrderTimeline({ currentStage }: Props) {
                 <Separator
                   aria-hidden
                   className={`hidden h-0.5 flex-1 sm:block ${
-                    isComplete ? "bg-teal-600" : "bg-zinc-200"
+                    isComplete ? "bg-teal-600" : "bg-border"
                   }`}
                 />
               )}
@@ -46,10 +46,10 @@ export function OrderTimeline({ currentStage }: Props) {
               <p
                 className={`text-sm font-medium ${
                   isCurrent
-                    ? "text-teal-700"
+                    ? "text-teal-700 dark:text-teal-300"
                     : isComplete
-                      ? "text-zinc-900"
-                      : "text-zinc-500"
+                      ? "text-foreground"
+                      : "text-muted-foreground"
                 }`}
               >
                 {step.name}
@@ -95,14 +95,17 @@ function StepDot({
     return (
       <span
         aria-hidden
-        className={`${base} border-teal-600 bg-white text-teal-700 ring-2 ring-teal-100`}
+        className={`${base} border-teal-600 bg-card text-teal-700 ring-2 ring-teal-100 dark:text-teal-300 dark:ring-teal-900/40`}
       >
         {index + 1}
       </span>
     );
   }
   return (
-    <span aria-hidden className={`${base} border-zinc-300 bg-white text-zinc-400`}>
+    <span
+      aria-hidden
+      className={`${base} border-border bg-card text-muted-foreground`}
+    >
       {index + 1}
     </span>
   );
