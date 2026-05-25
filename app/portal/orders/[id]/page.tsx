@@ -210,8 +210,10 @@ function NotFound() {
       <Button
         size="lg"
         className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={<Link href="/portal">Back to dashboard</Link>}
-      />
+        render={<Link href="/portal" />}
+      >
+        Back to dashboard
+      </Button>
     </div>
   );
 }

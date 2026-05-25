@@ -53,12 +53,10 @@ export default function PortalDashboardPage() {
             <Button
               size="lg"
               className="bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-              render={
-                <Link href="/portal/orders/new">
-                  New order <span aria-hidden>→</span>
-                </Link>
-              }
-            />
+              render={<Link href="/portal/orders/new" />}
+            >
+              New order <span aria-hidden>→</span>
+            </Button>
           )}
         </div>
         <div className="mt-4">
@@ -95,12 +93,10 @@ export default function PortalDashboardPage() {
             <Button
               size="lg"
               className="bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-              render={
-                <Link href="/portal/designs/new">
-                  New design <span aria-hidden>→</span>
-                </Link>
-              }
-            />
+              render={<Link href="/portal/designs/new" />}
+            >
+              New design <span aria-hidden>→</span>
+            </Button>
           )}
         </div>
         <div className="mt-4">
@@ -250,12 +246,10 @@ function EmptyState({
       <Button
         size="lg"
         className="mt-5 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={
-          <Link href={ctaHref}>
-            {ctaLabel} <span aria-hidden>→</span>
-          </Link>
-        }
-      />
+        render={<Link href={ctaHref} />}
+      >
+        {ctaLabel} <span aria-hidden>→</span>
+      </Button>
     </div>
   );
 }

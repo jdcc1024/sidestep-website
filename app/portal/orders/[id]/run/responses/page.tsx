@@ -241,10 +241,10 @@ function NoRunYet({ orderId }: { orderId: Id<"orders"> }) {
       <Button
         size="lg"
         className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={
-          <Link href={`/portal/orders/${orderId}`}>Back to order</Link>
-        }
-      />
+        render={<Link href={`/portal/orders/${orderId}`} />}
+      >
+        Back to order
+      </Button>
     </div>
   );
 }
@@ -261,10 +261,10 @@ function NotFound({ orderId }: { orderId: Id<"orders"> }) {
       <Button
         size="lg"
         className="mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700"
-        render={
-          <Link href={`/portal/orders/${orderId}`}>Back to order</Link>
-        }
-      />
+        render={<Link href={`/portal/orders/${orderId}`} />}
+      >
+        Back to order
+      </Button>
     </div>
   );
 }

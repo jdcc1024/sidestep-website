@@ -150,6 +150,26 @@ Issues live in `/backlog/` as markdown files. Each file represents one task:
 - Separate business logic from framework/IO concerns
 - Each module should be independently testable
 
+### shadcn primitives with `render` prop
+
+When a shadcn primitive (`<Button>`, `<Badge>`, `<SheetTrigger>`, etc.) needs to render as another element — typically `<Link>` for navigation — put the **label/content between the primitive's tags** and pass only the **self-closing wrapper element** to `render`. The primitive's children are what get composed into the rendered element.
+
+Do:
+
+```tsx
+<Button render={<Link href="/portal" />}>
+  Back to dashboard
+</Button>
+```
+
+Don't:
+
+```tsx
+<Button render={<Link href="/portal">Back to dashboard</Link>} />
+```
+
+Why: keeping label content as the primitive's children means the primitive's styling, icon slots, and variants apply to the label the same way they would for a plain `<Button>`. Moving label into `render` bypasses that composition — it looks similar but breaks the data-slot / variant story the primitive is built around.
+
 ### Testing
 
 - Tests live alongside or mirror the source structure
