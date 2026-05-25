@@ -38,7 +38,7 @@ export function MarketingNav() {
     <Link
       key={link.href}
       href={link.href}
-      className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
+      className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
     >
       {link.label}
     </Link>
@@ -49,14 +49,14 @@ export function MarketingNav() {
       key={link.href}
       href={link.href}
       onClick={() => setMobileOpen(false)}
-      className="block rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
+      className="block rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
     >
       {link.label}
     </Link>
   ));
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Logo />
 
@@ -83,8 +83,8 @@ export function MarketingNav() {
               aria-current={portalActive ? "page" : undefined}
               className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 portalActive
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-zinc-700 hover:bg-zinc-100"
+                  ? "bg-teal-500/15 text-teal-700 dark:text-teal-200"
+                  : "text-foreground/80 hover:bg-accent hover:text-foreground"
               }`}
             >
               Portal
@@ -107,7 +107,7 @@ export function MarketingNav() {
             />
             <SheetContent
               side="right"
-              className="flex w-72 flex-col gap-0 bg-white p-0 text-zinc-900"
+              className="flex w-72 flex-col gap-0 p-0"
             >
               <SheetHeader className="px-4 py-4">
                 <SheetTitle>Menu</SheetTitle>
@@ -123,7 +123,7 @@ export function MarketingNav() {
                   <Link
                     href="/sign-in"
                     onClick={() => setMobileOpen(false)}
-                    className="block rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
+                    className="block rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                   >
                     Sign in
                   </Link>
@@ -143,8 +143,8 @@ export function MarketingNav() {
                     aria-current={portalActive ? "page" : undefined}
                     className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       portalActive
-                        ? "bg-teal-50 text-teal-700"
-                        : "text-zinc-700 hover:bg-zinc-100"
+                        ? "bg-teal-500/15 text-teal-700 dark:text-teal-200"
+                        : "text-foreground/80 hover:bg-accent hover:text-foreground"
                     }`}
                   >
                     Portal
@@ -156,11 +156,11 @@ export function MarketingNav() {
                 <Authenticated>
                   <div className="flex items-center gap-3">
                     <UserButton />
-                    <span className="text-sm text-zinc-600">Account</span>
+                    <span className="text-sm text-muted-foreground">Account</span>
                   </div>
                 </Authenticated>
                 <Unauthenticated>
-                  <span className="text-sm text-zinc-600">Theme</span>
+                  <span className="text-sm text-muted-foreground">Theme</span>
                 </Unauthenticated>
                 <ThemeToggle />
               </div>

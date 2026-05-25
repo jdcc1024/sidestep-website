@@ -14,7 +14,7 @@ export function Logo({
       aria-label="Sidestep home"
     >
       <span className="text-teal-600">Side</span>
-      <span className="text-zinc-900">step</span>
+      <span className="text-foreground">step</span>
     </Link>
   );
 }
