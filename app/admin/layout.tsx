@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { AdminShell } from "@/components/layout/AdminShell";
+import { AdminAuthGate } from "@/components/layout/AdminAuthGate";
 
 // Reads privateMetadata.isAdmin server-side — this value is never sent to the client.
 export default async function AdminLayout({
@@ -25,5 +26,9 @@ export default async function AdminLayout({
     );
   }
 
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <AdminShell>
+      <AdminAuthGate>{children}</AdminAuthGate>
+    </AdminShell>
+  );
 }
