@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-27T07:44:35.982Z",
+  "lastUpdated": "2026-05-27T18:46:27.674Z",
   "phases": [
     {
       "id": "phase-1",
@@ -564,10 +564,10 @@
       "phase": "phase-3",
       "type": "infrastructure",
       "description": "Add a convex-test harness and write one happy-path plus one rejection test per public mutation in orders.ts, designs.ts, jerseyRuns.ts, intakes.ts, and users.ts. Captures trust-boundary behavior so the A-03..A-05 validation refactor has a real safety net (today the server has zero tests; only lib does).",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-A02",
+      "startedAt": "2026-05-27T18:41:17.973Z",
+      "completedAt": "2026-05-27T18:46:27.673Z",
       "issueFile": "backlog/A-02-add-convex-mutation-smoke-tests.md",
       "prdRef": "docs/architecture/improvement-report-2026-05-22.md#testing-gaps",
       "acceptanceCriteria": [
@@ -584,7 +584,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Split lib/jerseyRun.ts into rules.ts (constants and atomic pure checks) and form.ts (existing JerseyRunErrors-shaped adapter). Convex jerseyRuns.ts:create imports from rules.ts so SIZE_OPTIONS, MAX_CUSTOM_QUESTIONS, ROSTER_NAME_MAX_LENGTH and friends have a single source. Sets the template for A-04 and A-05.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1482,30 +1482,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "opus-A02",
+      "name": "Claude (Opus 4.7) — A-02 smoke tests",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-22T17:31:52.177Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-opus47-s2",
-      "message": "Claude Opus 4.7 joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-22T17:31:52.250Z",
-      "event": "task_started",
-      "nodeId": "2-06",
-      "agent": "agent-claude-opus47-s2",
-      "message": "Claude Opus 4.7 picked up: Order Creation"
-    },
-    {
-      "timestamp": "2026-05-22T17:34:25.797Z",
-      "event": "task_completed",
-      "nodeId": "2-06",
-      "agent": "agent-claude-opus47-s2",
-      "message": "Completed: Order Creation"
-    },
     {
       "timestamp": "2026-05-22T17:59:06.378Z",
       "event": "agent_joined",
@@ -2184,6 +2170,27 @@
       "nodeId": "A-01",
       "agent": "claude-a01",
       "message": "Completed: Extract Shared Convex Auth Helpers"
+    },
+    {
+      "timestamp": "2026-05-27T18:41:15.417Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-A02",
+      "message": "Claude (Opus 4.7) — A-02 smoke tests joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-27T18:41:17.973Z",
+      "event": "task_started",
+      "nodeId": "A-02",
+      "agent": "opus-A02",
+      "message": "Claude (Opus 4.7) — A-02 smoke tests picked up: Add Convex Mutation Smoke Tests"
+    },
+    {
+      "timestamp": "2026-05-27T18:46:27.674Z",
+      "event": "task_completed",
+      "nodeId": "A-02",
+      "agent": "opus-A02",
+      "message": "Completed: Add Convex Mutation Smoke Tests"
     }
   ]
 }
