@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getCurrentUserOrNull } from "./_auth";
 
 // Called client-side after every sign-in. Convex verifies the Clerk JWT
 // automatically — no args needed, identity is read from auth context.
@@ -71,12 +72,7 @@ export const syncUser = mutation({
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    return ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    return getCurrentUserOrNull(ctx);
   },
 });
 

@@ -4,11 +4,15 @@ import {
   internalQuery,
   mutation,
   query,
-  type MutationCtx,
-  type QueryCtx,
 } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import {
+  getCurrentUserOrNull,
+  requireAdmin,
+  requireCurrentUser,
+  requireOrderOwnership,
+} from "./_auth";
 
 // Server-side guards. Mirror lib/jerseyRun.ts and lib/jerseyRunResponse.ts
 // so the client and server cap values the same way — defense in depth
@@ -35,19 +39,6 @@ const JERSEY_NUMBER_MAX_LENGTH = 8;
 const ANSWER_MAX_LENGTH = 500;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-async function requireCurrentUser(
-  ctx: MutationCtx | QueryCtx,
-): Promise<Doc<"users">> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Not authenticated.");
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-  if (!user) throw new ConvexError("User not found.");
-  return user;
-}
-
 // Get the jersey run linked to one of the captain's orders. Returns null
 // if no run exists yet — the order detail page uses that to show the
 // "set up jersey run" CTA instead of the run details. Throws if the
@@ -56,13 +47,7 @@ async function requireCurrentUser(
 export const getByOrder = query({
   args: { orderId: v.id("orders") },
   handler: async (ctx, { orderId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    const user = await getCurrentUserOrNull(ctx);
     if (!user) return null;
 
     const order = await ctx.db.get(orderId);
@@ -115,12 +100,7 @@ export const create = mutation({
     deadline: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx);
-
-    const order = await ctx.db.get(args.orderId);
-    if (!order) throw new ConvexError("Order not found.");
-    if (order.captainId !== user._id)
-      throw new ConvexError("You don't have access to this order.");
+    const { user } = await requireOrderOwnership(ctx, args.orderId);
 
     // One run per order — the captain can edit the existing run if they
     // need to make changes (handled in a later issue). Creating a second
@@ -371,8 +351,7 @@ export const _closeRun = internalMutation({
 export const closeRunByAdmin = mutation({
   args: { jerseyRunId: v.id("jerseyRuns") },
   handler: async (ctx, { jerseyRunId }) => {
-    const user = await requireCurrentUser(ctx);
-    if (!user.isAdmin) throw new ConvexError("Admin access required.");
+    await requireAdmin(ctx);
 
     const run = await ctx.db.get(jerseyRunId);
     if (!run) throw new ConvexError("Jersey run not found.");

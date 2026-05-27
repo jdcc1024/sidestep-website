@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { getCurrentUserOrNull, requireCurrentUser } from "./_auth";
 
 // Server-side guards. Mirror lib/design.ts so the client and server cap
 // values the same way — defense in depth against a hand-rolled client that
@@ -8,29 +8,6 @@ import type { Doc } from "./_generated/dataModel";
 const TITLE_MAX_LENGTH = 120;
 const BRIEF_MAX_LENGTH = 2000;
 const CANVA_LINK_MAX_LENGTH = 500;
-
-function requireOwnedDesign(
-  identity: Awaited<ReturnType<QueryCtx["auth"]["getUserIdentity"]>>,
-  user: Doc<"users"> | null,
-  design: Doc<"designs"> | null,
-): asserts design is Doc<"designs"> {
-  if (!identity) throw new ConvexError("Not authenticated.");
-  if (!user) throw new ConvexError("User not found.");
-  if (!design) throw new ConvexError("Design not found.");
-  if (design.ownerId !== user._id)
-    throw new ConvexError("You don't have access to this design.");
-}
-
-async function requireCurrentUser(ctx: MutationCtx | QueryCtx): Promise<Doc<"users">> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Not authenticated.");
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-  if (!user) throw new ConvexError("User not found.");
-  return user;
-}
 
 function normalizeTitle(value: string): string {
   const trimmed = value.trim();
@@ -71,13 +48,7 @@ function normalizeCanvaLink(value: string | undefined): string | undefined {
 export const listMyDesigns = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    const user = await getCurrentUserOrNull(ctx);
     if (!user) return [];
 
     return ctx.db
@@ -96,13 +67,7 @@ export const listMyDesigns = query({
 export const getMyDesign = query({
   args: { designId: v.id("designs") },
   handler: async (ctx, { designId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    const user = await getCurrentUserOrNull(ctx);
     if (!user) return null;
 
     const design = await ctx.db.get(designId);
@@ -174,15 +139,11 @@ export const updateDesign = mutation({
     addFileIds: v.array(v.id("_storage")),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const user = identity
-      ? await ctx.db
-          .query("users")
-          .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-          .unique()
-      : null;
+    const user = await requireCurrentUser(ctx);
     const design = await ctx.db.get(args.designId);
-    requireOwnedDesign(identity, user, design);
+    if (!design) throw new ConvexError("Design not found.");
+    if (design.ownerId !== user._id)
+      throw new ConvexError("You don't have access to this design.");
 
     const title = normalizeTitle(args.title);
     const brief = normalizeBrief(args.brief);

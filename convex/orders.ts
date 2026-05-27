@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
+import { getCurrentUserOrNull, requireCurrentUser } from "./_auth";
 
 // Server-side guards. Mirror lib/order.ts so the client and server cap
 // values the same way — defense in depth against a hand-rolled client that
@@ -13,19 +14,6 @@ const MAX_QUANTITY = 10_000;
 const NECKLINES = ["Crew Neck", "V-Neck"] as const;
 const SLEEVE_STYLES = ["Regular", "Raglan"] as const;
 const INITIAL_INTERNAL_STAGE = "Inquiry";
-
-async function requireCurrentUser(
-  ctx: MutationCtx | QueryCtx,
-): Promise<Doc<"users">> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Not authenticated.");
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-  if (!user) throw new ConvexError("User not found.");
-  return user;
-}
 
 function requireShort(value: string, field: string, max: number): string {
   const trimmed = value.trim();
@@ -47,13 +35,7 @@ function requireShort(value: string, field: string, max: number): string {
 export const getMyOrder = query({
   args: { orderId: v.id("orders") },
   handler: async (ctx, { orderId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    const user = await getCurrentUserOrNull(ctx);
     if (!user) return null;
 
     const order = await ctx.db.get(orderId);
@@ -87,13 +69,7 @@ export const getMyOrder = query({
 export const listMyOrders = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    const user = await getCurrentUserOrNull(ctx);
     if (!user) return [];
 
     return ctx.db

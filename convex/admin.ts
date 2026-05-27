@@ -1,24 +1,7 @@
-import { ConvexError, v } from "convex/values";
-import { query, type QueryCtx } from "./_generated/server";
+import { v } from "convex/values";
+import { query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-
-// Defense in depth — every admin query checks this. Even if the Next.js
-// route gate is bypassed by a hand-rolled client call with a valid Clerk
-// JWT, Convex will refuse to return data unless the calling user's row in
-// our users table has isAdmin === true (kept in sync by the Clerk webhook).
-async function requireAdmin(ctx: QueryCtx): Promise<Doc<"users">> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Not authenticated.");
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-  if (!user || !user.isAdmin) {
-    throw new ConvexError("Admin access required.");
-  }
-  return user;
-}
+import { requireAdmin } from "./_auth";
 
 export const listOrders = query({
   args: {},

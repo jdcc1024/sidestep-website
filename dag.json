@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-27T07:25:25.645Z",
+  "lastUpdated": "2026-05-27T07:44:35.982Z",
   "phases": [
     {
       "id": "phase-1",
@@ -544,10 +544,10 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Replace four copy-pasted requireCurrentUser implementations (orders.ts, designs.ts, jerseyRuns.ts) and the inlined admin gate (jerseyRuns.ts:closeRunByAdmin) with a single convex/_auth.ts exposing getCurrentUserOrNull, requireCurrentUser, requireAdmin, and requireOrderOwnership. Pure code motion, no behavior change. Roughly -80 lines net.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "claude-a01",
+      "startedAt": "2026-05-27T07:37:46.448Z",
+      "completedAt": "2026-05-27T07:44:35.981Z",
       "issueFile": "backlog/A-01-extract-shared-convex-auth-helpers.md",
       "prdRef": "docs/architecture/improvement-report-2026-05-22.md#priority-1",
       "acceptanceCriteria": [
@@ -1475,30 +1475,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "claude-a01",
+      "name": "Claude (A-01 Auth Helpers)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-22T16:58:20.208Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-opus47-design",
-      "message": "Claude Opus 4.7 (Design Creation) joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-22T16:58:20.280Z",
-      "event": "task_started",
-      "nodeId": "2-05",
-      "agent": "agent-claude-opus47-design",
-      "message": "Claude Opus 4.7 (Design Creation) picked up: Design Creation"
-    },
-    {
-      "timestamp": "2026-05-22T17:03:40.038Z",
-      "event": "task_completed",
-      "nodeId": "2-05",
-      "agent": "agent-claude-opus47-design",
-      "message": "Completed: Design Creation"
-    },
     {
       "timestamp": "2026-05-22T17:31:52.177Z",
       "event": "agent_joined",
@@ -2177,6 +2163,27 @@
       "nodeId": "3-08",
       "agent": "claude-3-08",
       "message": "Completed: Logged-In User Sees Their Jersey Run Responses"
+    },
+    {
+      "timestamp": "2026-05-27T07:37:46.371Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "claude-a01",
+      "message": "Claude (A-01 Auth Helpers) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-27T07:37:46.449Z",
+      "event": "task_started",
+      "nodeId": "A-01",
+      "agent": "claude-a01",
+      "message": "Claude (A-01 Auth Helpers) picked up: Extract Shared Convex Auth Helpers"
+    },
+    {
+      "timestamp": "2026-05-27T07:44:35.981Z",
+      "event": "task_completed",
+      "nodeId": "A-01",
+      "agent": "claude-a01",
+      "message": "Completed: Extract Shared Convex Auth Helpers"
     }
   ]
 }
