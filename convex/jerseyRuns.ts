@@ -13,25 +13,19 @@ import {
   requireCurrentUser,
   requireOrderOwnership,
 } from "./_auth";
+import {
+  MAX_CUSTOM_QUESTIONS,
+  MAX_ROSTER_ENTRIES,
+  QUESTION_LABEL_MAX_LENGTH,
+  ROSTER_NAME_MAX_LENGTH,
+  ROSTER_NUMBER_MAX_LENGTH,
+  isSizeOption,
+} from "../lib/jerseyRun/rules";
 
-// Server-side guards. Mirror lib/jerseyRun.ts and lib/jerseyRunResponse.ts
-// so the client and server cap values the same way — defense in depth
-// against a hand-rolled client that posts past the form's UI guards.
-const SIZE_OPTIONS = [
-  "XS",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "2XL",
-  "3XL",
-  "4XL",
-] as const;
-const MAX_CUSTOM_QUESTIONS = 5;
-const QUESTION_LABEL_MAX_LENGTH = 200;
-const ROSTER_NAME_MAX_LENGTH = 80;
-const ROSTER_NUMBER_MAX_LENGTH = 8;
-const MAX_ROSTER_ENTRIES = 200;
+// Server-side guards for jerseyRunResponses. The run-creation rules
+// (size catalog, roster/question caps) are imported from
+// lib/jerseyRun/rules above; the response-side rules below still mirror
+// lib/jerseyRunResponse.ts inline until A-04 consolidates them.
 const RESPONDENT_NAME_MAX_LENGTH = 120;
 const EMAIL_MAX_LENGTH = 254;
 const JERSEY_NAME_MAX_LENGTH = 40;
@@ -112,8 +106,7 @@ export const create = mutation({
     if (existing) throw new ConvexError("This order already has a jersey run.");
 
     const sizeOptions = Array.from(new Set(args.sizeOptions)).filter(
-      (s): s is (typeof SIZE_OPTIONS)[number] =>
-        (SIZE_OPTIONS as readonly string[]).includes(s),
+      isSizeOption,
     );
     if (sizeOptions.length === 0)
       throw new ConvexError("Pick at least one size.");
