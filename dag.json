@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-25T01:20:15.810Z",
+  "lastUpdated": "2026-05-27T07:25:25.645Z",
   "phases": [
     {
       "id": "phase-1",
@@ -422,8 +422,9 @@
       "title": "Customer Participation History",
       "phase": "phase-3",
       "type": "feature",
-      "description": "Participated In section in the portal dashboard: shows jersey runs the customer submitted responses to (matched by email), with team name, jersey details, and submission date. Read-only.",
-      "status": "pending",
+      "description": "Participated In section in the portal dashboard: shows jersey runs the customer submitted responses to (matched by email), with team name, jersey details, and submission date. Read-only. OBSOLETE — superseded by 3-08, which covers the dashboard section plus a per-run panel on /run/[id].",
+      "status": "obsolete",
+      "supersededBy": "3-08",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -523,7 +524,7 @@
       "description": "Let intake-form visitors optionally attach photos or mood-board images (jerseys they like, team colors, inspiration). Files attach to the intake record so design conversations can start with visual context. Anonymous uploads create real abuse risk — open-write storage would let anyone fill our bucket — so the abuse-control approach needs a decision before implementation.",
       "status": "pending",
       "agent": null,
-      "startedAt": null,
+      "startedAt": "2026-05-27T06:36:39.442Z",
       "completedAt": null,
       "issueFile": "backlog/2-14-optional-intake-image-uploads.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#5-scope",
@@ -985,6 +986,53 @@
         "brand-teal CTA buttons migrated to shadcn Button",
         "build/typecheck/lint/test pass"
       ]
+    },
+    {
+      "id": "2-15",
+      "title": "Jersey Run Submit and Add Another",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Public jersey run form (/run/[id]) gains a secondary 'Submit and add another' action. Same mutation + blank-name confirm path as primary submit, then resets per-jersey fields (size, name, number, custom answers) while preserving respondent name and email so a parent/captain can submit several entries in one session. Confirmation surfaces as a sonner toast.",
+      "status": "completed",
+      "agent": "claude-2-14",
+      "startedAt": "2026-05-27T06:40:35.816Z",
+      "completedAt": "2026-05-27T06:53:03.640Z",
+      "issueFile": "backlog/2-15-jersey-run-submit-and-add-another.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories-jersey-run",
+      "acceptanceCriteria": [
+        "Secondary 'Submit and add another' button visible next to Submit",
+        "Secondary action submits via the same mutation and blank-name confirm dialog",
+        "On success the form resets to empty per-jersey fields while keeping respondent name + email",
+        "Sonner toast confirms what was just submitted",
+        "Primary Submit retains existing single-submit → confirmation behaviour",
+        "Both buttons disabled while a submission is in flight",
+        "Closed/expired runs still hide both actions",
+        "All tests pass; no regressions"
+      ]
+    },
+    {
+      "id": "3-08",
+      "title": "Logged-In User Sees Their Jersey Run Responses",
+      "phase": "phase-3",
+      "type": "feature",
+      "description": "Two new Convex queries (listMyResponsesForRun, listMyResponses) plus two UI surfaces: a 'Your responses to this run' panel on /run/[id] for signed-in users with prior responses, and a 'Your jersey run responses' section on the customer portal dashboard. Read-only. Supersedes 3-04.",
+      "status": "completed",
+      "agent": "claude-3-08",
+      "startedAt": "2026-05-27T07:17:44.305Z",
+      "completedAt": "2026-05-27T07:25:25.644Z",
+      "issueFile": "backlog/3-08-logged-in-user-sees-their-jersey-run-responses.md",
+      "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
+      "acceptanceCriteria": [
+        "listMyResponsesForRun returns current user's responses scoped to run; [] when unauthenticated",
+        "listMyResponses returns user's responses across all runs joined with order/run context; [] when unauthenticated",
+        "/run/[id] shows 'Your responses to this run' panel when signed-in AND prior responses exist",
+        "Panel shows submission date, size, jersey name, jersey number, custom answers (read-only)",
+        "Portal dashboard gains 'Your jersey run responses' section across all runs with team/run/jersey context + link to /run/[id]",
+        "Empty state when no responses",
+        "Anonymous /run/[id] flow unchanged",
+        "Email matching normalized consistently with public form's submit path",
+        "All tests pass; no regressions"
+      ]
     }
   ],
   "edges": [
@@ -1203,6 +1251,18 @@
     {
       "from": "S-14",
       "to": "S-15"
+    },
+    {
+      "from": "2-09",
+      "to": "2-15"
+    },
+    {
+      "from": "2-09",
+      "to": "3-08"
+    },
+    {
+      "from": "2-15",
+      "to": "3-08"
     }
   ],
   "agents": [
@@ -1401,79 +1461,23 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "claude-2-14",
+      "name": "Claude (2-14)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "claude-3-08",
+      "name": "Claude Opus 4.7 (3-08 Logged-In Responses)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-19T06:05:25.757Z",
-      "event": "task_started",
-      "nodeId": "2-03",
-      "agent": "claude-intake",
-      "message": "Claude (Intake form) picked up: Public Intake Form"
-    },
-    {
-      "timestamp": "2026-05-19T06:42:27.209Z",
-      "event": "nodes_added",
-      "nodeId": "2-14",
-      "agent": null,
-      "message": "New task added: Optional Intake Image Uploads"
-    },
-    {
-      "timestamp": "2026-05-19T06:51:37.097Z",
-      "event": "task_completed",
-      "nodeId": "2-03",
-      "agent": "claude-intake",
-      "message": "Completed: Public Intake Form"
-    },
-    {
-      "timestamp": "2026-05-19T07:29:49.553Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-opus47-portal",
-      "message": "Claude Opus 4.7 (Portal Dashboard) joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-19T07:29:49.617Z",
-      "event": "task_started",
-      "nodeId": "2-04",
-      "agent": "agent-claude-opus47-portal",
-      "message": "Claude Opus 4.7 (Portal Dashboard) picked up: Customer Portal Dashboard"
-    },
-    {
-      "timestamp": "2026-05-19T07:38:30.055Z",
-      "event": "task_completed",
-      "nodeId": "2-04",
-      "agent": "agent-claude-opus47-portal",
-      "message": "Completed: Customer Portal Dashboard"
-    },
-    {
-      "timestamp": "2026-05-19T14:58:59.844Z",
-      "event": "task_started",
-      "nodeId": "2-11",
-      "agent": "agent-claude-opus47-portal",
-      "message": "Claude Opus 4.7 (Portal Dashboard) picked up: Admin Order Overview"
-    },
-    {
-      "timestamp": "2026-05-20T04:20:49.758Z",
-      "event": "task_completed",
-      "nodeId": "2-11",
-      "agent": "agent-claude-opus47-portal",
-      "message": "Completed: Admin Order Overview"
-    },
-    {
-      "timestamp": "2026-05-22T16:21:26.209Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-opus47-s5",
-      "message": "Claude Opus 4.7 (Session 5) joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-22T16:21:29.313Z",
-      "event": "task_started",
-      "nodeId": "1-05",
-      "agent": "agent-claude-opus47-s5",
-      "message": "Claude Opus 4.7 (Session 5) picked up: Fix Mobile Responsive Shell"
-    },
     {
       "timestamp": "2026-05-22T16:58:20.208Z",
       "event": "agent_joined",
@@ -2103,6 +2107,76 @@
       "nodeId": "S-15",
       "agent": "agent-claude-opus47-s15",
       "message": "Completed: Portal Shell Dark-Mode Fix"
+    },
+    {
+      "timestamp": "2026-05-27T06:36:28.542Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "claude-2-14",
+      "message": "Claude (2-14) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-27T06:36:39.443Z",
+      "event": "task_started",
+      "nodeId": "2-14",
+      "agent": "claude-2-14",
+      "message": "Claude (2-14) picked up: Optional Intake Image Uploads"
+    },
+    {
+      "timestamp": "2026-05-27T06:40:23.785Z",
+      "event": "task_failed",
+      "nodeId": "2-14",
+      "agent": "claude-2-14",
+      "message": "Failed: Optional Intake Image Uploads — wrong node — backlog ID collision; real work tracked on 2-15 (jersey run submit and add another)"
+    },
+    {
+      "timestamp": "2026-05-27T06:40:32.007Z",
+      "event": "nodes_added",
+      "nodeId": "2-15",
+      "agent": null,
+      "message": "New task added: Jersey Run Submit and Add Another"
+    },
+    {
+      "timestamp": "2026-05-27T06:40:35.817Z",
+      "event": "task_started",
+      "nodeId": "2-15",
+      "agent": "claude-2-14",
+      "message": "Claude (2-14) picked up: Jersey Run Submit and Add Another"
+    },
+    {
+      "timestamp": "2026-05-27T06:53:03.641Z",
+      "event": "task_completed",
+      "nodeId": "2-15",
+      "agent": "claude-2-14",
+      "message": "Completed: Jersey Run Submit and Add Another"
+    },
+    {
+      "timestamp": "2026-05-27T07:17:09.217Z",
+      "event": "nodes_added",
+      "nodeId": "3-08",
+      "agent": null,
+      "message": "New task added: Logged-In User Sees Their Jersey Run Responses"
+    },
+    {
+      "timestamp": "2026-05-27T07:17:44.240Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "claude-3-08",
+      "message": "Claude Opus 4.7 (3-08 Logged-In Responses) joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-27T07:17:44.305Z",
+      "event": "task_started",
+      "nodeId": "3-08",
+      "agent": "claude-3-08",
+      "message": "Claude Opus 4.7 (3-08 Logged-In Responses) picked up: Logged-In User Sees Their Jersey Run Responses"
+    },
+    {
+      "timestamp": "2026-05-27T07:25:25.644Z",
+      "event": "task_completed",
+      "nodeId": "3-08",
+      "agent": "claude-3-08",
+      "message": "Completed: Logged-In User Sees Their Jersey Run Responses"
     }
   ]
 }

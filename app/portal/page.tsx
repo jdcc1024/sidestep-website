@@ -13,12 +13,23 @@ import {
   type ChipTone,
 } from "@/lib/orderStages";
 
+// Shape returned by api.jerseyRuns.listMyResponses — the response row joined
+// with its run and the linked order's team name. Keep this in sync with the
+// query handler in convex/jerseyRuns.ts; if either grows fields, add them
+// here too.
+type MyJerseyRunResponse = {
+  response: Doc<"jerseyRunResponses">;
+  run: Doc<"jerseyRuns">;
+  teamName: string;
+};
+
 const BRIEF_PREVIEW_CHARS = 140;
 
 export default function PortalDashboardPage() {
   const { user, isLoaded: isUserLoaded } = useUser();
   const orders = useQuery(api.orders.listMyOrders);
   const designs = useQuery(api.designs.listMyDesigns);
+  const jerseyRunResponses = useQuery(api.jerseyRuns.listMyResponses);
 
   const greetingName = user?.firstName ?? "Captain";
 
@@ -120,6 +131,35 @@ export default function PortalDashboardPage() {
           )}
         </div>
       </section>
+
+      <section aria-labelledby="jersey-responses-heading" className="mt-12">
+        <div>
+          <h2
+            id="jersey-responses-heading"
+            className="text-xl font-semibold text-foreground"
+          >
+            Your jersey run responses
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Submissions you&apos;ve made to other captains&apos; jersey runs.
+          </p>
+        </div>
+        <div className="mt-4">
+          {jerseyRunResponses === undefined ? (
+            <SectionSkeleton />
+          ) : jerseyRunResponses.length === 0 ? (
+            <EmptyJerseyRunResponses />
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {jerseyRunResponses.map((entry) => (
+                <li key={entry.response._id}>
+                  <JerseyResponseCard entry={entry} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -169,6 +209,77 @@ function DesignCard({ design }: { design: Doc<"designs"> }) {
       </p>
     </Link>
   );
+}
+
+function JerseyResponseCard({ entry }: { entry: MyJerseyRunResponse }) {
+  const { response, run, teamName } = entry;
+  const jerseyLabel =
+    [response.jerseyName, response.jerseyNumber ? `#${response.jerseyNumber}` : null]
+      .filter(Boolean)
+      .join(" ") || "No name or number";
+
+  return (
+    <Link
+      href={`/run/${run._id}`}
+      className="flex h-full flex-col rounded-lg border border-border bg-card p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-lg font-semibold text-foreground">
+          {teamName || "Jersey run"}
+        </h3>
+        {run.status === "closed" && (
+          <span className="inline-flex shrink-0 items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            Closed
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-sm font-medium text-foreground">{jerseyLabel}</p>
+      <dl className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">Size</dt>
+        <dd className="text-foreground">{response.size}</dd>
+        <dt className="text-muted-foreground">Submitted</dt>
+        <dd className="text-foreground">
+          {formatResponseDate(response.submittedAt)}
+        </dd>
+      </dl>
+    </Link>
+  );
+}
+
+function EmptyJerseyRunResponses() {
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-card px-6 py-10 text-center">
+      <svg
+        className="mx-auto h-10 w-10 text-muted-foreground"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M5 13l4 4L19 7"
+        />
+      </svg>
+      <h3 className="mt-4 text-base font-semibold text-foreground">
+        You haven&apos;t submitted any jersey run responses yet
+      </h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+        When a captain shares a jersey run link, your submissions will show up
+        here.
+      </p>
+    </div>
+  );
+}
+
+function formatResponseDate(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function StageChip({

@@ -203,6 +203,90 @@ export const create = mutation({
   },
 });
 
+// Normalize an email the same way submitResponse persists it. Keeping the
+// two in lockstep is the whole point — a user signed in with "Pat@x.com"
+// must still match a response they submitted as "pat@x.com". Defined as
+// a top-level helper rather than inlined so any future caller (an admin
+// lookup, an account-linking migration) uses the same rule.
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+// Issue 3-08. Returns the responses the signed-in user has submitted to a
+// single run, matched by their Clerk email (normalized the same way the
+// submit path stores it). Returns [] for unauthenticated callers so the
+// public /run/[id] page can call this unconditionally without branching
+// on the auth state at the call site.
+export const listMyResponsesForRun = query({
+  args: { jerseyRunId: v.id("jerseyRuns") },
+  handler: async (ctx, { jerseyRunId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return [];
+    const email = normalizeEmail(identity.email);
+    if (email.length === 0) return [];
+
+    const responses = await ctx.db
+      .query("jerseyRunResponses")
+      .withIndex("by_respondentEmail", (q) => q.eq("respondentEmail", email))
+      .collect();
+
+    return responses
+      .filter((r) => r.jerseyRunId === jerseyRunId)
+      .sort((a, b) => b.submittedAt - a.submittedAt);
+  },
+});
+
+// Issue 3-08. Returns the signed-in user's responses across every run,
+// joined with the linked run and order so the portal dashboard can show
+// team name and run context per entry without a follow-up roundtrip.
+// Skips orphaned rows whose run or order has been deleted — better to
+// silently omit than to leak a half-populated card. Cached lookups
+// (runCache/orderCache) keep this O(unique runs) instead of O(responses).
+export const listMyResponses = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return [];
+    const email = normalizeEmail(identity.email);
+    if (email.length === 0) return [];
+
+    const responses = await ctx.db
+      .query("jerseyRunResponses")
+      .withIndex("by_respondentEmail", (q) => q.eq("respondentEmail", email))
+      .collect();
+
+    const runCache = new Map<string, Doc<"jerseyRuns"> | null>();
+    const orderCache = new Map<string, Doc<"orders"> | null>();
+
+    const joined: Array<{
+      response: Doc<"jerseyRunResponses">;
+      run: Doc<"jerseyRuns">;
+      teamName: string;
+    }> = [];
+    for (const response of responses) {
+      let run = runCache.get(response.jerseyRunId) ?? null;
+      if (!runCache.has(response.jerseyRunId)) {
+        run = await ctx.db.get(response.jerseyRunId);
+        runCache.set(response.jerseyRunId, run);
+      }
+      if (!run) continue;
+
+      let order = orderCache.get(run.orderId) ?? null;
+      if (!orderCache.has(run.orderId)) {
+        order = await ctx.db.get(run.orderId);
+        orderCache.set(run.orderId, order);
+      }
+      if (!order) continue;
+
+      joined.push({ response, run, teamName: order.teamName });
+    }
+
+    return joined.sort(
+      (a, b) => b.response.submittedAt - a.response.submittedAt,
+    );
+  },
+});
+
 // Captain or admin view of every response submitted to a run. Used by the
 // captain dashboard (issue 2-10). Returns the run plus the linked order so
 // the dashboard can show team name + deadline without a follow-up query.

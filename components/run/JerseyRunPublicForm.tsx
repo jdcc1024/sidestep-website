@@ -77,20 +77,122 @@ export function JerseyRunPublicForm({
     status: data.run.status,
   };
 
+  // MyResponsesPanel is a sibling so it shows in every post-load state —
+  // form, success, and closed — for signed-in visitors with prior entries.
+  // It self-hides for anonymous visitors and signed-in first-timers, so
+  // the form-only experience is preserved without per-branch branching.
+  const panel = (
+    <MyResponsesPanel
+      jerseyRunId={jerseyRunId}
+      customQuestions={run.customQuestions}
+    />
+  );
+
   if (isJerseyRunClosed(run)) {
     return (
-      <ClosedState teamName={data.teamName} captainName={data.captainName} />
+      <>
+        <ClosedState teamName={data.teamName} captainName={data.captainName} />
+        {panel}
+      </>
     );
   }
 
   return (
-    <ResponseForm
-      jerseyRunId={jerseyRunId}
-      run={run}
-      teamName={data.teamName}
-      captainName={data.captainName}
-    />
+    <>
+      <ResponseForm
+        jerseyRunId={jerseyRunId}
+        run={run}
+        teamName={data.teamName}
+        captainName={data.captainName}
+      />
+      {panel}
+    </>
   );
+}
+
+// Issue 3-08. Renders the signed-in visitor's prior responses for this run
+// as a read-only confirmation panel. Returns null for anonymous visitors,
+// loading state, and signed-in first-timers so the form-only experience
+// stays unchanged — the panel only appears once the visitor has at least
+// one entry to confirm. Reactive: refetches after each "Submit and add
+// another" submission, so the user watches the panel grow as they go.
+function MyResponsesPanel({
+  jerseyRunId,
+  customQuestions,
+}: {
+  jerseyRunId: Id<"jerseyRuns">;
+  customQuestions: JerseyRunForResponse["customQuestions"];
+}) {
+  const responses = useQuery(api.jerseyRuns.listMyResponsesForRun, {
+    jerseyRunId,
+  });
+
+  if (!responses || responses.length === 0) return null;
+
+  const questionLabel = new Map(customQuestions.map((q) => [q.id, q.label]));
+
+  return (
+    <section
+      aria-labelledby="my-responses-heading"
+      className="mt-10 rounded-xl border border-border bg-muted/40 p-6"
+    >
+      <h2
+        id="my-responses-heading"
+        className="text-lg font-semibold text-foreground"
+      >
+        Your responses to this run
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        We&apos;ve recorded {responses.length}{" "}
+        {responses.length === 1 ? "submission" : "submissions"} from you.
+      </p>
+      <ul className="mt-4 space-y-3">
+        {responses.map((response) => (
+          <li
+            key={response._id}
+            className="rounded-lg border border-border bg-card p-4 shadow-sm"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-sm font-semibold text-foreground">
+                {[response.jerseyName, response.jerseyNumber ? `#${response.jerseyNumber}` : null]
+                  .filter(Boolean)
+                  .join(" ") || "No name / number"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatSubmittedAt(response.submittedAt)}
+              </p>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Size {response.size}
+            </p>
+            {Object.entries(response.customAnswers).length > 0 && (
+              <dl className="mt-3 space-y-1 text-sm">
+                {Object.entries(response.customAnswers).map(([id, answer]) => {
+                  const label = questionLabel.get(id);
+                  if (!label || !answer) return null;
+                  return (
+                    <div key={id} className="flex gap-2">
+                      <dt className="text-muted-foreground">{label}:</dt>
+                      <dd className="text-foreground">{answer}</dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function formatSubmittedAt(ms: number): string {
+  return new Date(ms).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 type FormValues = JerseyRunResponseInput;

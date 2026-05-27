@@ -8,22 +8,42 @@ import type { Id } from "@/convex/_generated/dataModel";
 // form view (rather than skeleton/not-found/closed). useMutation returns a
 // stub so submit attempts don't blow up if they slip past validation.
 const submitResponse = vi.fn(async () => {});
-vi.mock("convex/react", () => ({
-  useQuery: () => ({
-    teamName: "Vancouver Ravens",
-    captainName: "Sam Captain",
-    run: {
-      namesMode: "open" as const,
-      sizeOptions: ["S", "M", "L"],
-      customQuestions: [],
-      fixedRoster: undefined,
-      // Deadline far in the future so the run isn't treated as closed.
-      deadline: Date.now() + 1000 * 60 * 60 * 24 * 365,
-      status: "open" as const,
+
+// The component now calls useQuery twice (getPublic for the run + 3-08's
+// listMyResponsesForRun for the signed-in panel). Dispatch by function
+// name so each call gets the right payload — without this branch the
+// panel query would receive the run object and crash trying to .map() it.
+const listMyResponsesForRunMock = vi.fn(
+  (): Array<Record<string, unknown>> => [],
+);
+
+vi.mock("convex/react", async () => {
+  const { getFunctionName } = await vi.importActual<
+    typeof import("convex/server")
+  >("convex/server");
+  return {
+    useQuery: (ref: unknown) => {
+      const name = getFunctionName(ref as Parameters<typeof getFunctionName>[0]);
+      if (name.endsWith(":listMyResponsesForRun")) {
+        return listMyResponsesForRunMock();
+      }
+      return {
+        teamName: "Vancouver Ravens",
+        captainName: "Sam Captain",
+        run: {
+          namesMode: "open" as const,
+          sizeOptions: ["S", "M", "L"],
+          customQuestions: [],
+          fixedRoster: undefined,
+          // Deadline far in the future so the run isn't treated as closed.
+          deadline: Date.now() + 1000 * 60 * 60 * 24 * 365,
+          status: "open" as const,
+        },
+      };
     },
-  }),
-  useMutation: () => submitResponse,
-}));
+    useMutation: () => submitResponse,
+  };
+});
 
 import { JerseyRunPublicForm } from "./JerseyRunPublicForm";
 
@@ -63,6 +83,10 @@ describe("JerseyRunPublicForm", () => {
   beforeEach(() => {
     submitResponse.mockReset();
     submitResponse.mockImplementation(async () => {});
+    // Default to empty (no prior responses) so the panel stays hidden unless
+    // a specific test seeds it. Mirrors the signed-out / first-timer case.
+    listMyResponsesForRunMock.mockReset();
+    listMyResponsesForRunMock.mockReturnValue([]);
   });
 
   it("surfaces RHF + zod validation errors when the user submits an empty form", async () => {
@@ -182,6 +206,54 @@ describe("JerseyRunPublicForm", () => {
       await waitFor(() => {
         expect(submitResponse).toHaveBeenCalledTimes(1);
       });
+    });
+  });
+
+  describe("Your responses to this run panel (3-08)", () => {
+    it("stays hidden when the signed-in visitor has no prior responses", () => {
+      // Default mock returns [] — first-timer and anonymous look identical.
+      render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
+      expect(
+        screen.queryByRole("heading", { name: /your responses to this run/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders one card per prior response with size, name, and number", () => {
+      listMyResponsesForRunMock.mockReturnValue([
+        {
+          _id: "resp_1",
+          jerseyRunId: fakeRunId,
+          respondentName: "Pat Parent",
+          respondentEmail: "pat@example.com",
+          size: "M",
+          jerseyName: "Alex",
+          jerseyNumber: "7",
+          customAnswers: {},
+          submittedAt: Date.now() - 60_000,
+        },
+        {
+          _id: "resp_2",
+          jerseyRunId: fakeRunId,
+          respondentName: "Pat Parent",
+          respondentEmail: "pat@example.com",
+          size: "S",
+          jerseyName: "Jamie",
+          jerseyNumber: "3",
+          customAnswers: {},
+          submittedAt: Date.now() - 120_000,
+        },
+      ]);
+
+      render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
+
+      expect(
+        screen.getByRole("heading", { name: /your responses to this run/i }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/2 submissions from you/i)).toBeInTheDocument();
+      expect(screen.getByText(/Alex #7/)).toBeInTheDocument();
+      expect(screen.getByText(/Jamie #3/)).toBeInTheDocument();
+      expect(screen.getByText(/Size M/)).toBeInTheDocument();
+      expect(screen.getByText(/Size S/)).toBeInTheDocument();
     });
   });
 });
