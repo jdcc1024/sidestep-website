@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CheckIcon } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
@@ -179,6 +181,8 @@ function buildSchema(run: JerseyRunForResponse) {
     });
 }
 
+type SubmitMode = "final" | "addAnother";
+
 function ResponseForm({
   jerseyRunId,
   run,
@@ -193,9 +197,20 @@ function ResponseForm({
   const submitResponse = useMutation(api.jerseyRuns.submitResponse);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState<FormValues | null>(null);
+  const [confirming, setConfirming] = useState<
+    { values: FormValues; mode: SubmitMode } | null
+  >(null);
+  // Tracks the mutation independently of RHF's isSubmitting because the
+  // blank-name dialog path returns from handleSubmit before firing the
+  // mutation — without this flag the buttons would re-enable mid-flight.
+  const [pending, setPending] = useState(false);
 
   const schema = useMemo(() => buildSchema(run), [run]);
+
+  const emptyCustomAnswers = useMemo(
+    () => Object.fromEntries(run.customQuestions.map((q) => [q.id, ""])),
+    [run.customQuestions],
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -206,14 +221,13 @@ function ResponseForm({
       jerseyName: "",
       jerseyNumber: "",
       rosterSelection: "",
-      customAnswers: Object.fromEntries(
-        run.customQuestions.map((q) => [q.id, ""]),
-      ),
+      customAnswers: emptyCustomAnswers,
     },
   });
 
-  async function actuallySubmit(values: FormValues) {
+  async function actuallySubmit(values: FormValues, mode: SubmitMode) {
     setSubmitError(null);
+    setPending(true);
     try {
       const payload = toResponsePayload(values, run);
       await submitResponse({
@@ -225,27 +239,54 @@ function ResponseForm({
         jerseyNumber: payload.jerseyNumber,
         customAnswers: payload.customAnswers,
       });
-      setSubmitted(true);
+      if (mode === "final") {
+        setSubmitted(true);
+      } else {
+        toast.success("Response saved", {
+          description: buildToastDescription(payload),
+        });
+        // Keep respondent identity so a parent/captain submitting for
+        // several people doesn't retype it; reset only the per-jersey
+        // fields. Matches the UX call captured in the issue notes.
+        form.reset({
+          respondentName: values.respondentName,
+          respondentEmail: values.respondentEmail,
+          size: "",
+          jerseyName: "",
+          jerseyNumber: "",
+          rosterSelection: "",
+          customAnswers: emptyCustomAnswers,
+        });
+      }
     } catch (err) {
       setSubmitError(
         err instanceof Error
           ? err.message
           : "Something went wrong. Please try again.",
       );
+    } finally {
+      setPending(false);
     }
   }
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues, event?: BaseSyntheticEvent) {
+    // The submitter button carries data-submit-mode so we know which
+    // action the user pressed. Reading from the event avoids a render-
+    // time ref read and stays in sync with the click that triggered us.
+    const submitter = (event?.nativeEvent as SubmitEvent | undefined)
+      ?.submitter as HTMLElement | null;
+    const mode: SubmitMode =
+      submitter?.dataset.submitMode === "addAnother" ? "addAnother" : "final";
     if (hasBlankNameOrNumber(values, run)) {
-      setConfirming(values);
+      setConfirming({ values, mode });
       return;
     }
-    await actuallySubmit(values);
+    await actuallySubmit(values, mode);
   }
 
   if (submitted) return <SuccessState teamName={teamName} />;
 
-  const isSubmitting = form.formState.isSubmitting;
+  const busy = pending || form.formState.isSubmitting;
   const customAnswersError = form.formState.errors.customAnswers?.message;
 
   return (
@@ -257,7 +298,7 @@ function ResponseForm({
           onSubmit={form.handleSubmit(onSubmit)}
           noValidate
           className="mt-8 space-y-8"
-          aria-busy={isSubmitting}
+          aria-busy={busy}
         >
           <FormField
             control={form.control}
@@ -442,9 +483,23 @@ function ResponseForm({
             <p className="text-sm text-muted-foreground">
               Your captain will see your submission right away.
             </p>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting…" : "Submit"}
-            </Button>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={busy}
+                data-submit-mode="addAnother"
+              >
+                Submit and add another
+              </Button>
+              <Button
+                type="submit"
+                disabled={busy}
+                data-submit-mode="final"
+              >
+                {busy ? "Submitting…" : "Submit"}
+              </Button>
+            </div>
           </div>
         </form>
       </Form>
@@ -455,9 +510,9 @@ function ResponseForm({
           if (!open) setConfirming(null);
         }}
         onConfirm={() => {
-          const values = confirming;
+          const pending = confirming;
           setConfirming(null);
-          if (values) void actuallySubmit(values);
+          if (pending) void actuallySubmit(pending.values, pending.mode);
         }}
       />
     </>
@@ -610,4 +665,20 @@ function formatDeadline(ms: number): string {
     month: "long",
     day: "numeric",
   });
+}
+
+function buildToastDescription(payload: {
+  respondentName: string;
+  size: string;
+  jerseyName: string | undefined;
+  jerseyNumber: string | undefined;
+}): string {
+  const jersey = [
+    payload.jerseyName,
+    payload.jerseyNumber ? `#${payload.jerseyNumber}` : null,
+    payload.size,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return jersey.length > 0 ? jersey : payload.respondentName;
 }
