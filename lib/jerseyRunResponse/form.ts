@@ -1,21 +1,18 @@
-// Shared validation for the public jersey-run submission form.
-// Mirrored by guards in convex/jerseyRuns.ts:submitResponse so a
-// hand-rolled client cannot bypass these rules.
+// Form adapter for the public jersey-run submission page. Wraps the
+// atomic rules in ./rules into a JerseyRunResponseErrors record keyed
+// by form field, plus payload + warning helpers. The Convex side
+// imports the same rules directly — see convex/jerseyRuns.ts.
 
-export const RESPONDENT_NAME_MAX_LENGTH = 120;
-export const EMAIL_MAX_LENGTH = 254;
-export const JERSEY_NAME_MAX_LENGTH = 40;
-export const JERSEY_NUMBER_MAX_LENGTH = 8;
-export const ANSWER_MAX_LENGTH = 500;
-
-export type JerseyRunForResponse = {
-  namesMode: "open" | "fixed";
-  sizeOptions: string[];
-  customQuestions: { id: string; label: string }[];
-  fixedRoster: { name: string; number?: string }[] | undefined;
-  deadline: number;
-  status: "open" | "closed";
-};
+import {
+  checkCustomAnswer,
+  checkJerseyName,
+  checkJerseyNumber,
+  checkRespondentEmail,
+  checkRespondentName,
+  checkSize,
+  isJerseyRunClosed,
+  type JerseyRunForResponse,
+} from "./rules";
 
 export type JerseyRunResponseInput = {
   respondentName: string;
@@ -23,8 +20,8 @@ export type JerseyRunResponseInput = {
   size: string;
   jerseyName: string;
   jerseyNumber: string;
-  // Stringified index into the run's fixedRoster; empty string when unset.
-  // Kept as a string because <select> values are strings.
+  // Stringified index into the run's fixedRoster; empty string when
+  // unset. Kept as a string because <select> values are strings.
   rosterSelection: string;
   customAnswers: Record<string, string>;
 };
@@ -62,19 +59,6 @@ export const EMPTY_RESPONSE: JerseyRunResponseInput = {
   customAnswers: {},
 };
 
-export function isJerseyRunClosed(
-  run: Pick<JerseyRunForResponse, "status" | "deadline">,
-  now: number = Date.now(),
-): boolean {
-  if (run.status === "closed") return true;
-  return run.deadline < now;
-}
-
-// Deliberately loose — the email regex catches typos like missing "@" or
-// the local-part being empty. Strict RFC compliance is a job for the
-// mail server, not the form. The captain reads these by hand anyway.
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export function validateResponse(
   input: JerseyRunResponseInput,
   run: JerseyRunForResponse,
@@ -86,28 +70,20 @@ export function validateResponse(
 
   const errors: JerseyRunResponseErrors = {};
 
-  const name = input.respondentName.trim();
-  if (name.length === 0) errors.respondentName = "Tell us your name.";
-  else if (name.length > RESPONDENT_NAME_MAX_LENGTH)
-    errors.respondentName = `Keep your name under ${RESPONDENT_NAME_MAX_LENGTH} characters.`;
+  const nameCheck = checkRespondentName(input.respondentName);
+  if (!nameCheck.ok) errors.respondentName = nameCheck.error;
 
-  const email = input.respondentEmail.trim();
-  if (email.length === 0)
-    errors.respondentEmail = "We need an email so your captain can reach you.";
-  else if (email.length > EMAIL_MAX_LENGTH)
-    errors.respondentEmail = "That email is too long.";
-  else if (!EMAIL_PATTERN.test(email))
-    errors.respondentEmail = "That doesn't look like an email.";
+  const emailCheck = checkRespondentEmail(input.respondentEmail);
+  if (!emailCheck.ok) errors.respondentEmail = emailCheck.error;
 
-  if (input.size.length === 0) errors.size = "Pick a size.";
-  else if (!run.sizeOptions.includes(input.size))
-    errors.size = "Pick a size from the list.";
+  const sizeCheck = checkSize(input.size, run.sizeOptions);
+  if (!sizeCheck.ok) errors.size = sizeCheck.error;
 
   if (run.namesMode === "open") {
-    if (input.jerseyName.length > JERSEY_NAME_MAX_LENGTH)
-      errors.jerseyName = `Keep the jersey name under ${JERSEY_NAME_MAX_LENGTH} characters.`;
-    if (input.jerseyNumber.length > JERSEY_NUMBER_MAX_LENGTH)
-      errors.jerseyNumber = `Keep the jersey number under ${JERSEY_NUMBER_MAX_LENGTH} characters.`;
+    const jerseyNameCheck = checkJerseyName(input.jerseyName);
+    if (!jerseyNameCheck.ok) errors.jerseyName = jerseyNameCheck.error;
+    const jerseyNumberCheck = checkJerseyNumber(input.jerseyNumber);
+    if (!jerseyNumberCheck.ok) errors.jerseyNumber = jerseyNumberCheck.error;
   } else {
     const roster = run.fixedRoster ?? [];
     if (input.rosterSelection.length === 0)
@@ -119,14 +95,15 @@ export function validateResponse(
     }
   }
 
-  // Only inspect answers tied to known question ids — extras are ignored
-  // (they could come from a stale form snapshot if the captain edited
-  // questions after sharing the link).
+  // Only inspect answers tied to known question ids — extras are
+  // ignored (they could come from a stale form snapshot if the captain
+  // edited questions after sharing the link).
   const knownIds = new Set(run.customQuestions.map((q) => q.id));
   for (const id of knownIds) {
     const value = input.customAnswers[id] ?? "";
-    if (value.length > ANSWER_MAX_LENGTH) {
-      errors.customAnswers = `Keep each answer under ${ANSWER_MAX_LENGTH} characters.`;
+    const result = checkCustomAnswer(value);
+    if (!result.ok) {
+      errors.customAnswers = result.error;
       break;
     }
   }

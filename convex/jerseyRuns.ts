@@ -21,17 +21,15 @@ import {
   ROSTER_NUMBER_MAX_LENGTH,
   isSizeOption,
 } from "../lib/jerseyRun/rules";
-
-// Server-side guards for jerseyRunResponses. The run-creation rules
-// (size catalog, roster/question caps) are imported from
-// lib/jerseyRun/rules above; the response-side rules below still mirror
-// lib/jerseyRunResponse.ts inline until A-04 consolidates them.
-const RESPONDENT_NAME_MAX_LENGTH = 120;
-const EMAIL_MAX_LENGTH = 254;
-const JERSEY_NAME_MAX_LENGTH = 40;
-const JERSEY_NUMBER_MAX_LENGTH = 8;
-const ANSWER_MAX_LENGTH = 500;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import {
+  checkCustomAnswer,
+  checkJerseyName,
+  checkJerseyNumber,
+  checkRespondentEmail,
+  checkRespondentName,
+  checkSize,
+  isJerseyRunClosed,
+} from "../lib/jerseyRunResponse/rules";
 
 // Get the jersey run linked to one of the captain's orders. Returns null
 // if no run exists yet — the order detail page uses that to show the
@@ -376,56 +374,40 @@ export const submitResponse = mutation({
     const run = await ctx.db.get(args.jerseyRunId);
     if (!run) throw new ConvexError("Jersey run not found.");
 
-    if (run.status === "closed")
-      throw new ConvexError("This jersey run is closed.");
-    if (run.deadline < Date.now())
+    if (isJerseyRunClosed(run))
       throw new ConvexError("This jersey run is closed.");
 
-    const respondentName = args.respondentName.trim();
-    if (respondentName.length === 0)
-      throw new ConvexError("Tell us your name.");
-    if (respondentName.length > RESPONDENT_NAME_MAX_LENGTH)
-      throw new ConvexError("Your name is too long.");
+    const nameCheck = checkRespondentName(args.respondentName);
+    if (!nameCheck.ok) throw new ConvexError(nameCheck.error);
 
-    const respondentEmail = args.respondentEmail.trim().toLowerCase();
-    if (respondentEmail.length === 0)
-      throw new ConvexError("We need an email address.");
-    if (respondentEmail.length > EMAIL_MAX_LENGTH)
-      throw new ConvexError("That email is too long.");
-    if (!EMAIL_PATTERN.test(respondentEmail))
-      throw new ConvexError("That doesn't look like an email.");
+    const emailCheck = checkRespondentEmail(args.respondentEmail);
+    if (!emailCheck.ok) throw new ConvexError(emailCheck.error);
 
-    if (!run.sizeOptions.includes(args.size))
-      throw new ConvexError("Pick a size from the list.");
+    const sizeCheck = checkSize(args.size, run.sizeOptions);
+    if (!sizeCheck.ok) throw new ConvexError(sizeCheck.error);
 
-    const jerseyName = args.jerseyName?.trim();
-    if (jerseyName && jerseyName.length > JERSEY_NAME_MAX_LENGTH)
-      throw new ConvexError("Jersey name is too long.");
+    const jerseyNameCheck = checkJerseyName(args.jerseyName);
+    if (!jerseyNameCheck.ok) throw new ConvexError(jerseyNameCheck.error);
 
-    const jerseyNumber = args.jerseyNumber?.trim();
-    if (jerseyNumber && jerseyNumber.length > JERSEY_NUMBER_MAX_LENGTH)
-      throw new ConvexError("Jersey number is too long.");
+    const jerseyNumberCheck = checkJerseyNumber(args.jerseyNumber);
+    if (!jerseyNumberCheck.ok) throw new ConvexError(jerseyNumberCheck.error);
 
     const knownQuestionIds = new Set(run.customQuestions.map((q) => q.id));
     const customAnswers: Record<string, string> = {};
     for (const [id, value] of Object.entries(args.customAnswers)) {
       if (!knownQuestionIds.has(id)) continue;
-      if (typeof value !== "string")
-        throw new ConvexError("Answers must be text.");
-      const trimmed = value.trim();
-      if (trimmed.length > ANSWER_MAX_LENGTH)
-        throw new ConvexError("An answer is too long.");
-      customAnswers[id] = trimmed;
+      const result = checkCustomAnswer(value);
+      if (!result.ok) throw new ConvexError(result.error);
+      customAnswers[id] = result.value;
     }
 
     return ctx.db.insert("jerseyRunResponses", {
       jerseyRunId: args.jerseyRunId,
-      respondentName,
-      respondentEmail,
-      size: args.size,
-      jerseyName: jerseyName && jerseyName.length > 0 ? jerseyName : undefined,
-      jerseyNumber:
-        jerseyNumber && jerseyNumber.length > 0 ? jerseyNumber : undefined,
+      respondentName: nameCheck.value,
+      respondentEmail: emailCheck.value,
+      size: sizeCheck.value,
+      jerseyName: jerseyNameCheck.value,
+      jerseyNumber: jerseyNumberCheck.value,
       customAnswers,
       submittedAt: Date.now(),
     });
