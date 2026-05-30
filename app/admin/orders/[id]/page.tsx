@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { use } from "react";
 import { useQuery } from "convex/react";
-import { ArrowLeft, CheckCircle2, Circle, FileDown } from "lucide-react";
+import { ArrowLeft, FileDown } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { INTERNAL_STAGES } from "@/lib/orderStages";
+import { OrderStageChecklist } from "@/components/admin/OrderStageChecklist";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -185,47 +185,14 @@ export default function AdminOrderDetailPage({
           <CardTitle>Internal stages</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="-mt-1 text-xs text-muted-foreground">
-            Read-only here — editable checklist with timestamps ships in 2-12.
+          <p className="-mt-1 mb-4 text-xs text-muted-foreground">
+            Check a stage to mark it complete. Updates propagate to the
+            customer&apos;s order timeline in real time.
           </p>
-          <ul className="mt-4 space-y-2">
-            {INTERNAL_STAGES.map((name) => {
-              const stage = order.internalStages.find((s) => s.name === name);
-              const completed = stage?.completedAt != null;
-              const Icon = completed ? CheckCircle2 : Circle;
-              return (
-                <li
-                  key={name}
-                  className="flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2 text-sm"
-                >
-                  <span className="flex items-center gap-2">
-                    <Icon
-                      aria-hidden
-                      className={`size-4 ${
-                        completed
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-muted-foreground/60"
-                      }`}
-                    />
-                    <span
-                      className={
-                        completed
-                          ? "font-medium text-foreground"
-                          : "text-muted-foreground"
-                      }
-                    >
-                      {name}
-                    </span>
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {completed && stage?.completedAt
-                      ? formatDate(stage.completedAt)
-                      : "Pending"}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <OrderStageChecklist
+            orderId={order._id}
+            internalStages={order.internalStages}
+          />
         </CardContent>
       </Card>
 

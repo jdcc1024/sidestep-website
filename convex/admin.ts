@@ -1,7 +1,10 @@
-import { v } from "convex/values";
-import { query } from "./_generated/server";
+import { ConvexError, v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { requireAdmin } from "./_auth";
+import { INTERNAL_STAGES } from "../lib/orderStages";
+
+const INTERNAL_STAGE_NAMES = new Set<string>(INTERNAL_STAGES);
 
 export const listOrders = query({
   args: {},
@@ -113,6 +116,50 @@ export const getOrder = query({
       jerseyRun,
       jerseyRunResponseCount,
     };
+  },
+});
+
+// Replaces an order's internal stage checklist wholesale (issue 2-12). The
+// admin checklist UI sends the full 14-stage array every time, each stage
+// carrying a `completedAt` timestamp or null. We normalize null to an absent
+// field (the schema stores `completedAt` as an optional number) and persist.
+// Because Convex is real-time, the customer portal's derived stage updates
+// the instant this commits — no refresh on the customer's end.
+//
+// Stage names are validated against the canonical INTERNAL_STAGES list so a
+// hand-rolled client can't smuggle arbitrary labels into the array. Stages
+// may be completed out of order per the client requirement — we don't enforce
+// any ordering on the timestamps.
+export const updateOrderStages = mutation({
+  args: {
+    orderId: v.id("orders"),
+    stages: v.array(
+      v.object({
+        name: v.string(),
+        completedAt: v.union(v.number(), v.null()),
+      }),
+    ),
+  },
+  handler: async (ctx, { orderId, stages }) => {
+    await requireAdmin(ctx);
+
+    const order = await ctx.db.get(orderId);
+    if (!order) throw new ConvexError("Order not found.");
+
+    const seen = new Set<string>();
+    const internalStages = stages.map((stage) => {
+      if (!INTERNAL_STAGE_NAMES.has(stage.name))
+        throw new ConvexError(`Unknown internal stage: ${stage.name}`);
+      if (seen.has(stage.name))
+        throw new ConvexError(`Duplicate internal stage: ${stage.name}`);
+      seen.add(stage.name);
+      // null → omit the field so it reads back as "not completed".
+      return stage.completedAt === null
+        ? { name: stage.name }
+        : { name: stage.name, completedAt: stage.completedAt };
+    });
+
+    await ctx.db.patch(orderId, { internalStages, updatedAt: Date.now() });
   },
 });
 
