@@ -1,10 +1,19 @@
-// Shared validation for the portal design creation / edit form. The same
-// rules are enforced again server-side in convex/designs.ts so a hand-rolled
-// client can't bypass them.
+// Form adapter for the portal design creation / edit form. Wraps the
+// atomic rules in ./rules into a DesignErrors record keyed by form field,
+// plus a toDesignPayload helper that converts validated input into the
+// shape the Convex mutation accepts. The Convex side imports the same
+// rules directly — see convex/designs.ts.
+//
+// Silhouette specs (style/neckline/sleeve) live in ./rules and on the
+// designs table now, but the design form does not capture them yet — that
+// wiring lands in O-02. This adapter stays focused on title/brief/files.
 
-export const TITLE_MAX_LENGTH = 120;
-export const BRIEF_MAX_LENGTH = 2000;
-export const CANVA_LINK_MAX_LENGTH = 500;
+import {
+  BRIEF_MAX_LENGTH,
+  CANVA_LINK_MAX_LENGTH,
+  TITLE_MAX_LENGTH,
+  isHttpUrl,
+} from "./rules";
 
 export type DesignInput = {
   title: string;
@@ -68,16 +77,4 @@ export function toDesignPayload(input: DesignInput): DesignPayload {
     brief,
     ...(canvaLink ? { canvaLink } : {}),
   };
-}
-
-// Liberal URL check — we display the link as a clickable anchor and do no
-// rendering of the content itself, so the goal is just to catch obvious
-// typos and reject schemes other than http/https.
-export function isHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
 }

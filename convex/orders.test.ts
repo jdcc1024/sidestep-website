@@ -38,9 +38,6 @@ const VALID_ORDER = {
   teamName: "Falcons",
   sport: "Soccer",
   estimatedQuantity: 12,
-  jerseyStyle: "Classic crew",
-  neckline: "Crew Neck",
-  sleeveStyle: "Regular",
   hasOwnDesign: false,
   designIds: [] as never[],
 };
@@ -59,8 +56,6 @@ describe("orders.createOrder", () => {
       teamName: "Falcons",
       sport: "Soccer",
       estimatedQuantity: 12,
-      neckline: "Crew Neck",
-      sleeveStyle: "Regular",
     });
     expect(row?.internalStages[0]?.name).toBe("Inquiry");
   });
@@ -98,16 +93,5 @@ describe("orders.createOrder", () => {
         designIds: [foreignDesignId],
       }),
     ).rejects.toThrow(/not yours/);
-  });
-
-  it("rejects an invalid neckline value", async () => {
-    const t = convexTest(schema, modules);
-    const { asUser } = await seedCaptain(t);
-    await expect(
-      asUser.mutation(api.orders.createOrder, {
-        ...VALID_ORDER,
-        neckline: "Turtle",
-      }),
-    ).rejects.toThrow(/neckline/i);
   });
 });

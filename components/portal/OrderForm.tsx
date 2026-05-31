@@ -10,16 +10,11 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
-  JERSEY_STYLE_MAX_LENGTH,
   MAX_QUANTITY,
   MIN_QUANTITY,
-  NECKLINES,
-  SLEEVE_STYLES,
   SPORT_MAX_LENGTH,
   TEAM_NAME_MAX_LENGTH,
   toOrderPayload,
-  type Neckline,
-  type SleeveStyle,
 } from "@/lib/order";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,7 +28,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 
 // Colocated zod schema. Field-level rules match the constants and error
@@ -68,16 +62,6 @@ const formSchema = z.object({
       const n = Number.parseInt(value.trim(), 10);
       return !Number.isFinite(n) || n <= MAX_QUANTITY;
     }, `That's a lot — please contact us directly for orders over ${MAX_QUANTITY}.`),
-  jerseyStyle: z
-    .string()
-    .trim()
-    .min(1, "Tell us the jersey style.")
-    .max(
-      JERSEY_STYLE_MAX_LENGTH,
-      `Please keep this under ${JERSEY_STYLE_MAX_LENGTH} characters.`,
-    ),
-  neckline: z.enum(NECKLINES, { message: "Pick a neckline." }),
-  sleeveStyle: z.enum(SLEEVE_STYLES, { message: "Pick a sleeve style." }),
   hasOwnDesign: z.boolean(),
   designIds: z.array(z.string()),
 });
@@ -95,11 +79,6 @@ export function OrderForm() {
       teamName: "",
       sport: "",
       estimatedQuantity: "",
-      jerseyStyle: "",
-      // neckline / sleeveStyle start unselected. zod rejects undefined with
-      // the messages above; the cast satisfies the RadioGroup binding.
-      neckline: undefined as unknown as Neckline,
-      sleeveStyle: undefined as unknown as SleeveStyle,
       hasOwnDesign: false,
       designIds: [],
     },
@@ -111,9 +90,6 @@ export function OrderForm() {
         teamName: values.teamName,
         sport: values.sport,
         estimatedQuantity: values.estimatedQuantity,
-        jerseyStyle: values.jerseyStyle,
-        neckline: values.neckline,
-        sleeveStyle: values.sleeveStyle,
         hasOwnDesign: values.hasOwnDesign,
         designIds: values.designIds,
       });
@@ -121,9 +97,6 @@ export function OrderForm() {
         teamName: payload.teamName,
         sport: payload.sport,
         estimatedQuantity: payload.estimatedQuantity,
-        jerseyStyle: payload.jerseyStyle,
-        neckline: payload.neckline,
-        sleeveStyle: payload.sleeveStyle,
         hasOwnDesign: payload.hasOwnDesign,
         designIds: payload.designIds as unknown as Id<"designs">[],
       });
@@ -220,71 +193,9 @@ export function OrderForm() {
 
         <FieldSection
           eyebrow="02"
-          title="Jersey specs"
-          description="Pick the silhouette — fine details get nailed down during design review."
+          title="Design"
+          description="Tell us whether you're bringing your own artwork. Silhouette specs (style, neckline, sleeve) now live on each design."
         >
-          <FormField
-            control={form.control}
-            name="jerseyStyle"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Jersey style</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="e.g., Ultimate Frisbee jersey, Hockey jersey"
-                    maxLength={JERSEY_STYLE_MAX_LENGTH}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="neckline"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Neckline</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    value={field.value ?? ""}
-                    onValueChange={(value) => field.onChange(value)}
-                    className="grid grid-cols-2 gap-2"
-                  >
-                    {NECKLINES.map((option) => (
-                      <SegmentedOption key={option} value={option} />
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="sleeveStyle"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sleeve style</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    value={field.value ?? ""}
-                    onValueChange={(value) => field.onChange(value)}
-                    className="grid grid-cols-2 gap-2"
-                  >
-                    {SLEEVE_STYLES.map((option) => (
-                      <SegmentedOption key={option} value={option} />
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <FormField
             control={form.control}
             name="hasOwnDesign"
@@ -349,15 +260,6 @@ export function OrderForm() {
         </div>
       </form>
     </Form>
-  );
-}
-
-function SegmentedOption({ value }: { value: string }) {
-  return (
-    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-3 text-center text-sm font-medium text-foreground transition hover:border-ring has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[[data-checked]]:text-primary">
-      <RadioGroupItem value={value} className="sr-only" />
-      {value}
-    </label>
   );
 }
 

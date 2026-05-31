@@ -99,9 +99,6 @@ export default function AdminOrderDetailPage({
             <Field label="Team name" value={order.teamName} />
             <Field label="Sport" value={order.sport} />
             <Field label="Quantity" value={String(order.estimatedQuantity)} />
-            <Field label="Jersey style" value={order.jerseyStyle} />
-            <Field label="Neckline" value={order.neckline} />
-            <Field label="Sleeve style" value={order.sleeveStyle} />
             <Field
               label="Customer has own design"
               value={order.hasOwnDesign ? "Yes" : "No"}

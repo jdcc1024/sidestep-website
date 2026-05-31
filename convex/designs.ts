@@ -1,10 +1,16 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUserOrNull, requireCurrentUser } from "./_auth";
+import {
+  JERSEY_STYLE_MAX_LENGTH,
+  isNeckline,
+  isSleeveStyle,
+} from "../lib/design/rules";
 
-// Server-side guards. Mirror lib/design.ts so the client and server cap
+// Server-side guards. Mirror lib/design so the client and server cap
 // values the same way — defense in depth against a hand-rolled client that
-// posts past the form's maxLength.
+// posts past the form's maxLength. Spec allowlists/caps come from
+// lib/design/rules so the two sides can't drift.
 const TITLE_MAX_LENGTH = 120;
 const BRIEF_MAX_LENGTH = 2000;
 const CANVA_LINK_MAX_LENGTH = 500;
@@ -40,6 +46,42 @@ function normalizeCanvaLink(value: string | undefined): string | undefined {
   if (url.protocol !== "http:" && url.protocol !== "https:")
     throw new ConvexError("Canva link must start with http:// or https://");
   return trimmed;
+}
+
+// Silhouette specs are optional per design — a design can be saved before
+// its cut is decided. Each spec is validated independently when present:
+// jerseyStyle is free text (length-capped), neckline and sleeve style must
+// match the allowlists in lib/design/rules. Returns only the specs that
+// were supplied so we never write an empty string for an omitted field.
+function normalizeSpecs(args: {
+  jerseyStyle?: string;
+  neckline?: string;
+  sleeveStyle?: string;
+}): { jerseyStyle?: string; neckline?: string; sleeveStyle?: string } {
+  const specs: { jerseyStyle?: string; neckline?: string; sleeveStyle?: string } =
+    {};
+
+  if (args.jerseyStyle !== undefined) {
+    const trimmed = args.jerseyStyle.trim();
+    if (trimmed) {
+      if (trimmed.length > JERSEY_STYLE_MAX_LENGTH)
+        throw new ConvexError("Jersey style is too long.");
+      specs.jerseyStyle = trimmed;
+    }
+  }
+
+  if (args.neckline !== undefined && args.neckline.trim()) {
+    if (!isNeckline(args.neckline)) throw new ConvexError("Invalid neckline.");
+    specs.neckline = args.neckline;
+  }
+
+  if (args.sleeveStyle !== undefined && args.sleeveStyle.trim()) {
+    if (!isSleeveStyle(args.sleeveStyle))
+      throw new ConvexError("Invalid sleeve style.");
+    specs.sleeveStyle = args.sleeveStyle;
+  }
+
+  return specs;
 }
 
 // Captain's own designs, newest first. Mirrors the auth/scoping shape of
@@ -104,6 +146,9 @@ export const createDesign = mutation({
     brief: v.string(),
     canvaLink: v.optional(v.string()),
     fileIds: v.array(v.id("_storage")),
+    jerseyStyle: v.optional(v.string()),
+    neckline: v.optional(v.string()),
+    sleeveStyle: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
@@ -111,6 +156,7 @@ export const createDesign = mutation({
     const title = normalizeTitle(args.title);
     const brief = normalizeBrief(args.brief);
     const canvaLink = normalizeCanvaLink(args.canvaLink);
+    const specs = normalizeSpecs(args);
 
     if (args.fileIds.length < 1)
       throw new ConvexError("At least one file is required.");
@@ -121,6 +167,7 @@ export const createDesign = mutation({
       title,
       brief,
       ...(canvaLink ? { canvaLink } : {}),
+      ...specs,
       fileIds: args.fileIds,
       createdAt: now,
       updatedAt: now,
@@ -137,6 +184,9 @@ export const updateDesign = mutation({
     brief: v.string(),
     canvaLink: v.optional(v.string()),
     addFileIds: v.array(v.id("_storage")),
+    jerseyStyle: v.optional(v.string()),
+    neckline: v.optional(v.string()),
+    sleeveStyle: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
@@ -148,6 +198,7 @@ export const updateDesign = mutation({
     const title = normalizeTitle(args.title);
     const brief = normalizeBrief(args.brief);
     const canvaLink = normalizeCanvaLink(args.canvaLink);
+    const specs = normalizeSpecs(args);
 
     const nextFileIds = [...design.fileIds, ...args.addFileIds];
     if (nextFileIds.length < 1)
@@ -160,6 +211,8 @@ export const updateDesign = mutation({
       // an explicit string (possibly empty) and let the schema/optional do
       // the rest. We use the normalized value or fall back to clearing.
       ...(canvaLink ? { canvaLink } : { canvaLink: undefined }),
+      // Apply any supplied silhouette specs; omitted specs are left as-is.
+      ...specs,
       fileIds: nextFileIds,
       updatedAt: Date.now(),
     });

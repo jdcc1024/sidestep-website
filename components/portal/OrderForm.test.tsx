@@ -33,9 +33,6 @@ describe("OrderForm", () => {
       screen.getByText(/what sport or activity is this for/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/order at least 1 jersey/i)).toBeInTheDocument();
-    expect(screen.getByText(/tell us the jersey style/i)).toBeInTheDocument();
-    expect(screen.getByText(/pick a neckline/i)).toBeInTheDocument();
-    expect(screen.getByText(/pick a sleeve style/i)).toBeInTheDocument();
     expect(createOrder).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
   });

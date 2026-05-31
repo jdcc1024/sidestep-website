@@ -3,8 +3,13 @@ import {
   BRIEF_MAX_LENGTH,
   CANVA_LINK_MAX_LENGTH,
   EMPTY_DESIGN,
+  JERSEY_STYLE_MAX_LENGTH,
+  NECKLINES,
+  SLEEVE_STYLES,
   TITLE_MAX_LENGTH,
   isHttpUrl,
+  isNeckline,
+  isSleeveStyle,
   toDesignPayload,
   validateDesign,
   type DesignInput,
@@ -152,6 +157,38 @@ describe("isHttpUrl", () => {
     "not a url",
   ])("rejects %s", (value) => {
     expect(isHttpUrl(value)).toBe(false);
+  });
+});
+
+describe("silhouette spec allowlists", () => {
+  it("NECKLINES has the expected members", () => {
+    expect(NECKLINES).toEqual(["Crew Neck", "V-Neck"]);
+  });
+
+  it("SLEEVE_STYLES has the expected members", () => {
+    expect(SLEEVE_STYLES).toEqual(["Regular", "Raglan"]);
+  });
+
+  it("caps jersey style at 120 characters", () => {
+    expect(JERSEY_STYLE_MAX_LENGTH).toBe(120);
+  });
+
+  it("isNeckline accepts every member of NECKLINES", () => {
+    for (const value of NECKLINES) expect(isNeckline(value)).toBe(true);
+  });
+
+  it("isNeckline rejects anything else", () => {
+    expect(isNeckline("")).toBe(false);
+    expect(isNeckline("Boat Neck")).toBe(false);
+  });
+
+  it("isSleeveStyle accepts every member of SLEEVE_STYLES", () => {
+    for (const value of SLEEVE_STYLES) expect(isSleeveStyle(value)).toBe(true);
+  });
+
+  it("isSleeveStyle rejects anything else", () => {
+    expect(isSleeveStyle("")).toBe(false);
+    expect(isSleeveStyle("Sleeveless")).toBe(false);
   });
 });
 

@@ -1,15 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_ORDER,
-  JERSEY_STYLE_MAX_LENGTH,
   MAX_QUANTITY,
   MIN_QUANTITY,
-  NECKLINES,
-  SLEEVE_STYLES,
   SPORT_MAX_LENGTH,
   TEAM_NAME_MAX_LENGTH,
-  isNeckline,
-  isSleeveStyle,
   toOrderPayload,
   validateOrder,
   type OrderInput,
@@ -20,9 +15,6 @@ function validInput(overrides: Partial<OrderInput> = {}): OrderInput {
     teamName: "Westside FC",
     sport: "Ultimate Frisbee",
     estimatedQuantity: 12,
-    jerseyStyle: "Ultimate Frisbee jersey",
-    neckline: "Crew Neck",
-    sleeveStyle: "Regular",
     hasOwnDesign: false,
     designIds: [],
     ...overrides,
@@ -38,22 +30,6 @@ describe("validateOrder — happy path", () => {
     expect(validateOrder(validInput({ estimatedQuantity: "12" }))).toEqual({});
   });
 
-  it("accepts each valid neckline", () => {
-    for (const value of NECKLINES) {
-      expect(
-        validateOrder(validInput({ neckline: value })).neckline,
-      ).toBeUndefined();
-    }
-  });
-
-  it("accepts each valid sleeve style", () => {
-    for (const value of SLEEVE_STYLES) {
-      expect(
-        validateOrder(validInput({ sleeveStyle: value })).sleeveStyle,
-      ).toBeUndefined();
-    }
-  });
-
   it("accepts zero linked designs (designs are optional)", () => {
     expect(
       validateOrder(validInput({ designIds: [] })).designIds,
@@ -67,9 +43,6 @@ describe("validateOrder — required fields", () => {
     expect(errors.teamName).toBeTruthy();
     expect(errors.sport).toBeTruthy();
     expect(errors.estimatedQuantity).toBeTruthy();
-    expect(errors.jerseyStyle).toBeTruthy();
-    expect(errors.neckline).toBeTruthy();
-    expect(errors.sleeveStyle).toBeTruthy();
   });
 
   it("rejects a whitespace-only team name", () => {
@@ -80,12 +53,6 @@ describe("validateOrder — required fields", () => {
 
   it("rejects a whitespace-only sport", () => {
     expect(validateOrder(validInput({ sport: "   " })).sport).toBeTruthy();
-  });
-
-  it("rejects a whitespace-only jersey style", () => {
-    expect(
-      validateOrder(validInput({ jerseyStyle: "   " })).jerseyStyle,
-    ).toBeTruthy();
   });
 });
 
@@ -153,58 +120,6 @@ describe("validateOrder — length caps", () => {
         .sport,
     ).toBeTruthy();
   });
-
-  it("rejects a jersey style over the cap", () => {
-    expect(
-      validateOrder(
-        validInput({ jerseyStyle: "x".repeat(JERSEY_STYLE_MAX_LENGTH + 1) }),
-      ).jerseyStyle,
-    ).toBeTruthy();
-  });
-});
-
-describe("validateOrder — enum fields", () => {
-  it("rejects an unknown neckline", () => {
-    expect(
-      validateOrder(validInput({ neckline: "Boat Neck" })).neckline,
-    ).toBeTruthy();
-  });
-
-  it("rejects an empty neckline", () => {
-    expect(validateOrder(validInput({ neckline: "" })).neckline).toBeTruthy();
-  });
-
-  it("rejects an unknown sleeve style", () => {
-    expect(
-      validateOrder(validInput({ sleeveStyle: "Sleeveless" })).sleeveStyle,
-    ).toBeTruthy();
-  });
-
-  it("rejects an empty sleeve style", () => {
-    expect(
-      validateOrder(validInput({ sleeveStyle: "" })).sleeveStyle,
-    ).toBeTruthy();
-  });
-});
-
-describe("isNeckline / isSleeveStyle", () => {
-  it("isNeckline accepts every member of NECKLINES", () => {
-    for (const value of NECKLINES) expect(isNeckline(value)).toBe(true);
-  });
-
-  it("isNeckline rejects anything else", () => {
-    expect(isNeckline("")).toBe(false);
-    expect(isNeckline("Boat Neck")).toBe(false);
-  });
-
-  it("isSleeveStyle accepts every member of SLEEVE_STYLES", () => {
-    for (const value of SLEEVE_STYLES) expect(isSleeveStyle(value)).toBe(true);
-  });
-
-  it("isSleeveStyle rejects anything else", () => {
-    expect(isSleeveStyle("")).toBe(false);
-    expect(isSleeveStyle("Sleeveless")).toBe(false);
-  });
 });
 
 describe("toOrderPayload", () => {
@@ -213,12 +128,10 @@ describe("toOrderPayload", () => {
       validInput({
         teamName: "  Westside FC  ",
         sport: "  Ultimate  ",
-        jerseyStyle: "  Ultimate jersey  ",
       }),
     );
     expect(payload.teamName).toBe("Westside FC");
     expect(payload.sport).toBe("Ultimate");
-    expect(payload.jerseyStyle).toBe("Ultimate jersey");
   });
 
   it("coerces a string quantity to a number", () => {
@@ -250,17 +163,5 @@ describe("toOrderPayload", () => {
   it("drops blank designIds", () => {
     const payload = toOrderPayload(validInput({ designIds: ["a", "", "b"] }));
     expect(payload.designIds).toEqual(["a", "b"]);
-  });
-
-  it("throws for an invalid neckline (caller should have validated)", () => {
-    expect(() =>
-      toOrderPayload(validInput({ neckline: "Boat Neck" })),
-    ).toThrow();
-  });
-
-  it("throws for an invalid sleeve style (caller should have validated)", () => {
-    expect(() =>
-      toOrderPayload(validInput({ sleeveStyle: "Sleeveless" })),
-    ).toThrow();
   });
 });

@@ -8,11 +8,8 @@ import { getCurrentUserOrNull, requireCurrentUser } from "./_auth";
 // posts past the form's maxLength.
 const TEAM_NAME_MAX_LENGTH = 120;
 const SPORT_MAX_LENGTH = 120;
-const JERSEY_STYLE_MAX_LENGTH = 120;
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY = 10_000;
-const NECKLINES = ["Crew Neck", "V-Neck"] as const;
-const SLEEVE_STYLES = ["Regular", "Raglan"] as const;
 const INITIAL_INTERNAL_STAGE = "Inquiry";
 
 function requireShort(value: string, field: string, max: number): string {
@@ -85,9 +82,6 @@ export const createOrder = mutation({
     teamName: v.string(),
     sport: v.string(),
     estimatedQuantity: v.number(),
-    jerseyStyle: v.string(),
-    neckline: v.string(),
-    sleeveStyle: v.string(),
     hasOwnDesign: v.boolean(),
     designIds: v.array(v.id("designs")),
   },
@@ -96,11 +90,6 @@ export const createOrder = mutation({
 
     const teamName = requireShort(args.teamName, "Team name", TEAM_NAME_MAX_LENGTH);
     const sport = requireShort(args.sport, "Sport", SPORT_MAX_LENGTH);
-    const jerseyStyle = requireShort(
-      args.jerseyStyle,
-      "Jersey style",
-      JERSEY_STYLE_MAX_LENGTH,
-    );
 
     if (
       !Number.isFinite(args.estimatedQuantity) ||
@@ -112,11 +101,6 @@ export const createOrder = mutation({
         `Quantity must be a whole number between ${MIN_QUANTITY} and ${MAX_QUANTITY}.`,
       );
     }
-
-    if (!(NECKLINES as readonly string[]).includes(args.neckline))
-      throw new ConvexError("Invalid neckline.");
-    if (!(SLEEVE_STYLES as readonly string[]).includes(args.sleeveStyle))
-      throw new ConvexError("Invalid sleeve style.");
 
     // Each linked design must exist and be owned by this captain. Without
     // this check, a captain could link another user's designs by id.
@@ -133,9 +117,6 @@ export const createOrder = mutation({
       teamName,
       sport,
       estimatedQuantity: args.estimatedQuantity,
-      jerseyStyle,
-      neckline: args.neckline,
-      sleeveStyle: args.sleeveStyle,
       hasOwnDesign: args.hasOwnDesign,
       designIds: uniqueDesignIds,
       internalStages: [{ name: INITIAL_INTERNAL_STAGE, completedAt: now }],

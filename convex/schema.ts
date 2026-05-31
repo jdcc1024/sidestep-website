@@ -16,6 +16,12 @@ export default defineSchema({
     brief: v.string(),
     canvaLink: v.optional(v.string()),
     fileIds: v.array(v.id("_storage")),
+    // Silhouette specs live on the design now (moved off the order in O-01)
+    // so a reusable design carries its own cut. Optional: a design can be
+    // saved before its specs are decided; the design form wires them in O-02.
+    jerseyStyle: v.optional(v.string()),
+    neckline: v.optional(v.string()),
+    sleeveStyle: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_owner", ["ownerId"]),
@@ -25,9 +31,6 @@ export default defineSchema({
     teamName: v.string(),
     sport: v.string(),
     estimatedQuantity: v.number(),
-    jerseyStyle: v.string(),
-    neckline: v.string(),
-    sleeveStyle: v.string(),
     hasOwnDesign: v.boolean(),
     designIds: v.array(v.id("designs")),
     internalStages: v.array(

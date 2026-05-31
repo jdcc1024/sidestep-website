@@ -86,9 +86,6 @@ export default function OrderDetailPage({ params }: PageProps) {
           <Field label="Team name" value={order.teamName} />
           <Field label="Sport" value={order.sport} />
           <Field label="Quantity" value={`${order.estimatedQuantity} jerseys`} />
-          <Field label="Jersey style" value={order.jerseyStyle} />
-          <Field label="Neckline" value={order.neckline} />
-          <Field label="Sleeve style" value={order.sleeveStyle} />
           <Field
             label="Design"
             value={

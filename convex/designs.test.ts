@@ -71,6 +71,76 @@ describe("designs.createDesign", () => {
       }),
     ).rejects.toThrow(/At least one file/);
   });
+
+  it("persists silhouette specs when supplied", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedOwner(t);
+    const storageId = await fakeStorageId(t);
+
+    const designId = await asUser.mutation(api.designs.createDesign, {
+      title: "Home kit",
+      brief: "Bold stripes.",
+      fileIds: [storageId],
+      jerseyStyle: "  Soccer jersey  ",
+      neckline: "Crew Neck",
+      sleeveStyle: "Raglan",
+    });
+
+    const row = await t.run((ctx) => ctx.db.get(designId));
+    expect(row).toMatchObject({
+      // jerseyStyle is trimmed; neckline / sleeve match the allowlists.
+      jerseyStyle: "Soccer jersey",
+      neckline: "Crew Neck",
+      sleeveStyle: "Raglan",
+    });
+  });
+
+  it("creates a design with no specs (specs are optional)", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedOwner(t);
+    const storageId = await fakeStorageId(t);
+
+    const designId = await asUser.mutation(api.designs.createDesign, {
+      title: "Idea only",
+      brief: "No cut decided yet.",
+      fileIds: [storageId],
+    });
+
+    const row = await t.run((ctx) => ctx.db.get(designId));
+    expect(row?.neckline).toBeUndefined();
+    expect(row?.sleeveStyle).toBeUndefined();
+    expect(row?.jerseyStyle).toBeUndefined();
+  });
+
+  it("rejects an invalid neckline", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedOwner(t);
+    const storageId = await fakeStorageId(t);
+
+    await expect(
+      asUser.mutation(api.designs.createDesign, {
+        title: "Bad cut",
+        brief: "Brief.",
+        fileIds: [storageId],
+        neckline: "Turtle",
+      }),
+    ).rejects.toThrow(/neckline/i);
+  });
+
+  it("rejects an invalid sleeve style", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedOwner(t);
+    const storageId = await fakeStorageId(t);
+
+    await expect(
+      asUser.mutation(api.designs.createDesign, {
+        title: "Bad sleeve",
+        brief: "Brief.",
+        fileIds: [storageId],
+        sleeveStyle: "Sleeveless",
+      }),
+    ).rejects.toThrow(/sleeve/i);
+  });
 });
 
 describe("designs.updateDesign", () => {
@@ -94,6 +164,35 @@ describe("designs.updateDesign", () => {
 
     const row = await t.run((ctx) => ctx.db.get(designId));
     expect(row).toMatchObject({ title: "Revised pass", brief: "Updated brief." });
+  });
+
+  it("updates silhouette specs when supplied", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedOwner(t);
+    const storageId = await fakeStorageId(t);
+
+    const designId = await asUser.mutation(api.designs.createDesign, {
+      title: "Spec edit",
+      brief: "Initial.",
+      fileIds: [storageId],
+    });
+
+    await asUser.mutation(api.designs.updateDesign, {
+      designId,
+      title: "Spec edit",
+      brief: "Initial.",
+      addFileIds: [],
+      jerseyStyle: "Hockey jersey",
+      neckline: "V-Neck",
+      sleeveStyle: "Regular",
+    });
+
+    const row = await t.run((ctx) => ctx.db.get(designId));
+    expect(row).toMatchObject({
+      jerseyStyle: "Hockey jersey",
+      neckline: "V-Neck",
+      sleeveStyle: "Regular",
+    });
   });
 
   it("rejects updateDesign when the caller doesn't own the design", async () => {

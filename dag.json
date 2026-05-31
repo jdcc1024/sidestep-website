@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-31T01:17:06.887Z",
+  "lastUpdated": "2026-05-31T08:21:07.730Z",
   "phases": [
     {
       "id": "phase-1",
@@ -1040,10 +1040,10 @@
       "phase": "phase-1",
       "type": "infrastructure",
       "description": "Relocate jerseyStyle/neckline/sleeveStyle from the order record onto the design record so a reusable design carries its own cut. Foundational schema swap (no real data) the whole order-page rework depends on.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-o01",
+      "startedAt": "2026-05-31T08:07:05.504Z",
+      "completedAt": "2026-05-31T08:21:07.727Z",
       "issueFile": "backlog/O-01-design-owns-silhouette-specs.md",
       "prdRef": "docs/prd/new-edit-order-page.md#6-implementation-decisions",
       "acceptanceCriteria": [
@@ -1058,7 +1058,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Surface the silhouette specs (now on the design) in the design create/edit form and on the design detail page, using the RHF+zod+shadcn Form pattern from S-07. Files stay optional.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1708,30 +1708,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "opus-o01",
+      "name": "Opus O-01",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-23T20:31:00.495Z",
-      "event": "nodes_added",
-      "nodeId": "A-02",
-      "agent": null,
-      "message": "New task added: Add Convex Mutation Smoke Tests"
-    },
-    {
-      "timestamp": "2026-05-23T20:31:10.074Z",
-      "event": "nodes_added",
-      "nodeId": "A-03",
-      "agent": null,
-      "message": "New task added: Consolidate Jersey Run Validation Rules"
-    },
-    {
-      "timestamp": "2026-05-23T20:31:51.260Z",
-      "event": "nodes_added",
-      "nodeId": "A-04",
-      "agent": null,
-      "message": "New task added: Consolidate Jersey Run Response Validation Rules"
-    },
     {
       "timestamp": "2026-05-23T20:32:49.164Z",
       "event": "nodes_added",
@@ -2410,6 +2396,27 @@
       "nodeId": "O-09",
       "agent": null,
       "message": "New task added: Order Page Visual Pass"
+    },
+    {
+      "timestamp": "2026-05-31T08:07:05.404Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-o01",
+      "message": "Opus O-01 joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-31T08:07:05.505Z",
+      "event": "task_started",
+      "nodeId": "O-01",
+      "agent": "opus-o01",
+      "message": "Opus O-01 picked up: Design Owns Silhouette Specs"
+    },
+    {
+      "timestamp": "2026-05-31T08:21:07.729Z",
+      "event": "task_completed",
+      "nodeId": "O-01",
+      "agent": "opus-o01",
+      "message": "Completed: Design Owns Silhouette Specs"
     }
   ]
 }
