@@ -158,9 +158,8 @@ export const createDesign = mutation({
     const canvaLink = normalizeCanvaLink(args.canvaLink);
     const specs = normalizeSpecs(args);
 
-    if (args.fileIds.length < 1)
-      throw new ConvexError("At least one file is required.");
-
+    // Files are optional — an idea-only brief is a valid design
+    // (flow spec §Flow 1). A captain can attach references later via edit.
     const now = Date.now();
     return ctx.db.insert("designs", {
       ownerId: user._id,
@@ -200,9 +199,9 @@ export const updateDesign = mutation({
     const canvaLink = normalizeCanvaLink(args.canvaLink);
     const specs = normalizeSpecs(args);
 
+    // Files optional — a design may carry zero files (idea-only). Appending
+    // an empty addFileIds array leaves the existing files untouched.
     const nextFileIds = [...design.fileIds, ...args.addFileIds];
-    if (nextFileIds.length < 1)
-      throw new ConvexError("At least one file is required.");
 
     await ctx.db.patch(args.designId, {
       title,

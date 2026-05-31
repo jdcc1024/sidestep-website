@@ -1,6 +1,6 @@
 # Issue: Design Form Captures Specs
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
