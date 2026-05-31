@@ -1,6 +1,6 @@
 # Issue: Admin Stage Management
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 

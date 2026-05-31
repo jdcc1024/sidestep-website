@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-28T15:54:05.324Z",
+  "lastUpdated": "2026-05-31T01:17:06.887Z",
   "phases": [
     {
       "id": "phase-1",
@@ -323,10 +323,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "14-stage internal checklist on admin order detail: admin checks/unchecks stages with timestamps. Completing a stage triggers real-time customer-facing stage update in the portal.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-4-8",
+      "startedAt": "2026-05-30T15:52:46.315Z",
+      "completedAt": "2026-05-30T16:19:53.530Z",
       "issueFile": "backlog/2-12-admin-stage-management.md",
       "prdRef": "docs/prd/sidestep-website-phase1.md#4-user-stories",
       "acceptanceCriteria": [
@@ -1033,6 +1033,168 @@
         "Email matching normalized consistently with public form's submit path",
         "All tests pass; no regressions"
       ]
+    },
+    {
+      "id": "O-01",
+      "title": "Design Owns Silhouette Specs",
+      "phase": "phase-1",
+      "type": "infrastructure",
+      "description": "Relocate jerseyStyle/neckline/sleeveStyle from the order record onto the design record so a reusable design carries its own cut. Foundational schema swap (no real data) the whole order-page rework depends on.",
+      "status": "pending",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-01-design-owns-silhouette-specs.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#6-implementation-decisions",
+      "acceptanceCriteria": [
+        "designs table gains the three spec fields; orders no longer defines them",
+        "designs.create/update validate+persist specs via lib/design/rules; orders.create/update succeed without them",
+        "convex dev starts clean; smoke + lib unit tests pass"
+      ]
+    },
+    {
+      "id": "O-02",
+      "title": "Design Form Captures Specs",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Surface the silhouette specs (now on the design) in the design create/edit form and on the design detail page, using the RHF+zod+shadcn Form pattern from S-07. Files stay optional.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-02-design-form-captures-specs.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#5-scope",
+      "acceptanceCriteria": [
+        "DesignForm collects jerseyStyle/neckline/sleeve with colocated zod schema",
+        "designs.create/update receive the new fields; detail page renders them",
+        "files remain optional; existing design tests pass"
+      ]
+    },
+    {
+      "id": "O-03",
+      "title": "Order Links Many Designs",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Decouple the order from silhouette specs and let one order link zero-to-many designs. estimatedQuantity becomes informational only. Core data change behind 'season kit = one order, many designs'.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-03-order-links-many-designs.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#4-user-stories",
+      "acceptanceCriteria": [
+        "orders.create/update accept 0..many designIds; zero-design order persists",
+        "OrderForm drops spec fields and links multiple existing designs",
+        "smoke tests cover zero-design and multi-design create paths"
+      ]
+    },
+    {
+      "id": "O-04",
+      "title": "New / Edit Order Single Page",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "Render the order as one scrollable page handling both New and Edit, editable while open, with a progress indicator that blocks the 'design attached' milestone until a design is linked. Locked read-only is layered later by O-06.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-04-new-edit-order-single-page.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#2-proposed-solution",
+      "acceptanceCriteria": [
+        "New and Edit render from one page; single scrollable layout, no wizard",
+        "all fields editable pre-lock",
+        "progress milestone blocked at zero designs, clears once one is linked"
+      ]
+    },
+    {
+      "id": "O-05",
+      "title": "Order Detail Design Sections And Handoff",
+      "phase": "phase-2",
+      "type": "feature",
+      "description": "On order detail, present each linked design as its own section under one timeline and give a clear handoff into Run Setup. The jersey run is created lazily on first collect, not on order save.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-05-order-detail-design-sections-and-handoff.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#6-implementation-decisions",
+      "acceptanceCriteria": [
+        "order detail renders each linked design as a grouped section",
+        "handoff CTA routes to Run Setup",
+        "saving an order creates no run; first collect creates exactly one"
+      ]
+    },
+    {
+      "id": "O-06",
+      "title": "Freeze Order When Roster Locked",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Once the roster is locked, freeze the order: details go read-only and edit mutations are rejected so the production basis cannot drift. Reacts to the external locked run state; standalone designs stay editable. BLOCKED on the external Confirm/Lock slice (jerseyRuns.locked status).",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-06-freeze-order-when-roster-locked.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#5-scope",
+      "acceptanceCriteria": [
+        "editable while unlocked; read-only with 'Locked — contact Sidestep' when locked",
+        "orders.update rejects edits when the roster is locked",
+        "lock freezes roster + order editing only, not the design records"
+      ]
+    },
+    {
+      "id": "O-07",
+      "title": "Order Total Derived From Roster",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Replace the static estimate with a live total derived from the unified roster: order total and per-design counts are summed from roster rows. BLOCKED on the external Roster Manager slice (unified rosterEntries table).",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-07-order-total-derived-from-roster.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#6-implementation-decisions",
+      "acceptanceCriteria": [
+        "order total equals sum of roster row quantities",
+        "each design section shows its count from rows tagged with that designId",
+        "empty roster reads 0; estimatedQuantity shown only as informational seed"
+      ]
+    },
+    {
+      "id": "O-08",
+      "title": "Relabel Remove Design Warning",
+      "phase": "phase-3",
+      "type": "feature",
+      "description": "When a captain relabels or removes a linked design that already has submissions, warn rather than silently orphan: relabel carries submissions to the new label; remove keeps rows and flags them with a removed indicator naming affected submitters. BLOCKED on the external Roster Manager slice (rosterEntries with designId).",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-08-relabel-remove-design-warning.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#4-user-stories",
+      "acceptanceCriteria": [
+        "relabel moves existing submissions to the new label with no data loss",
+        "remove surfaces a non-destructive warning naming affected submitters",
+        "affected rows show a removed indicator; never a silent hard stop"
+      ]
+    },
+    {
+      "id": "O-09",
+      "title": "Order Page Visual Pass",
+      "phase": "phase-3",
+      "type": "improvement",
+      "description": "Restyle the New/Edit Order page + order detail to match the Claude design mock's visual language (dark dense cards, chips/badges, the X-of-N progress meter, teal accents). The order screen has no mock of its own, so it borrows the Roster Manager surface's design language. Pure presentation, no behaviour change.",
+      "status": "blocked",
+      "agent": null,
+      "startedAt": null,
+      "completedAt": null,
+      "issueFile": "backlog/O-09-order-page-visual-pass.md",
+      "prdRef": "docs/prd/new-edit-order-page.md#8-success-metrics",
+      "acceptanceCriteria": [
+        "page chrome, chips, and progress meter match the mock's design language",
+        "renders correctly in light and dark at 375/768/1280",
+        "uses existing shadcn primitives + theme tokens; no functional regressions"
+      ]
     }
   ],
   "edges": [
@@ -1263,6 +1425,42 @@
     {
       "from": "2-15",
       "to": "3-08"
+    },
+    {
+      "from": "O-01",
+      "to": "O-02"
+    },
+    {
+      "from": "O-01",
+      "to": "O-03"
+    },
+    {
+      "from": "O-02",
+      "to": "O-03"
+    },
+    {
+      "from": "O-03",
+      "to": "O-04"
+    },
+    {
+      "from": "O-04",
+      "to": "O-05"
+    },
+    {
+      "from": "O-05",
+      "to": "O-06"
+    },
+    {
+      "from": "O-05",
+      "to": "O-07"
+    },
+    {
+      "from": "O-05",
+      "to": "O-08"
+    },
+    {
+      "from": "O-05",
+      "to": "O-09"
     }
   ],
   "agents": [
@@ -1503,93 +1701,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "opus-4-8",
+      "name": "Opus 4.8",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-22T20:19:18.924Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "opus-jersey-public",
-      "message": "Opus Jersey Public Form joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-22T20:20:17.523Z",
-      "event": "task_started",
-      "nodeId": "2-09",
-      "agent": "opus-jersey-public",
-      "message": "Opus Jersey Public Form picked up: Jersey Run Public Form"
-    },
-    {
-      "timestamp": "2026-05-22T20:25:12.199Z",
-      "event": "task_completed",
-      "nodeId": "2-09",
-      "agent": "opus-jersey-public",
-      "message": "Completed: Jersey Run Public Form"
-    },
-    {
-      "timestamp": "2026-05-22T23:25:31.683Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-opus47-captain-dashboard",
-      "message": "Claude Opus 4.7 (Captain Dashboard) joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-22T23:25:34.261Z",
-      "event": "task_started",
-      "nodeId": "2-10",
-      "agent": "agent-claude-opus47-captain-dashboard",
-      "message": "Claude Opus 4.7 (Captain Dashboard) picked up: Jersey Run Captain Dashboard"
-    },
-    {
-      "timestamp": "2026-05-22T23:29:40.700Z",
-      "event": "task_completed",
-      "nodeId": "2-10",
-      "agent": "agent-claude-opus47-captain-dashboard",
-      "message": "Completed: Jersey Run Captain Dashboard"
-    },
-    {
-      "timestamp": "2026-05-22T23:30:18.590Z",
-      "event": "task_started",
-      "nodeId": "3-01",
-      "agent": "agent-claude-opus47-captain-dashboard",
-      "message": "Claude Opus 4.7 (Captain Dashboard) picked up: Jersey Run Deadline Enforcement"
-    },
-    {
-      "timestamp": "2026-05-22T23:51:47.792Z",
-      "event": "task_completed",
-      "nodeId": "3-01",
-      "agent": "agent-claude-opus47-captain-dashboard",
-      "message": "Completed: Jersey Run Deadline Enforcement"
-    },
-    {
-      "timestamp": "2026-05-23T00:02:16.001Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-opus47-admin-runs",
-      "message": "Claude Opus 4.7 (Admin Jersey Runs) joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-23T00:02:16.090Z",
-      "event": "task_started",
-      "nodeId": "3-02",
-      "agent": "agent-claude-opus47-admin-runs",
-      "message": "Claude Opus 4.7 (Admin Jersey Runs) picked up: Admin Jersey Run Oversight"
-    },
-    {
-      "timestamp": "2026-05-23T00:19:49.202Z",
-      "event": "task_completed",
-      "nodeId": "3-02",
-      "agent": "agent-claude-opus47-admin-runs",
-      "message": "Completed: Admin Jersey Run Oversight"
-    },
-    {
-      "timestamp": "2026-05-23T20:30:45.090Z",
-      "event": "nodes_added",
-      "nodeId": "A-01",
-      "agent": null,
-      "message": "New task added: Extract Shared Convex Auth Helpers"
-    },
     {
       "timestamp": "2026-05-23T20:31:00.495Z",
       "event": "nodes_added",
@@ -2205,6 +2326,90 @@
       "nodeId": "A-04",
       "agent": "opus-A04",
       "message": "Completed: Consolidate Jersey Run Response Validation Rules"
+    },
+    {
+      "timestamp": "2026-05-30T15:52:46.245Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-4-8",
+      "message": "Opus 4.8 joined the workforce"
+    },
+    {
+      "timestamp": "2026-05-30T15:52:46.316Z",
+      "event": "task_started",
+      "nodeId": "2-12",
+      "agent": "opus-4-8",
+      "message": "Opus 4.8 picked up: Admin Stage Management"
+    },
+    {
+      "timestamp": "2026-05-30T16:19:53.531Z",
+      "event": "task_completed",
+      "nodeId": "2-12",
+      "agent": "opus-4-8",
+      "message": "Completed: Admin Stage Management"
+    },
+    {
+      "timestamp": "2026-05-31T00:04:57.493Z",
+      "event": "nodes_added",
+      "nodeId": "O-01",
+      "agent": null,
+      "message": "New task added: Design Owns Silhouette Specs"
+    },
+    {
+      "timestamp": "2026-05-31T00:04:59.932Z",
+      "event": "nodes_added",
+      "nodeId": "O-02",
+      "agent": null,
+      "message": "New task added: Design Form Captures Specs"
+    },
+    {
+      "timestamp": "2026-05-31T00:05:02.642Z",
+      "event": "nodes_added",
+      "nodeId": "O-03",
+      "agent": null,
+      "message": "New task added: Order Links Many Designs"
+    },
+    {
+      "timestamp": "2026-05-31T00:05:05.344Z",
+      "event": "nodes_added",
+      "nodeId": "O-04",
+      "agent": null,
+      "message": "New task added: New / Edit Order Single Page"
+    },
+    {
+      "timestamp": "2026-05-31T00:05:11.767Z",
+      "event": "nodes_added",
+      "nodeId": "O-05",
+      "agent": null,
+      "message": "New task added: Order Detail Design Sections And Handoff"
+    },
+    {
+      "timestamp": "2026-05-31T00:05:15.012Z",
+      "event": "nodes_added",
+      "nodeId": "O-06",
+      "agent": null,
+      "message": "New task added: Freeze Order When Roster Locked"
+    },
+    {
+      "timestamp": "2026-05-31T00:05:17.836Z",
+      "event": "nodes_added",
+      "nodeId": "O-07",
+      "agent": null,
+      "message": "New task added: Order Total Derived From Roster"
+    },
+    {
+      "timestamp": "2026-05-31T00:05:20.636Z",
+      "event": "nodes_added",
+      "nodeId": "O-08",
+      "agent": null,
+      "message": "New task added: Relabel Remove Design Warning"
+    },
+    {
+      "timestamp": "2026-05-31T01:17:06.808Z",
+      "event": "nodes_added",
+      "nodeId": "O-09",
+      "agent": null,
+      "message": "New task added: Order Page Visual Pass"
     }
   ]
 }

@@ -132,3 +132,40 @@ Cross-cutting refactor track to adopt shadcn/ui primitives across every surface.
 - **Before S-04**: gate `/dev/components` to dev-only, or leave unlinked-live? (PRD Open Question — default is unlinked-live)
 - **During each form issue (S-06, S-07, S-08, S-10, S-11)**: verify the Convex mutation's payload shape survives a clean zod schema; flag any mismatches case-by-case
 - **Before S-12**: confirm shadcn `<DropdownMenu>` / `<Tabs>` cover any custom hover/keyboard behavior in the admin checklist UI
+
+---
+
+# Track O — New / Edit Order Page (8 issues)
+## Source PRD: docs/prd/new-edit-order-page.md
+## Generated: 2026-05-30
+
+Reworks the order around the customer-ordering flows: silhouette specs move onto designs, an order links 1..many designs (zero allowed), the order total derives from the roster, and the page handles New/Edit on one scrollable surface. This PRD owns slice 1 (design-specs migration) and slice 2 (the order page); the unified roster table and the run `locked` status are **external dependencies** owned by the Roster Manager and Confirm/Lock PRDs (not yet written).
+
+### Buildable spine (sequential, with one fan-out)
+| # | Issue | Type | Depends On |
+|---|-------|------|------------|
+| O-01 | Design Owns Silhouette Specs | infrastructure | none |
+| O-02 | Design Form Captures Specs | feature | O-01 |
+| O-03 | Order Links Many Designs | feature | O-01, O-02 |
+| O-04 | New / Edit Order Single Page | feature | O-03 |
+| O-05 | Order Detail Design Sections + Handoff | feature | O-04 |
+
+### Gated on external Roster / Lock slices (separate PRDs)
+| # | Issue | Type | Depends On (internal) | External block |
+|---|-------|------|------------------------|----------------|
+| O-06 | Freeze Order When Roster Locked | improvement | O-05 | Confirm/Lock slice → `jerseyRuns.locked` status |
+| O-07 | Order Total Derived From Roster | improvement | O-05 | Roster Manager slice → unified `rosterEntries` |
+| O-08 | Relabel / Remove Design Warning | feature | O-05 | Roster Manager slice → `rosterEntries` w/ `designId` |
+
+### Parallelization Notes for Track O
+- O-02 and O-03 both fan out from O-01; O-03 additionally needs O-02 (it links spec-carrying designs), so the practical order is O-01 → O-02 → O-03.
+- O-06, O-07, O-08 all sit behind O-05 and can run in parallel **once their external dependency lands** — until then they stay blocked at the PRD level, not just the DAG level.
+
+### Critical Path
+`O-01 → O-02 → O-03 → O-04 → O-05 → (O-06 ‖ O-07 ‖ O-08, each after its external dependency)`
+
+### Open Questions Affecting Track O
+- **Before O-04**: confirm the order-page progress milestones align with the Roster Manager progress model so the two surfaces don't diverge.
+- **Before O-06**: the Confirm/Lock PRD must define the `locked` run status + confirmed-count snapshot first; decide whether the locked order view offers a "request a change" path.
+- **Before O-07 / O-08**: the Roster Manager PRD must define the unified `rosterEntries` table (merging `jerseyRuns.fixedRoster` + `jerseyRunResponses`) first.
+- **Sequencing reminder**: O-01 (Design screen revision) is the true first vertical slice — the order page cannot link a spec-carrying design that doesn't exist yet.
