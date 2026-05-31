@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,9 @@ import type { Id } from "@/convex/_generated/dataModel";
 import {
   BRIEF_MAX_LENGTH,
   CANVA_LINK_MAX_LENGTH,
+  JERSEY_STYLE_MAX_LENGTH,
+  NECKLINES,
+  SLEEVE_STYLES,
   TITLE_MAX_LENGTH,
   isHttpUrl,
   toDesignPayload,
@@ -28,6 +31,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -39,6 +49,9 @@ type Mode =
       initialTitle: string;
       initialBrief: string;
       initialCanvaLink: string;
+      initialJerseyStyle: string;
+      initialNeckline: string;
+      initialSleeveStyle: string;
       existingFileCount: number;
     };
 
@@ -54,9 +67,10 @@ type PendingUpload = {
 
 // Colocated zod schema. Field rules mirror lib/design.ts so the client and
 // the convex/designs.ts mutation reject the same inputs with the same
-// wording. fileCount lives inside the form so the upload dropzone can use
-// the same error rendering as every other field — it's mutated via
-// form.setValue from the file picker handlers.
+// wording. Files are optional — an idea-only brief is a valid design
+// (flow spec §Flow 1) — so the form no longer gates submission on a file
+// count. Silhouette specs are optional too: a blank neckline / sleeve means
+// "undecided"; a non-empty value must match the allowlist in lib/design.
 const formSchema = z.object({
   title: z
     .string()
@@ -88,12 +102,27 @@ const formSchema = z.object({
       });
     }
   }),
-  fileCount: z
-    .number()
-    .int()
-    .min(
-      1,
-      "Upload at least one file (logo, mood board, reference image).",
+  jerseyStyle: z
+    .string()
+    .trim()
+    .max(
+      JERSEY_STYLE_MAX_LENGTH,
+      `Please keep the jersey style under ${JERSEY_STYLE_MAX_LENGTH} characters.`,
+    ),
+  // Plain-boolean predicates (not the `isNeckline` type guards) so zod keeps
+  // the inferred field type as `string` — a type-guard refine narrows the
+  // output union and breaks react-hook-form's resolver typing.
+  neckline: z
+    .string()
+    .refine(
+      (v) => v === "" || (NECKLINES as readonly string[]).includes(v),
+      "Pick a neckline from the list.",
+    ),
+  sleeveStyle: z
+    .string()
+    .refine(
+      (v) => v === "" || (SLEEVE_STYLES as readonly string[]).includes(v),
+      "Pick a sleeve style from the list.",
     ),
 });
 
@@ -116,26 +145,29 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
             title: mode.initialTitle,
             brief: mode.initialBrief,
             canvaLink: mode.initialCanvaLink,
-            fileCount: mode.existingFileCount,
+            jerseyStyle: mode.initialJerseyStyle,
+            neckline: mode.initialNeckline,
+            sleeveStyle: mode.initialSleeveStyle,
           }
-        : { title: "", brief: "", canvaLink: "", fileCount: 0 },
+        : {
+            title: "",
+            brief: "",
+            canvaLink: "",
+            jerseyStyle: "",
+            neckline: "",
+            sleeveStyle: "",
+          },
   });
 
-  // Pending uploads stay in local state — each entry has live upload
-  // status (pending/uploading/done/failed) that RHF doesn't need to know
-  // about. fileCount is mirrored into the form below so validation and
-  // FormMessage rendering work the same as every other field.
+  // Pending uploads stay in local state — each entry has live upload status
+  // (pending/uploading/done/failed) that RHF doesn't need to know about.
+  // Files are optional, so the upload count never gates submission; it only
+  // drives the dropzone's "N attached" copy.
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const attachedCount = existingFileCount + pending.length;
-
-  useEffect(() => {
-    form.setValue("fileCount", attachedCount, {
-      shouldValidate: form.formState.isSubmitted,
-    });
-  }, [attachedCount, form]);
 
   function onFilesPicked(picked: FileList | null) {
     if (!picked || picked.length === 0) return;
@@ -216,7 +248,9 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
         title: values.title,
         brief: values.brief,
         canvaLink: values.canvaLink,
-        fileCount: values.fileCount,
+        jerseyStyle: values.jerseyStyle,
+        neckline: values.neckline,
+        sleeveStyle: values.sleeveStyle,
       });
       if (mode.kind === "edit") {
         await updateDesign({
@@ -224,6 +258,9 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
           title: payload.title,
           brief: payload.brief,
           canvaLink: payload.canvaLink,
+          jerseyStyle: payload.jerseyStyle,
+          neckline: payload.neckline,
+          sleeveStyle: payload.sleeveStyle,
           addFileIds: storageIds,
         });
         toast.success("Design updated");
@@ -233,6 +270,9 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
           title: payload.title,
           brief: payload.brief,
           canvaLink: payload.canvaLink,
+          jerseyStyle: payload.jerseyStyle,
+          neckline: payload.neckline,
+          sleeveStyle: payload.sleeveStyle,
           fileIds: storageIds,
         });
         toast.success("Design saved", {
@@ -257,7 +297,6 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
       : mode.kind === "edit"
         ? "Save changes"
         : "Save design";
-  const fileError = form.formState.errors.fileCount?.message;
 
   return (
     <Form {...form}>
@@ -341,8 +380,93 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
 
         <FieldSection
           eyebrow="02"
+          title="The cut"
+          description="The silhouette this artwork lives on. All optional — leave a field blank if the cut isn't decided yet."
+        >
+          <FormField
+            control={form.control}
+            name="jerseyStyle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Jersey style</FormLabel>
+                <FormDescription>
+                  e.g. Soccer jersey, hockey jersey, basketball singlet.
+                </FormDescription>
+                <FormControl>
+                  <Input
+                    placeholder="Soccer jersey"
+                    maxLength={JERSEY_STYLE_MAX_LENGTH}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="neckline"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Neckline</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a neckline…" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {NECKLINES.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sleeveStyle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sleeve style</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a sleeve style…" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {SLEEVE_STYLES.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </FieldSection>
+
+        <FieldSection
+          eyebrow="03"
           title="Files"
-          description="Logos, mood boards, reference photos, sketches — any file type works."
+          description="Logos, mood boards, reference photos, sketches — any file type works. Optional: a brief alone is enough to get started."
         >
           {mode.kind === "edit" && existingFileCount > 0 && (
             <p className="text-sm text-muted-foreground">
@@ -355,7 +479,6 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
             inputRef={fileInputRef}
             onPicked={onFilesPicked}
             disabled={isSubmitting}
-            error={fileError}
             attachedCount={attachedCount}
           />
 
@@ -439,26 +562,21 @@ function FileDropzone({
   inputRef,
   onPicked,
   disabled,
-  error,
   attachedCount,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>;
   onPicked: (files: FileList | null) => void;
   disabled: boolean;
-  error?: string;
   attachedCount: number;
 }) {
   const id = useId();
-  const errorId = `${id}-err`;
   return (
     <div>
       <label
         htmlFor={id}
-        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-card px-6 py-10 text-center transition ${
-          error
-            ? "border-destructive hover:border-destructive"
-            : "border-border hover:border-ring"
-        } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-card px-6 py-10 text-center transition hover:border-ring ${
+          disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+        }`}
       >
         <UploadCloudIcon className="h-8 w-8 text-muted-foreground" aria-hidden />
         <span className="text-sm font-medium text-foreground">
@@ -468,7 +586,7 @@ function FileDropzone({
           Any file type.{" "}
           {attachedCount > 0
             ? `${attachedCount} attached.`
-            : "Add at least one."}
+            : "Add references if you have them — or just describe it above."}
         </span>
         <input
           ref={inputRef}
@@ -478,19 +596,8 @@ function FileDropzone({
           className="sr-only"
           onChange={(e) => onPicked(e.target.files)}
           disabled={disabled}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
         />
       </label>
-      {error && (
-        <p
-          id={errorId}
-          role="alert"
-          className="mt-1 text-[0.8rem] font-medium text-destructive"
-        >
-          {error}
-        </p>
-      )}
     </div>
   );
 }

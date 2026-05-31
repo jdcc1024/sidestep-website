@@ -20,7 +20,9 @@ function validInput(overrides: Partial<DesignInput> = {}): DesignInput {
     title: "Spring season kits",
     brief: "Retro 90s look, cobalt blue with cream accents.",
     canvaLink: "",
-    fileCount: 1,
+    jerseyStyle: "",
+    neckline: "",
+    sleeveStyle: "",
     ...overrides,
   };
 }
@@ -41,14 +43,25 @@ describe("validateDesign — happy path", () => {
       ),
     ).toEqual({});
   });
+
+  it("accepts a design with all silhouette specs set", () => {
+    expect(
+      validateDesign(
+        validInput({
+          jerseyStyle: "Soccer jersey",
+          neckline: "Crew Neck",
+          sleeveStyle: "Raglan",
+        }),
+      ),
+    ).toEqual({});
+  });
 });
 
 describe("validateDesign — required fields", () => {
-  it("flags every required field when the form is empty", () => {
+  it("flags only title and brief when the form is empty", () => {
     const errors = validateDesign(EMPTY_DESIGN);
     expect(errors.title).toBeTruthy();
     expect(errors.brief).toBeTruthy();
-    expect(errors.fileCount).toBeTruthy();
   });
 
   it("rejects a whitespace-only title", () => {
@@ -59,16 +72,48 @@ describe("validateDesign — required fields", () => {
     expect(validateDesign(validInput({ brief: "   " })).brief).toBeTruthy();
   });
 
-  it("requires at least one file", () => {
+  it("does not require files — an idea-only brief is a valid design", () => {
+    // Flow spec §Flow 1: files are optional; a brief alone is a valid design.
+    expect(validateDesign(validInput())).toEqual({});
+  });
+});
+
+describe("validateDesign — silhouette specs (optional)", () => {
+  it("accepts blank specs (the cut is undecided)", () => {
+    const errors = validateDesign(
+      validInput({ jerseyStyle: "", neckline: "", sleeveStyle: "" }),
+    );
+    expect(errors.jerseyStyle).toBeUndefined();
+    expect(errors.neckline).toBeUndefined();
+    expect(errors.sleeveStyle).toBeUndefined();
+  });
+
+  it("rejects a jersey style over the max length", () => {
     expect(
-      validateDesign(validInput({ fileCount: 0 })).fileCount,
+      validateDesign(
+        validInput({ jerseyStyle: "x".repeat(JERSEY_STYLE_MAX_LENGTH + 1) }),
+      ).jerseyStyle,
     ).toBeTruthy();
   });
 
-  it("accepts a file count of 1", () => {
+  it("accepts a jersey style at exactly the max length", () => {
     expect(
-      validateDesign(validInput({ fileCount: 1 })).fileCount,
+      validateDesign(
+        validInput({ jerseyStyle: "x".repeat(JERSEY_STYLE_MAX_LENGTH) }),
+      ).jerseyStyle,
     ).toBeUndefined();
+  });
+
+  it("rejects a neckline outside the allowlist", () => {
+    expect(
+      validateDesign(validInput({ neckline: "Boat Neck" })).neckline,
+    ).toBeTruthy();
+  });
+
+  it("rejects a sleeve style outside the allowlist", () => {
+    expect(
+      validateDesign(validInput({ sleeveStyle: "Sleeveless" })).sleeveStyle,
+    ).toBeTruthy();
   });
 });
 
@@ -219,5 +264,27 @@ describe("toDesignPayload", () => {
         validInput({ canvaLink: "  https://canva.com/design/abc  " }),
       ).canvaLink,
     ).toBe("https://canva.com/design/abc");
+  });
+
+  it("omits every silhouette spec when blank", () => {
+    const payload = toDesignPayload(validInput());
+    expect(payload.jerseyStyle).toBeUndefined();
+    expect(payload.neckline).toBeUndefined();
+    expect(payload.sleeveStyle).toBeUndefined();
+  });
+
+  it("includes and trims jersey style when present", () => {
+    expect(
+      toDesignPayload(validInput({ jerseyStyle: "  Soccer jersey  " }))
+        .jerseyStyle,
+    ).toBe("Soccer jersey");
+  });
+
+  it("includes neckline and sleeve style when present", () => {
+    const payload = toDesignPayload(
+      validInput({ neckline: "V-Neck", sleeveStyle: "Raglan" }),
+    );
+    expect(payload.neckline).toBe("V-Neck");
+    expect(payload.sleeveStyle).toBe("Raglan");
   });
 });

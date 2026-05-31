@@ -60,16 +60,20 @@ describe("designs.createDesign", () => {
     expect(row?.fileIds).toEqual([storageId]);
   });
 
-  it("rejects createDesign when no files are attached", async () => {
+  it("creates an idea-only design with no files (files are optional)", async () => {
+    // Flow spec §Flow 1: a brief alone is a valid design; files optional.
     const t = convexTest(schema, modules);
-    const { asUser } = await seedOwner(t);
-    await expect(
-      asUser.mutation(api.designs.createDesign, {
-        title: "Empty",
-        brief: "Has a brief but no files.",
-        fileIds: [],
-      }),
-    ).rejects.toThrow(/At least one file/);
+    const { userId, asUser } = await seedOwner(t);
+
+    const designId = await asUser.mutation(api.designs.createDesign, {
+      title: "Idea only",
+      brief: "Has a brief but no files yet.",
+      fileIds: [],
+    });
+
+    const row = await t.run((ctx) => ctx.db.get(designId));
+    expect(row).toMatchObject({ ownerId: userId, title: "Idea only" });
+    expect(row?.fileIds).toEqual([]);
   });
 
   it("persists silhouette specs when supplied", async () => {

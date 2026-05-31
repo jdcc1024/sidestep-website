@@ -56,6 +56,9 @@ export default function DesignDetailPage({ params }: PageProps) {
               initialTitle: design.title,
               initialBrief: design.brief,
               initialCanvaLink: design.canvaLink ?? "",
+              initialJerseyStyle: design.jerseyStyle ?? "",
+              initialNeckline: design.neckline ?? "",
+              initialSleeveStyle: design.sleeveStyle ?? "",
               existingFileCount: design.files.length,
             }}
           />
@@ -103,6 +106,17 @@ export default function DesignDetailPage({ params }: PageProps) {
           {design.brief}
         </p>
       </section>
+
+      {(design.jerseyStyle || design.neckline || design.sleeveStyle) && (
+        <section className="mt-8">
+          <h2 className="text-base font-semibold text-foreground">The cut</h2>
+          <dl className="mt-3 grid gap-4 sm:grid-cols-3">
+            <SpecItem label="Jersey style" value={design.jerseyStyle} />
+            <SpecItem label="Neckline" value={design.neckline} />
+            <SpecItem label="Sleeve style" value={design.sleeveStyle} />
+          </dl>
+        </section>
+      )}
 
       {design.canvaLink && (
         <section className="mt-8">
@@ -182,6 +196,19 @@ function NotFound() {
       >
         Back to dashboard
       </Link>
+    </div>
+  );
+}
+
+function SpecItem({ label, value }: { label: string; value?: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 text-sm text-foreground/90">
+        {value ? value : <span className="text-muted-foreground">Not set</span>}
+      </dd>
     </div>
   );
 }
