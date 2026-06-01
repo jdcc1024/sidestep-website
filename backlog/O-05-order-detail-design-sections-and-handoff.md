@@ -1,6 +1,6 @@
 # Issue: Order Detail Design Sections And Handoff
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -17,13 +17,13 @@ This issue touches:
 On order detail, present each linked design as its own section under one order timeline, and give the captain a clear handoff into Run Setup to start collecting. The jersey run is created **lazily on first collect** — saving an order does not eagerly create a run.
 
 ## Acceptance Criteria
-- [ ] Order detail renders each linked design as a grouped section (per-design rollup placeholders are fine until O-07 wires real counts)
-- [ ] A prominent handoff CTA routes to Run Setup ("Set up your run / collect sizes")
-- [ ] Saving an order does **not** create a `jerseyRuns` record
-- [ ] The first "collect" action creates exactly one run for the order
-- [ ] Zero-design orders show the handoff as not-yet-available with the design nudge
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] Order detail renders each linked design as a grouped section (per-design rollup placeholders are fine until O-07 wires real counts)
+- [x] A prominent handoff CTA routes to Run Setup ("Set up your run / collect sizes")
+- [x] Saving an order does **not** create a `jerseyRuns` record
+- [x] The first "collect" action creates exactly one run for the order
+- [x] Zero-design orders show the handoff as not-yet-available with the design nudge
+- [x] All tests pass
+- [x] No regressions in existing tests
 
 ## Dependencies
 - Blocked by: O-04

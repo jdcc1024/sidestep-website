@@ -118,6 +118,11 @@ export const getMyOrder = query({
         title: design.title,
         brief: design.brief,
         canvaLink: design.canvaLink,
+        // Silhouette specs live on the design now (O-01); surface them so the
+        // order detail can render each design as its own section with its cut.
+        jerseyStyle: design.jerseyStyle,
+        neckline: design.neckline,
+        sleeveStyle: design.sleeveStyle,
         fileCount: design.fileIds.length,
       })),
     );

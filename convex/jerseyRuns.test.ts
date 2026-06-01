@@ -88,6 +88,26 @@ describe("jerseyRuns.create", () => {
     ).rejects.toThrow(/already has a jersey run/);
   });
 
+  // O-05: run creation is lazy — saving an order does not eagerly create a
+  // run. The order detail page hands off to Run Setup, and only the first
+  // "collect" (jerseyRuns.create) brings a run into existence. This locks in
+  // that contract: no run exists between order creation and the first collect.
+  it("creates no run on order save; first collect creates exactly one", async () => {
+    const t = convexTest(schema, modules);
+    const { orderId, asUser } = await seedCaptainWithOrder(t);
+
+    // Order exists, but no run has been set up yet.
+    expect(await asUser.query(api.jerseyRuns.getByOrder, { orderId })).toBeNull();
+
+    // First collect lazily creates the single run for the order.
+    const runId = await asUser.mutation(
+      api.jerseyRuns.create,
+      validRunArgs(orderId),
+    );
+    const run = await asUser.query(api.jerseyRuns.getByOrder, { orderId });
+    expect(run?._id).toBe(runId);
+  });
+
   it("rejects creating a run on someone else's order", async () => {
     const t = convexTest(schema, modules);
     const { orderId } = await seedCaptainWithOrder(t, "user_captain_clerk");

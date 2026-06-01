@@ -280,3 +280,38 @@ describe("orders.updateOrder", () => {
     ).rejects.toThrow(/Not authenticated/);
   });
 });
+
+describe("orders.getMyOrder", () => {
+  it("surfaces each linked design's silhouette specs so the order detail can render per-design sections", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, asUser } = await seedCaptain(t);
+
+    const designId = await t.run((ctx) =>
+      ctx.db.insert("designs", {
+        ownerId: userId,
+        title: "Home kit",
+        brief: "Classic look",
+        fileIds: [],
+        jerseyStyle: "Pro Fit",
+        neckline: "V-Neck",
+        sleeveStyle: "Raglan",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }),
+    );
+    const orderId = await asUser.mutation(api.orders.createOrder, {
+      ...VALID_ORDER,
+      designIds: [designId],
+    });
+
+    const result = await asUser.query(api.orders.getMyOrder, { orderId });
+    expect(result?.designs).toHaveLength(1);
+    expect(result?.designs[0]).toMatchObject({
+      _id: designId,
+      title: "Home kit",
+      jerseyStyle: "Pro Fit",
+      neckline: "V-Neck",
+      sleeveStyle: "Raglan",
+    });
+  });
+});

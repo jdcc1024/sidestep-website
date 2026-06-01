@@ -1,0 +1,92 @@
+"use client";
+
+import Link from "next/link";
+import { use } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { JerseyRunSetup } from "@/components/portal/JerseyRunSetup";
+
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
+
+// The "collect" surface. The order detail page hands off here, and the run
+// is created lazily the moment the captain completes setup — saving an order
+// never creates a run on its own (O-05). JerseyRunSetup shows the form when
+// no run exists yet, and the run summary + share link once it does.
+export default function RunSetupPage({ params }: PageProps) {
+  const { id } = use(params);
+  const orderId = id as Id<"orders">;
+  const result = useQuery(api.orders.getMyOrder, { orderId });
+
+  if (result === undefined) return <Loading orderId={orderId} />;
+  if (result === null) return <NotFound />;
+
+  const { order } = result;
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <Link
+        href={`/portal/orders/${orderId}`}
+        className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
+      >
+        ← Back to order
+      </Link>
+
+      <header className="mt-3">
+        <p className="text-sm font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
+          Run setup · {order.teamName}
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Collect sizes &amp; names
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Set up one shareable link to gather sizes, names, and numbers from
+          your whole team.
+        </p>
+      </header>
+
+      <section className="mt-10 rounded-lg border border-border bg-card p-6 shadow-sm">
+        <JerseyRunSetup orderId={orderId} />
+      </section>
+    </div>
+  );
+}
+
+function Loading({ orderId }: { orderId: Id<"orders"> }) {
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <Link
+        href={`/portal/orders/${orderId}`}
+        className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
+      >
+        ← Back to order
+      </Link>
+      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="mt-8 h-60 animate-pulse rounded bg-muted" />
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
+      <h1 className="text-2xl font-bold text-foreground">Order not found</h1>
+      <p className="mt-2 text-muted-foreground">
+        We couldn&apos;t find that order — it may have been removed.
+      </p>
+      <Link
+        href="/portal"
+        className={cn(
+          buttonVariants({ size: "lg" }),
+          "mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700",
+        )}
+      >
+        Back to dashboard
+      </Link>
+    </div>
+  );
+}

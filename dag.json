@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-06-01T08:08:01.278Z",
+  "lastUpdated": "2026-06-01T08:22:09.523Z",
   "phases": [
     {
       "id": "phase-1",
@@ -1112,10 +1112,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "On order detail, present each linked design as its own section under one timeline and give a clear handoff into Run Setup. The jersey run is created lazily on first collect, not on order save.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-o05",
+      "startedAt": "2026-06-01T08:18:41.279Z",
+      "completedAt": "2026-06-01T08:22:09.522Z",
       "issueFile": "backlog/O-05-order-detail-design-sections-and-handoff.md",
       "prdRef": "docs/prd/new-edit-order-page.md#6-implementation-decisions",
       "acceptanceCriteria": [
@@ -1130,7 +1130,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Once the roster is locked, freeze the order: details go read-only and edit mutations are rejected so the production basis cannot drift. Reacts to the external locked run state; standalone designs stay editable. BLOCKED on the external Confirm/Lock slice (jerseyRuns.locked status).",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1148,7 +1148,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Replace the static estimate with a live total derived from the unified roster: order total and per-design counts are summed from roster rows. BLOCKED on the external Roster Manager slice (unified rosterEntries table).",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1166,7 +1166,7 @@
       "phase": "phase-3",
       "type": "feature",
       "description": "When a captain relabels or removes a linked design that already has submissions, warn rather than silently orphan: relabel carries submissions to the new label; remove keeps rows and flags them with a removed indicator naming affected submitters. BLOCKED on the external Roster Manager slice (rosterEntries with designId).",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1184,7 +1184,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Restyle the New/Edit Order page + order detail to match the Claude design mock's visual language (dark dense cards, chips/badges, the X-of-N progress meter, teal accents). The order screen has no mock of its own, so it borrows the Roster Manager surface's design language. Pure presentation, no behaviour change.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1736,30 +1736,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "opus-o05",
+      "name": "Claude Opus (O-05)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-23T21:31:46.258Z",
-      "event": "nodes_added",
-      "nodeId": "S-07",
-      "agent": null,
-      "message": "New task added: DesignForm → RHF + zod + shadcn Form"
-    },
-    {
-      "timestamp": "2026-05-23T21:31:49.051Z",
-      "event": "nodes_added",
-      "nodeId": "S-08",
-      "agent": null,
-      "message": "New task added: OrderForm → RHF + zod + shadcn Form"
-    },
-    {
-      "timestamp": "2026-05-23T21:32:00.286Z",
-      "event": "nodes_added",
-      "nodeId": "S-09",
-      "agent": null,
-      "message": "New task added: Marketing Sweep"
-    },
     {
       "timestamp": "2026-05-23T21:32:02.872Z",
       "event": "nodes_added",
@@ -2438,6 +2424,27 @@
       "nodeId": "O-04",
       "agent": "opus-o04",
       "message": "Completed: New / Edit Order Single Page"
+    },
+    {
+      "timestamp": "2026-06-01T08:18:41.225Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-o05",
+      "message": "Claude Opus (O-05) joined the workforce"
+    },
+    {
+      "timestamp": "2026-06-01T08:18:41.279Z",
+      "event": "task_started",
+      "nodeId": "O-05",
+      "agent": "opus-o05",
+      "message": "Claude Opus (O-05) picked up: Order Detail Design Sections And Handoff"
+    },
+    {
+      "timestamp": "2026-06-01T08:22:09.522Z",
+      "event": "task_completed",
+      "nodeId": "O-05",
+      "agent": "opus-o05",
+      "message": "Completed: Order Detail Design Sections And Handoff"
     }
   ]
 }
