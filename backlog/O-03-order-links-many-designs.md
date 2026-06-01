@@ -1,6 +1,6 @@
 # Issue: Order Links Many Designs
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -17,14 +17,14 @@ This issue touches:
 Decouple the order from silhouette specs (now on designs) and let one order link **zero to many** designs. The order total stops being a frozen estimate — `estimatedQuantity` becomes informational only. This is the core data change behind the "season kit = one order, many designs" flow.
 
 ## Acceptance Criteria
-- [ ] `orders.create` / `orders.update` accept an array of `designIds` of length 0 or more
-- [ ] An order can be created with **zero** designs and persists successfully
-- [ ] `OrderForm` no longer collects `jerseyStyle` / `neckline` / `sleeveStyle`
-- [ ] `OrderForm` links multiple existing designs from "My Designs"
-- [ ] `estimatedQuantity` is retained on the record but no longer presented as the binding quantity
-- [ ] Convex smoke tests cover zero-design and multi-design create paths
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] `orders.create` / `orders.update` accept an array of `designIds` of length 0 or more
+- [x] An order can be created with **zero** designs and persists successfully
+- [x] `OrderForm` no longer collects `jerseyStyle` / `neckline` / `sleeveStyle`
+- [x] `OrderForm` links multiple existing designs from "My Designs"
+- [x] `estimatedQuantity` is retained on the record but no longer presented as the binding quantity
+- [x] Convex smoke tests cover zero-design and multi-design create paths
+- [x] All tests pass
+- [x] No regressions in existing tests
 
 ## Dependencies
 - Blocked by: O-01, O-02

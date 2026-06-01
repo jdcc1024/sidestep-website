@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "./schema";
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 const modules = import.meta.glob("./**/*.*s");
 
@@ -42,6 +43,25 @@ const VALID_ORDER = {
   designIds: [] as never[],
 };
 
+// Insert a design owned by `ownerId` and return its id. Designs carry their
+// own silhouette specs now (O-01), so an order just links to them.
+async function seedDesign(
+  t: ReturnType<typeof convexTest>,
+  ownerId: Id<"users">,
+  title = "My design",
+) {
+  return t.run((ctx) =>
+    ctx.db.insert("designs", {
+      ownerId,
+      title,
+      brief: "A brief",
+      fileIds: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }),
+  );
+}
+
 describe("orders.createOrder", () => {
   it("inserts an order for an authenticated captain", async () => {
     const t = convexTest(schema, modules);
@@ -58,6 +78,34 @@ describe("orders.createOrder", () => {
       estimatedQuantity: 12,
     });
     expect(row?.internalStages[0]?.name).toBe("Inquiry");
+  });
+
+  it("creates an order with zero designs (a kit can start empty)", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedCaptain(t);
+
+    const orderId = await asUser.mutation(api.orders.createOrder, {
+      ...VALID_ORDER,
+      designIds: [],
+    });
+
+    const row = await t.run((ctx) => ctx.db.get(orderId));
+    expect(row?.designIds).toEqual([]);
+  });
+
+  it("creates an order linking multiple owned designs", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, asUser } = await seedCaptain(t);
+    const a = await seedDesign(t, userId, "Home kit");
+    const b = await seedDesign(t, userId, "Away kit");
+
+    const orderId = await asUser.mutation(api.orders.createOrder, {
+      ...VALID_ORDER,
+      designIds: [a, b],
+    });
+
+    const row = await t.run((ctx) => ctx.db.get(orderId));
+    expect(row?.designIds).toEqual([a, b]);
   });
 
   it("rejects an unauthenticated caller (no Clerk identity)", async () => {
@@ -93,5 +141,142 @@ describe("orders.createOrder", () => {
         designIds: [foreignDesignId],
       }),
     ).rejects.toThrow(/not yours/);
+  });
+});
+
+describe("orders.updateOrder", () => {
+  // Helper: create a baseline order owned by the seeded captain so each
+  // update test starts from a persisted record.
+  async function seedOrder(
+    t: ReturnType<typeof convexTest>,
+    asUser: Awaited<ReturnType<typeof seedCaptain>>["asUser"],
+    overrides: Partial<typeof VALID_ORDER> = {},
+  ) {
+    return asUser.mutation(api.orders.createOrder, {
+      ...VALID_ORDER,
+      ...overrides,
+    });
+  }
+
+  it("updates team context fields and bumps updatedAt", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedCaptain(t);
+    const orderId = await seedOrder(t, asUser);
+    const before = await t.run((ctx) => ctx.db.get(orderId));
+
+    await asUser.mutation(api.orders.updateOrder, {
+      orderId,
+      teamName: "Renamed FC",
+      sport: "Rugby",
+      estimatedQuantity: 20,
+      hasOwnDesign: true,
+      designIds: [],
+    });
+
+    const after = await t.run((ctx) => ctx.db.get(orderId));
+    expect(after).toMatchObject({
+      teamName: "Renamed FC",
+      sport: "Rugby",
+      estimatedQuantity: 20,
+      hasOwnDesign: true,
+    });
+    // createdAt and internalStages are preserved; updatedAt advances.
+    expect(after?.createdAt).toBe(before?.createdAt);
+    expect(after?.internalStages).toEqual(before?.internalStages);
+    expect(after?.updatedAt).toBeGreaterThanOrEqual(before?.updatedAt ?? 0);
+  });
+
+  it("links zero..many designs and can clear them back to zero", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, asUser } = await seedCaptain(t);
+    const a = await seedDesign(t, userId, "Home kit");
+    const b = await seedDesign(t, userId, "Away kit");
+    const orderId = await seedOrder(t, asUser);
+
+    await asUser.mutation(api.orders.updateOrder, {
+      orderId,
+      teamName: VALID_ORDER.teamName,
+      sport: VALID_ORDER.sport,
+      estimatedQuantity: VALID_ORDER.estimatedQuantity,
+      hasOwnDesign: VALID_ORDER.hasOwnDesign,
+      designIds: [a, b],
+    });
+    expect(
+      (await t.run((ctx) => ctx.db.get(orderId)))?.designIds,
+    ).toEqual([a, b]);
+
+    await asUser.mutation(api.orders.updateOrder, {
+      orderId,
+      teamName: VALID_ORDER.teamName,
+      sport: VALID_ORDER.sport,
+      estimatedQuantity: VALID_ORDER.estimatedQuantity,
+      hasOwnDesign: VALID_ORDER.hasOwnDesign,
+      designIds: [],
+    });
+    expect(
+      (await t.run((ctx) => ctx.db.get(orderId)))?.designIds,
+    ).toEqual([]);
+  });
+
+  it("rejects updating an order owned by a different captain", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedCaptain(t);
+    const orderId = await seedOrder(t, asUser);
+
+    const { asUser: asOther } = await seedCaptain(t, "user_other_clerk", {
+      email: "other@example.com",
+      name: "Other",
+    });
+
+    await expect(
+      asOther.mutation(api.orders.updateOrder, {
+        orderId,
+        teamName: "Hijacked",
+        sport: VALID_ORDER.sport,
+        estimatedQuantity: VALID_ORDER.estimatedQuantity,
+        hasOwnDesign: VALID_ORDER.hasOwnDesign,
+        designIds: [],
+      }),
+    ).rejects.toThrow(/access/i);
+  });
+
+  it("rejects linking a design owned by a different captain", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedCaptain(t);
+    const orderId = await seedOrder(t, asUser);
+
+    const { userId: otherUserId } = await seedCaptain(t, "user_other_clerk", {
+      email: "other@example.com",
+      name: "Other",
+    });
+    const foreignDesignId = await seedDesign(t, otherUserId, "Not mine");
+
+    await expect(
+      asUser.mutation(api.orders.updateOrder, {
+        orderId,
+        teamName: VALID_ORDER.teamName,
+        sport: VALID_ORDER.sport,
+        estimatedQuantity: VALID_ORDER.estimatedQuantity,
+        hasOwnDesign: VALID_ORDER.hasOwnDesign,
+        designIds: [foreignDesignId],
+      }),
+    ).rejects.toThrow(/not yours/);
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedCaptain(t);
+    const orderId = await seedOrder(t, asUser);
+
+    await expect(
+      t.mutation(api.orders.updateOrder, {
+        orderId,
+        teamName: VALID_ORDER.teamName,
+        sport: VALID_ORDER.sport,
+        estimatedQuantity: VALID_ORDER.estimatedQuantity,
+        hasOwnDesign: VALID_ORDER.hasOwnDesign,
+        designIds: [],
+      }),
+    ).rejects.toThrow(/Not authenticated/);
   });
 });

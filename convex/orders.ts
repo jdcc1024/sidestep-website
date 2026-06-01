@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { getCurrentUserOrNull, requireCurrentUser } from "./_auth";
 
 // Server-side guards. Mirror lib/order.ts so the client and server cap
@@ -17,6 +18,71 @@ function requireShort(value: string, field: string, max: number): string {
   if (!trimmed) throw new ConvexError(`${field} is required.`);
   if (trimmed.length > max) throw new ConvexError(`${field} is too long.`);
   return trimmed;
+}
+
+// The editable fields shared by create and update. Both mutations write the
+// same validated shape, so centralising the checks here keeps them in lock
+// step — there's no second copy of the rules to forget to update.
+const ORDER_FIELD_ARGS = {
+  teamName: v.string(),
+  sport: v.string(),
+  estimatedQuantity: v.number(),
+  hasOwnDesign: v.boolean(),
+  designIds: v.array(v.id("designs")),
+} as const;
+
+type OrderFieldArgs = {
+  teamName: string;
+  sport: string;
+  estimatedQuantity: number;
+  hasOwnDesign: boolean;
+  designIds: Id<"designs">[];
+};
+
+// Normalise and validate the shared order fields, and confirm every linked
+// design exists and belongs to this captain. Returns the persisted shape
+// (sans timestamps/ownership, which the callers own).
+async function normalizeOrderFields(
+  ctx: MutationCtx,
+  ownerId: Id<"users">,
+  args: OrderFieldArgs,
+): Promise<{
+  teamName: string;
+  sport: string;
+  estimatedQuantity: number;
+  hasOwnDesign: boolean;
+  designIds: Id<"designs">[];
+}> {
+  const teamName = requireShort(args.teamName, "Team name", TEAM_NAME_MAX_LENGTH);
+  const sport = requireShort(args.sport, "Sport", SPORT_MAX_LENGTH);
+
+  if (
+    !Number.isFinite(args.estimatedQuantity) ||
+    !Number.isInteger(args.estimatedQuantity) ||
+    args.estimatedQuantity < MIN_QUANTITY ||
+    args.estimatedQuantity > MAX_QUANTITY
+  ) {
+    throw new ConvexError(
+      `Quantity must be a whole number between ${MIN_QUANTITY} and ${MAX_QUANTITY}.`,
+    );
+  }
+
+  // Each linked design must exist and be owned by this captain. Without
+  // this check, a captain could link another user's designs by id.
+  const uniqueDesignIds = Array.from(new Set(args.designIds));
+  for (const designId of uniqueDesignIds) {
+    const design = await ctx.db.get(designId);
+    if (!design || design.ownerId !== ownerId)
+      throw new ConvexError("One of the linked designs is not yours.");
+  }
+
+  return {
+    teamName,
+    sport,
+    estimatedQuantity: args.estimatedQuantity,
+    hasOwnDesign: args.hasOwnDesign,
+    designIds: uniqueDesignIds,
+  };
 }
 
 // One of the captain's orders with linked designs (and their file URLs)
@@ -78,50 +144,38 @@ export const listMyOrders = query({
 });
 
 export const createOrder = mutation({
-  args: {
-    teamName: v.string(),
-    sport: v.string(),
-    estimatedQuantity: v.number(),
-    hasOwnDesign: v.boolean(),
-    designIds: v.array(v.id("designs")),
-  },
+  args: ORDER_FIELD_ARGS,
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
-
-    const teamName = requireShort(args.teamName, "Team name", TEAM_NAME_MAX_LENGTH);
-    const sport = requireShort(args.sport, "Sport", SPORT_MAX_LENGTH);
-
-    if (
-      !Number.isFinite(args.estimatedQuantity) ||
-      !Number.isInteger(args.estimatedQuantity) ||
-      args.estimatedQuantity < MIN_QUANTITY ||
-      args.estimatedQuantity > MAX_QUANTITY
-    ) {
-      throw new ConvexError(
-        `Quantity must be a whole number between ${MIN_QUANTITY} and ${MAX_QUANTITY}.`,
-      );
-    }
-
-    // Each linked design must exist and be owned by this captain. Without
-    // this check, a captain could link another user's designs by id.
-    const uniqueDesignIds = Array.from(new Set(args.designIds));
-    for (const designId of uniqueDesignIds) {
-      const design = await ctx.db.get(designId);
-      if (!design || design.ownerId !== user._id)
-        throw new ConvexError("One of the linked designs is not yours.");
-    }
+    const fields = await normalizeOrderFields(ctx, user._id, args);
 
     const now = Date.now();
     return ctx.db.insert("orders", {
       captainId: user._id,
-      teamName,
-      sport,
-      estimatedQuantity: args.estimatedQuantity,
-      hasOwnDesign: args.hasOwnDesign,
-      designIds: uniqueDesignIds,
+      ...fields,
       internalStages: [{ name: INITIAL_INTERNAL_STAGE, completedAt: now }],
       createdAt: now,
       updatedAt: now,
     });
+  },
+});
+
+// Edit an existing order's team context and linked designs. Same validation
+// and zero-to-many design linking as create; ownership of the order itself is
+// enforced before any write. internalStages, captainId, and createdAt are
+// immutable here — only the captain-editable fields and updatedAt change.
+export const updateOrder = mutation({
+  args: { orderId: v.id("orders"), ...ORDER_FIELD_ARGS },
+  handler: async (ctx, { orderId, ...args }) => {
+    const user = await requireCurrentUser(ctx);
+
+    const order = await ctx.db.get(orderId);
+    if (!order || order.captainId !== user._id)
+      throw new ConvexError("You don't have access to this order.");
+
+    const fields = await normalizeOrderFields(ctx, user._id, args);
+
+    await ctx.db.patch(orderId, { ...fields, updatedAt: Date.now() });
+    return orderId;
   },
 });
