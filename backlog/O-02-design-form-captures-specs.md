@@ -1,6 +1,6 @@
 # Issue: Design Form Captures Specs
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -17,14 +17,27 @@ This issue touches:
 Surface the silhouette specs (now living on the design) in the design create/edit form and on the design detail page. Captains describe the cut where the artwork lives, not on the order.
 
 ## Acceptance Criteria
-- [ ] `DesignForm` collects `jerseyStyle`, `neckline`, `sleeveStyle` using the RHF + zod + shadcn Form pattern (mirrors S-07)
-- [ ] zod schema colocated; validation errors via `FormMessage`
-- [ ] `designs.create` / `designs.update` receive the new fields in the same payload shape
-- [ ] Design detail page renders the three specs
-- [ ] Files remain optional (idea-only design still saves)
-- [ ] Success via sonner toast; existing design tests pass
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] `DesignForm` collects `jerseyStyle`, `neckline`, `sleeveStyle` using the RHF + zod + shadcn Form pattern (mirrors S-07)
+- [x] zod schema colocated; validation errors via `FormMessage`
+- [x] `designs.create` / `designs.update` receive the new fields in the same payload shape
+- [x] Design detail page renders the three specs
+- [x] Files remain optional (idea-only design still saves)
+- [x] Success via sonner toast; existing design tests pass
+- [x] All tests pass (314)
+- [x] No regressions in existing tests
+
+## Implementation Note (delivered)
+All three specs are **optional** in the form: `jerseyStyle` is a free-text
+`Input`; `neckline` / `sleeveStyle` are shadcn `Select`s offering the
+`lib/design/rules` allowlists. Blank means "not decided yet" — an idea-only
+design (brief + files, cut undecided) still saves, matching PRD §4 / §6. The
+zod `.refine` predicates are return-annotated `: boolean` so the
+`isNeckline` / `isSleeveStyle` type guards don't widen `FormValues` into a
+literal union and break RHF's resolver generics. Payload building lives in
+the shared `lib/design` form adapter (`toDesignPayload` omits blank specs).
+The detail page renders a "The cut" section; clearing a spec in edit mode is
+not supported (convex `normalizeSpecs` leaves omitted specs as-is — a
+deliberate API behaviour left untouched per this slice's "API: none" scope).
 
 ## Dependencies
 - Blocked by: O-01

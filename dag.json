@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-05-31T08:21:07.730Z",
+  "lastUpdated": "2026-06-01T07:34:59.678Z",
   "phases": [
     {
       "id": "phase-1",
@@ -1058,10 +1058,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Surface the silhouette specs (now on the design) in the design create/edit form and on the design detail page, using the RHF+zod+shadcn Form pattern from S-07. Files stay optional.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-o02",
+      "startedAt": "2026-06-01T07:30:12.488Z",
+      "completedAt": "2026-06-01T07:34:59.677Z",
       "issueFile": "backlog/O-02-design-form-captures-specs.md",
       "prdRef": "docs/prd/new-edit-order-page.md#5-scope",
       "acceptanceCriteria": [
@@ -1076,7 +1076,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Decouple the order from silhouette specs and let one order link zero-to-many designs. estimatedQuantity becomes informational only. Core data change behind 'season kit = one order, many designs'.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1715,30 +1715,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "opus-o02",
+      "name": "Opus 4.8",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-23T20:32:49.164Z",
-      "event": "nodes_added",
-      "nodeId": "A-05",
-      "agent": null,
-      "message": "New task added: Consolidate Order Design Intake Validation Rules"
-    },
-    {
-      "timestamp": "2026-05-23T20:32:58.240Z",
-      "event": "nodes_added",
-      "nodeId": "A-06",
-      "agent": null,
-      "message": "New task added: Extract Admin Join Users By Id Helper"
-    },
-    {
-      "timestamp": "2026-05-23T20:33:05.576Z",
-      "event": "nodes_added",
-      "nodeId": "A-07",
-      "agent": null,
-      "message": "New task added: Extract Form Hooks From Large Components"
-    },
     {
       "timestamp": "2026-05-23T21:31:23.274Z",
       "event": "nodes_added",
@@ -2417,6 +2403,27 @@
       "nodeId": "O-01",
       "agent": "opus-o01",
       "message": "Completed: Design Owns Silhouette Specs"
+    },
+    {
+      "timestamp": "2026-06-01T07:30:12.432Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-o02",
+      "message": "Opus 4.8 joined the workforce"
+    },
+    {
+      "timestamp": "2026-06-01T07:30:12.488Z",
+      "event": "task_started",
+      "nodeId": "O-02",
+      "agent": "opus-o02",
+      "message": "Opus 4.8 picked up: Design Form Captures Specs"
+    },
+    {
+      "timestamp": "2026-06-01T07:34:59.678Z",
+      "event": "task_completed",
+      "nodeId": "O-02",
+      "agent": "opus-o02",
+      "message": "Completed: Design Form Captures Specs"
     }
   ]
 }

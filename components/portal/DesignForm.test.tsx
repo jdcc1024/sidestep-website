@@ -35,6 +35,34 @@ describe("DesignForm", () => {
     expect(mutationStub).not.toHaveBeenCalled();
   });
 
+  it("renders the optional silhouette spec fields", () => {
+    render(<DesignForm />);
+
+    expect(screen.getByLabelText(/jersey style/i)).toBeInTheDocument();
+    expect(screen.getByText("Neckline")).toBeInTheDocument();
+    expect(screen.getByText("Sleeve style")).toBeInTheDocument();
+    // Specs are optional: an empty submit never complains about them.
+    expect(screen.queryByText(/choose a neckline from the list/i)).toBeNull();
+  });
+
+  it("does not block submission on blank specs (they are optional)", async () => {
+    const user = userEvent.setup();
+    render(<DesignForm />);
+
+    await user.click(screen.getByRole("button", { name: /save design/i }));
+
+    // The required fields complain, but the optional specs never do.
+    expect(
+      await screen.findByText(/give your design a title/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/choose a neckline from the list/i),
+    ).toBeNull();
+    expect(
+      screen.queryByText(/choose a sleeve style from the list/i),
+    ).toBeNull();
+  });
+
   it("flags an invalid canva link", async () => {
     const user = userEvent.setup();
     render(<DesignForm />);

@@ -56,6 +56,9 @@ export default function DesignDetailPage({ params }: PageProps) {
               initialTitle: design.title,
               initialBrief: design.brief,
               initialCanvaLink: design.canvaLink ?? "",
+              initialJerseyStyle: design.jerseyStyle ?? "",
+              initialNeckline: design.neckline ?? "",
+              initialSleeveStyle: design.sleeveStyle ?? "",
               existingFileCount: design.files.length,
             }}
           />
@@ -102,6 +105,21 @@ export default function DesignDetailPage({ params }: PageProps) {
         <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/90">
           {design.brief}
         </p>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-base font-semibold text-foreground">The cut</h2>
+        {design.jerseyStyle || design.neckline || design.sleeveStyle ? (
+          <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <SpecItem label="Jersey style" value={design.jerseyStyle} />
+            <SpecItem label="Neckline" value={design.neckline} />
+            <SpecItem label="Sleeve style" value={design.sleeveStyle} />
+          </dl>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">
+            The silhouette isn&apos;t decided yet — Sidestep will help you choose.
+          </p>
+        )}
       </section>
 
       {design.canvaLink && (
@@ -152,6 +170,19 @@ export default function DesignDetailPage({ params }: PageProps) {
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+function SpecItem({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 text-sm text-foreground/90">
+        {value || <span className="text-muted-foreground">Not set</span>}
+      </dd>
     </div>
   );
 }

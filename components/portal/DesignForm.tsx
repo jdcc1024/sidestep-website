@@ -13,8 +13,13 @@ import type { Id } from "@/convex/_generated/dataModel";
 import {
   BRIEF_MAX_LENGTH,
   CANVA_LINK_MAX_LENGTH,
+  JERSEY_STYLE_MAX_LENGTH,
+  NECKLINES,
+  SLEEVE_STYLES,
   TITLE_MAX_LENGTH,
   isHttpUrl,
+  isNeckline,
+  isSleeveStyle,
   toDesignPayload,
 } from "@/lib/design";
 import { Button } from "@/components/ui/button";
@@ -28,6 +33,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -39,6 +51,9 @@ type Mode =
       initialTitle: string;
       initialBrief: string;
       initialCanvaLink: string;
+      initialJerseyStyle: string;
+      initialNeckline: string;
+      initialSleeveStyle: string;
       existingFileCount: number;
     };
 
@@ -88,6 +103,31 @@ const formSchema = z.object({
       });
     }
   }),
+  // Silhouette specs — all optional. Blank means "not decided yet"; the
+  // neckline/sleeve Selects only offer allowlisted values, so the refine
+  // is defense-in-depth against a hand-edited DOM, mirroring lib/design.
+  jerseyStyle: z
+    .string()
+    .trim()
+    .max(
+      JERSEY_STYLE_MAX_LENGTH,
+      `Please keep the jersey style under ${JERSEY_STYLE_MAX_LENGTH} characters.`,
+    ),
+  // Return-annotate as boolean so zod doesn't infer these as type guards
+  // (isNeckline/isSleeveStyle narrow), which would widen FormValues into a
+  // literal union and break RHF's resolver generic inference.
+  neckline: z
+    .string()
+    .refine(
+      (value): boolean => value === "" || isNeckline(value),
+      "Choose a neckline from the list.",
+    ),
+  sleeveStyle: z
+    .string()
+    .refine(
+      (value): boolean => value === "" || isSleeveStyle(value),
+      "Choose a sleeve style from the list.",
+    ),
   fileCount: z
     .number()
     .int()
@@ -116,9 +156,20 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
             title: mode.initialTitle,
             brief: mode.initialBrief,
             canvaLink: mode.initialCanvaLink,
+            jerseyStyle: mode.initialJerseyStyle,
+            neckline: mode.initialNeckline,
+            sleeveStyle: mode.initialSleeveStyle,
             fileCount: mode.existingFileCount,
           }
-        : { title: "", brief: "", canvaLink: "", fileCount: 0 },
+        : {
+            title: "",
+            brief: "",
+            canvaLink: "",
+            jerseyStyle: "",
+            neckline: "",
+            sleeveStyle: "",
+            fileCount: 0,
+          },
   });
 
   // Pending uploads stay in local state — each entry has live upload
@@ -216,6 +267,9 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
         title: values.title,
         brief: values.brief,
         canvaLink: values.canvaLink,
+        jerseyStyle: values.jerseyStyle,
+        neckline: values.neckline,
+        sleeveStyle: values.sleeveStyle,
         fileCount: values.fileCount,
       });
       if (mode.kind === "edit") {
@@ -224,6 +278,9 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
           title: payload.title,
           brief: payload.brief,
           canvaLink: payload.canvaLink,
+          jerseyStyle: payload.jerseyStyle,
+          neckline: payload.neckline,
+          sleeveStyle: payload.sleeveStyle,
           addFileIds: storageIds,
         });
         toast.success("Design updated");
@@ -233,6 +290,9 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
           title: payload.title,
           brief: payload.brief,
           canvaLink: payload.canvaLink,
+          jerseyStyle: payload.jerseyStyle,
+          neckline: payload.neckline,
+          sleeveStyle: payload.sleeveStyle,
           fileIds: storageIds,
         });
         toast.success("Design saved", {
@@ -341,6 +401,92 @@ export function DesignForm({ mode = { kind: "create" } }: { mode?: Mode }) {
 
         <FieldSection
           eyebrow="02"
+          title="The cut"
+          description="The silhouette this artwork lives on. Optional — leave these blank if you haven't decided yet, and Sidestep will help you choose."
+        >
+          <FormField
+            control={form.control}
+            name="jerseyStyle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Jersey style</FormLabel>
+                <FormDescription>
+                  Optional — e.g. &ldquo;Soccer jersey&rdquo; or &ldquo;Hockey
+                  jersey&rdquo;.
+                </FormDescription>
+                <FormControl>
+                  <Input
+                    placeholder="Soccer jersey"
+                    maxLength={JERSEY_STYLE_MAX_LENGTH}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="neckline"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Neckline</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a neckline…" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {NECKLINES.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sleeveStyle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sleeve style</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a sleeve style…" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {SLEEVE_STYLES.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </FieldSection>
+
+        <FieldSection
+          eyebrow="03"
           title="Files"
           description="Logos, mood boards, reference photos, sketches — any file type works."
         >

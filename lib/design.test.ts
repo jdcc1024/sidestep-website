@@ -20,6 +20,9 @@ function validInput(overrides: Partial<DesignInput> = {}): DesignInput {
     title: "Spring season kits",
     brief: "Retro 90s look, cobalt blue with cream accents.",
     canvaLink: "",
+    jerseyStyle: "",
+    neckline: "",
+    sleeveStyle: "",
     fileCount: 1,
     ...overrides,
   };
@@ -189,6 +192,74 @@ describe("silhouette spec allowlists", () => {
   it("isSleeveStyle rejects anything else", () => {
     expect(isSleeveStyle("")).toBe(false);
     expect(isSleeveStyle("Sleeveless")).toBe(false);
+  });
+});
+
+describe("validateDesign — silhouette specs (optional)", () => {
+  it("accepts a design with no specs set", () => {
+    expect(validateDesign(validInput())).toEqual({});
+  });
+
+  it("accepts valid specs", () => {
+    expect(
+      validateDesign(
+        validInput({
+          jerseyStyle: "Soccer jersey",
+          neckline: "Crew Neck",
+          sleeveStyle: "Raglan",
+        }),
+      ),
+    ).toEqual({});
+  });
+
+  it("rejects a jersey style over the length cap", () => {
+    expect(
+      validateDesign(
+        validInput({ jerseyStyle: "x".repeat(JERSEY_STYLE_MAX_LENGTH + 1) }),
+      ).jerseyStyle,
+    ).toBeTruthy();
+  });
+
+  it("accepts a jersey style at exactly the max length", () => {
+    expect(
+      validateDesign(
+        validInput({ jerseyStyle: "x".repeat(JERSEY_STYLE_MAX_LENGTH) }),
+      ).jerseyStyle,
+    ).toBeUndefined();
+  });
+
+  it("rejects a neckline outside the allowlist", () => {
+    expect(
+      validateDesign(validInput({ neckline: "Turtle" })).neckline,
+    ).toBeTruthy();
+  });
+
+  it("rejects a sleeve style outside the allowlist", () => {
+    expect(
+      validateDesign(validInput({ sleeveStyle: "Sleeveless" })).sleeveStyle,
+    ).toBeTruthy();
+  });
+});
+
+describe("toDesignPayload — silhouette specs", () => {
+  it("omits specs when blank", () => {
+    const payload = toDesignPayload(validInput());
+    expect(payload).not.toHaveProperty("jerseyStyle");
+    expect(payload).not.toHaveProperty("neckline");
+    expect(payload).not.toHaveProperty("sleeveStyle");
+  });
+
+  it("trims and includes specs when present", () => {
+    const payload = toDesignPayload(
+      validInput({
+        jerseyStyle: "  Hockey jersey  ",
+        neckline: "V-Neck",
+        sleeveStyle: "Regular",
+      }),
+    );
+    expect(payload.jerseyStyle).toBe("Hockey jersey");
+    expect(payload.neckline).toBe("V-Neck");
+    expect(payload.sleeveStyle).toBe("Regular");
   });
 });
 
