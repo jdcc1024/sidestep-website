@@ -1,0 +1,85 @@
+"use client";
+
+import Link from "next/link";
+import { use } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { OrderForm } from "@/components/portal/OrderForm";
+
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
+
+// Edit reuses the same OrderForm as New (O-04): one component renders both
+// surfaces. Here we resolve the order, then hand the doc to OrderForm to
+// pre-populate and route the submit through updateOrder.
+export default function EditOrderPage({ params }: PageProps) {
+  const { id } = use(params);
+  const orderId = id as Id<"orders">;
+  const result = useQuery(api.orders.getMyOrder, { orderId });
+
+  if (result === undefined) return <Loading />;
+  if (result === null) return <NotFound />;
+
+  const { order } = result;
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <Link
+        href={`/portal/orders/${orderId}`}
+        className="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
+      >
+        ← Back to order
+      </Link>
+      <header className="mt-3">
+        <p className="text-sm font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
+          Edit order
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          {order.teamName}
+        </h1>
+        <p className="mt-2 max-w-2xl text-muted-foreground">
+          Update your team details and the designs linked to this order. You
+          can edit anytime before the roster is locked.
+        </p>
+      </header>
+
+      <div className="mt-10">
+        <OrderForm order={order} />
+      </div>
+    </div>
+  );
+}
+
+function Loading() {
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+      <div className="mt-6 h-10 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="mt-8 h-64 animate-pulse rounded bg-muted" />
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 lg:px-8">
+      <h1 className="text-2xl font-bold text-foreground">Order not found</h1>
+      <p className="mt-2 text-muted-foreground">
+        We couldn&apos;t find that order — it may have been removed.
+      </p>
+      <Link
+        href="/portal"
+        className={cn(
+          buttonVariants({ size: "lg" }),
+          "mt-6 bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-700",
+        )}
+      >
+        Back to dashboard
+      </Link>
+    </div>
+  );
+}

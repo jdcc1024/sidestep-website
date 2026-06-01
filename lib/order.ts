@@ -66,6 +66,53 @@ export function validateOrder(input: OrderInput): OrderErrors {
   return errors;
 }
 
+// Count the designs that would actually be linked: deduped, blanks dropped —
+// the same normalisation toOrderPayload applies. Keeps the progress gate
+// honest if the checkbox state ever carries duplicates or empty strings.
+export function linkedDesignCount(designIds: string[]): number {
+  return new Set(designIds.filter((id) => id.length > 0)).size;
+}
+
+// Progress milestones for the New / Edit Order page. "complete" = done,
+// "current" = reached and actionable now, "blocked" = can't proceed yet.
+//
+// The "design" milestone is the gate the PRD calls out: it stays "blocked"
+// while no design is linked and clears to "complete" the moment one is — and
+// "collect" stays blocked behind it. Zero designs is a nudge here, not a hard
+// validation error (the order still saves), so the gate lives in this
+// progress view rather than in validateOrder.
+export type OrderMilestoneStatus = "complete" | "current" | "blocked";
+
+export type OrderMilestone = {
+  id: "details" | "design" | "collect";
+  label: string;
+  status: OrderMilestoneStatus;
+};
+
+export function orderMilestones(input: OrderInput): OrderMilestone[] {
+  const errors = validateOrder(input);
+  const detailsValid = !errors.teamName && !errors.sport && !errors.estimatedQuantity;
+  const designsLinked = linkedDesignCount(input.designIds) >= 1;
+
+  return [
+    {
+      id: "details",
+      label: "Order details",
+      status: detailsValid ? "complete" : "current",
+    },
+    {
+      id: "design",
+      label: "Design attached",
+      status: designsLinked ? "complete" : "blocked",
+    },
+    {
+      id: "collect",
+      label: "Ready to collect",
+      status: detailsValid && designsLinked ? "current" : "blocked",
+    },
+  ];
+}
+
 // Convert validated form state into the payload shape the Convex mutation
 // expects. Throws if the input was never run through validateOrder — the
 // caller should always gate this on an empty error object.

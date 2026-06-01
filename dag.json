@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-06-01T07:43:06.316Z",
+  "lastUpdated": "2026-06-01T08:08:01.278Z",
   "phases": [
     {
       "id": "phase-1",
@@ -1094,10 +1094,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Render the order as one scrollable page handling both New and Edit, editable while open, with a progress indicator that blocks the 'design attached' milestone until a design is linked. Locked read-only is layered later by O-06.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-o04",
+      "startedAt": "2026-06-01T07:56:36.277Z",
+      "completedAt": "2026-06-01T08:08:01.277Z",
       "issueFile": "backlog/O-04-new-edit-order-single-page.md",
       "prdRef": "docs/prd/new-edit-order-page.md#2-proposed-solution",
       "acceptanceCriteria": [
@@ -1112,7 +1112,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "On order detail, present each linked design as its own section under one timeline and give a clear handoff into Run Setup. The jersey run is created lazily on first collect, not on order save.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1729,30 +1729,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "opus-o04",
+      "name": "Opus (O-04)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-23T21:31:36.429Z",
-      "event": "nodes_added",
-      "nodeId": "S-04",
-      "agent": null,
-      "message": "New task added: /dev/components Showcase Page"
-    },
-    {
-      "timestamp": "2026-05-23T21:31:39.472Z",
-      "event": "nodes_added",
-      "nodeId": "S-05",
-      "agent": null,
-      "message": "New task added: Portal Pilot — PortalShell and OrderTimeline on shadcn"
-    },
-    {
-      "timestamp": "2026-05-23T21:31:43.119Z",
-      "event": "nodes_added",
-      "nodeId": "S-06",
-      "agent": null,
-      "message": "New task added: JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form)"
-    },
     {
       "timestamp": "2026-05-23T21:31:46.258Z",
       "event": "nodes_added",
@@ -2431,6 +2417,27 @@
       "nodeId": "O-03",
       "agent": "opus-o03",
       "message": "Completed: Order Links Many Designs"
+    },
+    {
+      "timestamp": "2026-06-01T07:56:36.207Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-o04",
+      "message": "Opus (O-04) joined the workforce"
+    },
+    {
+      "timestamp": "2026-06-01T07:56:36.278Z",
+      "event": "task_started",
+      "nodeId": "O-04",
+      "agent": "opus-o04",
+      "message": "Opus (O-04) picked up: New / Edit Order Single Page"
+    },
+    {
+      "timestamp": "2026-06-01T08:08:01.277Z",
+      "event": "task_completed",
+      "nodeId": "O-04",
+      "agent": "opus-o04",
+      "message": "Completed: New / Edit Order Single Page"
     }
   ]
 }

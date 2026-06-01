@@ -2,10 +2,11 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { Check, Lock, Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
@@ -14,8 +15,12 @@ import {
   MIN_QUANTITY,
   SPORT_MAX_LENGTH,
   TEAM_NAME_MAX_LENGTH,
+  linkedDesignCount,
+  orderMilestones,
   toOrderPayload,
+  type OrderMilestone,
 } from "@/lib/order";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -68,21 +73,55 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function OrderForm() {
+// The fields the edit surface pre-populates from an existing order. The page
+// passes the order doc; only the captain-editable fields are read here.
+export type EditableOrder = Pick<
+  Doc<"orders">,
+  "_id" | "teamName" | "sport" | "estimatedQuantity" | "hasOwnDesign" | "designIds"
+>;
+
+// One component renders both New and Edit (O-04 AC): pass an existing `order`
+// to pre-populate fields and route the submit through updateOrder instead of
+// createOrder. Everything else — layout, validation, progress gate — is shared.
+export function OrderForm({ order }: { order?: EditableOrder } = {}) {
   const router = useRouter();
+  const isEdit = order !== undefined;
   const createOrder = useMutation(api.orders.createOrder);
+  const updateOrder = useMutation(api.orders.updateOrder);
   const designs = useQuery(api.designs.listMyDesigns);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      teamName: "",
-      sport: "",
-      estimatedQuantity: "",
-      hasOwnDesign: false,
-      designIds: [],
-    },
+    defaultValues: order
+      ? {
+          teamName: order.teamName,
+          sport: order.sport,
+          estimatedQuantity: String(order.estimatedQuantity),
+          hasOwnDesign: order.hasOwnDesign,
+          designIds: order.designIds as unknown as string[],
+        }
+      : {
+          teamName: "",
+          sport: "",
+          estimatedQuantity: "",
+          hasOwnDesign: false,
+          designIds: [],
+        },
   });
+
+  // Recompute the progress gate on every change so the "design attached"
+  // milestone clears the instant a design is checked. useWatch (not
+  // form.watch) keeps the subscription React-Compiler-friendly, matching the
+  // other portal forms. hasOwnDesign doesn't affect the gate, so it's omitted.
+  const watched = useWatch({ control: form.control });
+  const milestones = orderMilestones({
+    teamName: watched.teamName ?? "",
+    sport: watched.sport ?? "",
+    estimatedQuantity: watched.estimatedQuantity ?? "",
+    hasOwnDesign: false,
+    designIds: watched.designIds ?? [],
+  });
+  const hasLinkedDesign = linkedDesignCount(watched.designIds ?? []) >= 1;
 
   async function onSubmit(values: FormValues) {
     try {
@@ -93,15 +132,21 @@ export function OrderForm() {
         hasOwnDesign: values.hasOwnDesign,
         designIds: values.designIds,
       });
-      const orderId = await createOrder({
+      const fields = {
         teamName: payload.teamName,
         sport: payload.sport,
         estimatedQuantity: payload.estimatedQuantity,
         hasOwnDesign: payload.hasOwnDesign,
         designIds: payload.designIds as unknown as Id<"designs">[],
-      });
-      toast.success("Order created", {
-        description: "We'll take it from here — track its progress on the order page.",
+      };
+      const orderId =
+        order !== undefined
+          ? await updateOrder({ orderId: order._id, ...fields })
+          : await createOrder(fields);
+      toast.success(isEdit ? "Order updated" : "Order created", {
+        description: isEdit
+          ? "Your changes are saved."
+          : "We'll take it from here — track its progress on the order page.",
       });
       router.push(`/portal/orders/${orderId}`);
     } catch (err) {
@@ -124,6 +169,7 @@ export function OrderForm() {
         className="space-y-10"
         aria-busy={isSubmitting}
       >
+        <OrderProgress milestones={milestones} />
         <FieldSection
           eyebrow="01"
           title="Team & order"
@@ -241,6 +287,16 @@ export function OrderForm() {
                   value={field.value}
                   onChange={field.onChange}
                 />
+                {!hasLinkedDesign && (
+                  <p
+                    role="note"
+                    className="rounded-md border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
+                  >
+                    No design attached yet — that&apos;s okay, you can save now
+                    and add one whenever you&apos;re ready. Your order stays
+                    incomplete until a design is linked.
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -255,11 +311,111 @@ export function OrderForm() {
             page.
           </p>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Create order"}
+            {isSubmitting
+              ? "Saving…"
+              : isEdit
+                ? "Save changes"
+                : "Create order"}
           </Button>
         </div>
       </form>
     </Form>
+  );
+}
+
+// The order-readiness gate. Renders each milestone with a status icon and a
+// caption ("Done" / "In progress" / "Locked"). The "Design attached"
+// milestone shows Locked until a design is linked, which is the visible block
+// the PRD calls for — and "Ready to collect" stays Locked behind it.
+const STATUS_CAPTION: Record<OrderMilestone["status"], string> = {
+  complete: "Done",
+  current: "In progress",
+  blocked: "Locked",
+};
+
+function OrderProgress({ milestones }: { milestones: OrderMilestone[] }) {
+  return (
+    <section
+      aria-label="Order progress"
+      className="rounded-lg border border-border bg-muted/30 p-4"
+    >
+      <ol className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-2">
+        {milestones.map((m, i) => (
+          <li
+            key={m.id}
+            className="flex flex-1 items-start gap-3 sm:flex-col sm:items-center sm:text-center"
+          >
+            <MilestoneIcon status={m.status} />
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  "text-sm font-medium",
+                  m.status === "complete"
+                    ? "text-foreground"
+                    : m.status === "blocked"
+                      ? "text-muted-foreground"
+                      : "text-foreground",
+                )}
+              >
+                {m.label}
+              </p>
+              <p
+                className={cn(
+                  "text-xs",
+                  m.status === "complete"
+                    ? "text-emerald-700 dark:text-emerald-300"
+                    : m.status === "blocked"
+                      ? "text-amber-700 dark:text-amber-300"
+                      : "text-muted-foreground",
+                )}
+              >
+                {STATUS_CAPTION[m.status]}
+              </p>
+            </div>
+            {i < milestones.length - 1 && (
+              <span
+                aria-hidden
+                className="hidden h-px flex-1 self-center bg-border sm:block"
+              />
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function MilestoneIcon({ status }: { status: OrderMilestone["status"] }) {
+  const base =
+    "flex size-7 shrink-0 items-center justify-center rounded-full";
+  if (status === "complete") {
+    return (
+      <span
+        className={cn(
+          base,
+          "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
+        )}
+      >
+        <Check className="size-4" aria-hidden />
+      </span>
+    );
+  }
+  if (status === "blocked") {
+    return (
+      <span
+        className={cn(
+          base,
+          "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
+        )}
+      >
+        <Lock className="size-4" aria-hidden />
+      </span>
+    );
+  }
+  return (
+    <span className={cn(base, "bg-primary/10 text-primary")}>
+      <Loader2 className="size-4" aria-hidden />
+    </span>
   );
 }
 

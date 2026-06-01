@@ -5,10 +5,22 @@ import {
   MIN_QUANTITY,
   SPORT_MAX_LENGTH,
   TEAM_NAME_MAX_LENGTH,
+  linkedDesignCount,
+  orderMilestones,
   toOrderPayload,
   validateOrder,
   type OrderInput,
+  type OrderMilestone,
 } from "./order";
+
+function milestone(
+  milestones: OrderMilestone[],
+  id: OrderMilestone["id"],
+): OrderMilestone {
+  const found = milestones.find((m) => m.id === id);
+  if (!found) throw new Error(`No milestone with id "${id}"`);
+  return found;
+}
 
 function validInput(overrides: Partial<OrderInput> = {}): OrderInput {
   return {
@@ -163,5 +175,63 @@ describe("toOrderPayload", () => {
   it("drops blank designIds", () => {
     const payload = toOrderPayload(validInput({ designIds: ["a", "", "b"] }));
     expect(payload.designIds).toEqual(["a", "b"]);
+  });
+});
+
+describe("linkedDesignCount", () => {
+  it("counts distinct, non-blank ids", () => {
+    expect(linkedDesignCount(["a", "b", "a", "", "c"])).toBe(3);
+  });
+
+  it("is zero for an empty or all-blank array", () => {
+    expect(linkedDesignCount([])).toBe(0);
+    expect(linkedDesignCount(["", ""])).toBe(0);
+  });
+});
+
+describe("orderMilestones — design gate", () => {
+  it("blocks the design milestone when no design is linked", () => {
+    const milestones = orderMilestones(validInput({ designIds: [] }));
+    expect(milestone(milestones, "design").status).toBe("blocked");
+  });
+
+  it("clears the design milestone once a design is linked", () => {
+    const milestones = orderMilestones(validInput({ designIds: ["d1"] }));
+    expect(milestone(milestones, "design").status).toBe("complete");
+  });
+
+  it("treats blank-only designIds as no design linked", () => {
+    const milestones = orderMilestones(validInput({ designIds: ["", ""] }));
+    expect(milestone(milestones, "design").status).toBe("blocked");
+  });
+
+  it("keeps 'ready to collect' blocked until a design is attached", () => {
+    expect(
+      milestone(orderMilestones(validInput({ designIds: [] })), "collect")
+        .status,
+    ).toBe("blocked");
+    expect(
+      milestone(orderMilestones(validInput({ designIds: ["d1"] })), "collect")
+        .status,
+    ).toBe("current");
+  });
+});
+
+describe("orderMilestones — details gate", () => {
+  it("marks details complete for a valid order", () => {
+    const milestones = orderMilestones(validInput());
+    expect(milestone(milestones, "details").status).toBe("complete");
+  });
+
+  it("marks details current (not complete) when required fields are missing", () => {
+    const milestones = orderMilestones(EMPTY_ORDER);
+    expect(milestone(milestones, "details").status).toBe("current");
+  });
+
+  it("blocks 'ready to collect' when details are invalid even with a design", () => {
+    const milestones = orderMilestones(
+      validInput({ teamName: "", designIds: ["d1"] }),
+    );
+    expect(milestone(milestones, "collect").status).toBe("blocked");
   });
 });

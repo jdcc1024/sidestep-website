@@ -54,7 +54,15 @@ export default function OrderDetailPage({ params }: PageProps) {
             {order.estimatedQuantity} jerseys
           </p>
         </div>
-        <StageChip stage={stage} tone={tone} />
+        <div className="flex shrink-0 items-center gap-3">
+          <StageChip stage={stage} tone={tone} />
+          <Link
+            href={`/portal/orders/${orderId}/edit`}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            Edit order
+          </Link>
+        </div>
       </header>
 
       <section

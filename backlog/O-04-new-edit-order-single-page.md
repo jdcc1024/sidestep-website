@@ -1,6 +1,6 @@
 # Issue: New Edit Order Single Page
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -17,13 +17,13 @@ This issue touches:
 Render the order as a single scrollable page that handles both New and Edit on one surface, with editable affordances while the order is open. A progress indicator shows order readiness and stays blocked at the "design attached" milestone until at least one design is linked.
 
 ## Acceptance Criteria
-- [ ] New and Edit render from one page/component, not two divergent forms
-- [ ] Page is a single scrollable layout with sections (no multi-step wizard)
-- [ ] Every field is editable while the order is open (pre-lock)
-- [ ] A progress indicator visibly **blocks** the "design attached" milestone when `designIds` is empty, and clears it once a design is linked
-- [ ] Zero-design state shows a nudge, not a blocking error
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] New and Edit render from one page/component, not two divergent forms
+- [x] Page is a single scrollable layout with sections (no multi-step wizard)
+- [x] Every field is editable while the order is open (pre-lock)
+- [x] A progress indicator visibly **blocks** the "design attached" milestone when `designIds` is empty, and clears it once a design is linked
+- [x] Zero-design state shows a nudge, not a blocking error
+- [x] All tests pass
+- [x] No regressions in existing tests
 
 ## Dependencies
 - Blocked by: O-03
