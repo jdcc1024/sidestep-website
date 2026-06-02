@@ -1,6 +1,6 @@
 # Issue: Order Page Visual Pass
 
-## Status: pending
+## Status: done
 
 ## Phase: 3
 
