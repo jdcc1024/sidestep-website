@@ -26,7 +26,7 @@ Replace the static estimate with a live total derived from the unified roster: t
 
 ## Dependencies
 - Blocked by: O-05
-- Blocked by (EXTERNAL — not yet a DAG node): **Roster Manager** slice, which introduces the unified `rosterEntries` table (name · number · size · qty · designId · source), merging today's `jerseyRuns.fixedRoster` + `jerseyRunResponses`. Do not start until that lands.
+- Blocked by: **R-04** (Derived Counts Query) — provides the Σ-qty total + per-design subtotals this issue displays. R-04 in turn rests on the unified `rosterEntries`/`orderEntries` model (R-01..R-03). (Was an undeclared external dependency; now tracked in Track R, docs/prd/roster-manager-and-lock.md.)
 
 ## PRD Reference
 See: docs/prd/new-edit-order-page.md — Section 5 (Out of Scope: dependencies), Section 6 (Order total = derived)

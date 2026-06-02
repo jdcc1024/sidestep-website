@@ -26,7 +26,7 @@ Once the roster is locked, freeze the order: its details become read-only and ed
 
 ## Dependencies
 - Blocked by: O-05
-- Blocked by (EXTERNAL — not yet a DAG node): **Confirm / Lock Roster** slice, which introduces the `jerseyRuns` `locked` status + confirmed-count snapshot (separate PRD). Today `status` is only `open | closed` (convex/schema.ts:66). Do not start until that lands.
+- Blocked by: **R-06** (Lock & Freeze) — introduces the `locked` run status + confirmed-count snapshot + freeze guards this issue renders against. (Was an undeclared external dependency; now tracked in Track R, docs/prd/roster-manager-and-lock.md.)
 
 ## PRD Reference
 See: docs/prd/new-edit-order-page.md — Section 5 (Out of Scope: dependencies), Section 6 (Lock behaviour)

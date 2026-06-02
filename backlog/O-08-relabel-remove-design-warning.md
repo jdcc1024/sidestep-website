@@ -26,7 +26,7 @@ When a captain relabels or removes a linked design that already has submissions,
 
 ## Dependencies
 - Blocked by: O-05
-- Blocked by (EXTERNAL — not yet a DAG node): **Roster Manager** slice (unified `rosterEntries` with `designId` per row). Do not start until that lands.
+- Blocked by: **R-05** (Relabel / Remove Design on the Roster) — provides the relabel-carry-over and remove-flag-and-drop behaviour + affected-submitter payload this issue surfaces. (Was an undeclared external dependency; now tracked in Track R, docs/prd/roster-manager-and-lock.md.)
 
 ## PRD Reference
 See: docs/prd/new-edit-order-page.md — Section 4 (P1 stories), Section 6 (edit-after-collection)

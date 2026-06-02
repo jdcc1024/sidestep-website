@@ -150,12 +150,12 @@ Reworks the order around the customer-ordering flows: silhouette specs move onto
 | O-04 | New / Edit Order Single Page | feature | O-03 |
 | O-05 | Order Detail Design Sections + Handoff | feature | O-04 |
 
-### Gated on external Roster / Lock slices (separate PRDs)
-| # | Issue | Type | Depends On (internal) | External block |
+### Gated on the Roster / Lock track (now real issues — see Track R)
+| # | Issue | Type | Depends On (internal) | External block (now a DAG node) |
 |---|-------|------|------------------------|----------------|
-| O-06 | Freeze Order When Roster Locked | improvement | O-05 | Confirm/Lock slice → `jerseyRuns.locked` status |
-| O-07 | Order Total Derived From Roster | improvement | O-05 | Roster Manager slice → unified `rosterEntries` |
-| O-08 | Relabel / Remove Design Warning | feature | O-05 | Roster Manager slice → `rosterEntries` w/ `designId` |
+| O-06 | Freeze Order When Roster Locked | improvement | O-05 | **R-06** (Lock & Freeze) |
+| O-07 | Order Total Derived From Roster | improvement | O-05 | **R-04** (Derived Counts Query) |
+| O-08 | Relabel / Remove Design Warning | feature | O-05 | **R-05** (Relabel / Remove Design) |
 
 ### Parallelization Notes for Track O
 - O-02 and O-03 both fan out from O-01; O-03 additionally needs O-02 (it links spec-carrying designs), so the practical order is O-01 → O-02 → O-03.
@@ -169,3 +169,45 @@ Reworks the order around the customer-ordering flows: silhouette specs move onto
 - **Before O-06**: the Confirm/Lock PRD must define the `locked` run status + confirmed-count snapshot first; decide whether the locked order view offers a "request a change" path.
 - **Before O-07 / O-08**: the Roster Manager PRD must define the unified `rosterEntries` table (merging `jerseyRuns.fixedRoster` + `jerseyRunResponses`) first.
 - **Sequencing reminder**: O-01 (Design screen revision) is the true first vertical slice — the order page cannot link a spec-carrying design that doesn't exist yet.
+
+---
+
+# Track R — Roster Manager + Confirm/Lock (7 issues)
+## Source PRD: docs/prd/roster-manager-and-lock.md
+## Generated: 2026-06-02
+
+Slice three of the order build. Replaces the split `jerseyRuns.fixedRoster` + `jerseyRunResponses` with a unified model — `order → run (1:1)`, `order → designs (0..N)`, `design → rosterEntry (0..N)`, `rosterEntry → orderEntry (1..N)` — and adds the run `locked` state. This track **unblocks** the three gated O-track issues: R-04 → O-07, R-05 → O-08, R-06 → O-06.
+
+### Foundation
+| # | Issue | Type | Depends On |
+|---|-------|------|------------|
+| R-01 | Roster & Order Entry Data Model | infrastructure | none |
+
+### Core (after R-01)
+| # | Issue | Type | Depends On |
+|---|-------|------|------------|
+| R-02 | Public Form — Fan Orders Across All Designs | feature | R-01 |
+| R-03 | Captain Roster Seeding + "Not Yet Filled" | feature | R-01 |
+| R-04 | Derived Counts Query | feature | R-02, R-03 |
+| R-05 | Relabel / Remove Design on the Roster | feature | R-02, R-04 |
+| R-06 | Lock & Freeze | feature | R-03, R-04 |
+
+### Cleanup
+| # | Issue | Type | Depends On |
+|---|-------|------|------------|
+| R-07 | Migrate Remaining Surfaces + Retire Old Tables | improvement | R-05, R-06 |
+
+### Parallelization Notes for Track R
+- R-02 and R-03 both fan out from R-01 and can run in parallel.
+- R-05 and R-06 can run in parallel once R-04 lands (R-05 needs R-02+R-04; R-06 needs R-03+R-04).
+- R-07 is strictly last — every writer must be on the new model before the legacy table is dropped.
+
+### Critical Path
+`R-01 → R-02 → R-04 → (R-05 ‖ R-06) → R-07`
+
+### Cross-track unblocks
+- **R-04 unblocks O-07**, **R-05 unblocks O-08**, **R-06 unblocks O-06** — each O issue also still needs its own O-05 internal dependency.
+
+### Open Questions Affecting Track R (carry into implementation)
+- **During R-06**: confirm `closed` vs `locked` precedence when a deadline passes; coordinate with `3-01-jersey-run-deadline-enforcement` so the two "done" signals don't fight (PRD §10 residual).
+- **During R-05**: decide whether "removed" is a derived state (design no longer in `orders.designIds`) or a stored per-entry flag.
