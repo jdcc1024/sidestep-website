@@ -8,6 +8,8 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { OrderTimeline } from "@/components/portal/OrderTimeline";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   chipToneForStage,
@@ -64,10 +66,11 @@ export default function OrderDetailPage({ params }: PageProps) {
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {order.teamName}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Created {formatDate(order.createdAt)} · {order.sport} ·{" "}
-            {order.estimatedQuantity} jerseys
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{order.sport}</Badge>
+            <Badge variant="secondary">{order.estimatedQuantity} jerseys</Badge>
+            <Badge variant="outline">Created {formatDate(order.createdAt)}</Badge>
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <StageChip stage={stage} tone={tone} />
@@ -80,54 +83,69 @@ export default function OrderDetailPage({ params }: PageProps) {
         </div>
       </header>
 
-      <section
-        aria-labelledby="timeline-heading"
-        className="mt-10 rounded-lg border border-border bg-card p-6 shadow-sm"
-      >
-        <h2
-          id="timeline-heading"
-          className="text-base font-semibold text-foreground"
-        >
-          Progress
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Updates live as Sidestep moves your order forward.
-        </p>
-        <div className="mt-6">
+      <Card aria-labelledby="timeline-heading" className="mt-10 py-6">
+        <CardHeader className="gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
+            Progress
+          </p>
+          <CardTitle id="timeline-heading" className="text-base">
+            Where your order stands
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Updates live as Sidestep moves your order forward.
+          </p>
+        </CardHeader>
+        <CardContent>
           <OrderTimeline currentStage={stage} />
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section
-        aria-labelledby="specs-heading"
-        className="mt-6 rounded-lg border border-border bg-card p-6 shadow-sm"
-      >
-        <h2 id="specs-heading" className="text-base font-semibold text-foreground">
-          Order details
-        </h2>
-        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-          <Field label="Team name" value={order.teamName} />
-          <Field label="Sport" value={order.sport} />
-          <Field label="Quantity" value={`${order.estimatedQuantity} jerseys`} />
-          <Field
-            label="Design"
-            value={
-              order.hasOwnDesign ? "I have my own design" : "Sidestep is helping"
-            }
-          />
-          <Field label="Last updated" value={formatDate(order.updatedAt)} />
-        </dl>
-      </section>
+      <Card aria-labelledby="specs-heading" className="mt-6 py-6">
+        <CardHeader className="gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
+            Order details
+          </p>
+          <CardTitle id="specs-heading" className="text-base">
+            The basics
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <Field label="Team name" value={order.teamName} />
+            <Field label="Sport" value={order.sport} />
+            <Field
+              label="Quantity"
+              value={`${order.estimatedQuantity} jerseys`}
+            />
+            <Field
+              label="Design"
+              value={
+                order.hasOwnDesign
+                  ? "I have my own design"
+                  : "Sidestep is helping"
+              }
+            />
+            <Field label="Last updated" value={formatDate(order.updatedAt)} />
+          </dl>
+        </CardContent>
+      </Card>
 
       <section aria-labelledby="designs-heading" className="mt-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2
-              id="designs-heading"
-              className="text-lg font-semibold text-foreground"
-            >
-              Designs
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2
+                id="designs-heading"
+                className="text-lg font-semibold text-foreground"
+              >
+                Designs
+              </h2>
+              {designs.length > 0 && (
+                <Badge variant="secondary" className="tabular-nums">
+                  {designs.length}
+                </Badge>
+              )}
+            </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {designs.length === 0
                 ? "Each design in this order — home, away, warmup — gets its own section here."
@@ -170,48 +188,53 @@ export default function OrderDetailPage({ params }: PageProps) {
 function DesignSection({ design }: { design: OrderDesign }) {
   const hasSpecs = design.jerseyStyle || design.neckline || design.sleeveStyle;
   return (
-    <section
-      aria-label={`Design: ${design.title}`}
-      className="rounded-lg border border-border bg-card p-6 shadow-sm"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-base font-semibold text-foreground">
-            {design.title}
-          </h3>
-          <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {design.fileCount === 0
-              ? "No files yet"
-              : `${design.fileCount} file${design.fileCount === 1 ? "" : "s"}`}
-          </p>
+    <Card aria-label={`Design: ${design.title}`} className="py-6">
+      <CardHeader className="gap-1.5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle className="text-base">{design.title}</CardTitle>
+            <Badge variant={design.fileCount === 0 ? "outline" : "secondary"}>
+              {design.fileCount === 0
+                ? "No files yet"
+                : `${design.fileCount} file${
+                    design.fileCount === 1 ? "" : "s"
+                  }`}
+            </Badge>
+          </div>
+          <Link
+            href={`/portal/designs/${design._id}`}
+            className="text-sm font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
+          >
+            View design →
+          </Link>
         </div>
-        <Link
-          href={`/portal/designs/${design._id}`}
-          className="text-sm font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-300 dark:hover:text-teal-200"
-        >
-          View design →
-        </Link>
-      </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {hasSpecs ? (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Silhouette
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <SpecChip label="Style" value={design.jerseyStyle} />
+              <SpecChip label="Neckline" value={design.neckline} />
+              <SpecChip label="Sleeve" value={design.sleeveStyle} />
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            The cut isn&apos;t decided yet — Sidestep will help you choose.
+          </p>
+        )}
 
-      {hasSpecs ? (
-        <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Spec label="Jersey style" value={design.jerseyStyle} />
-          <Spec label="Neckline" value={design.neckline} />
-          <Spec label="Sleeve style" value={design.sleeveStyle} />
-        </dl>
-      ) : (
-        <p className="mt-4 text-sm text-muted-foreground">
-          The cut isn&apos;t decided yet — Sidestep will help you choose.
-        </p>
-      )}
-
-      {/* Per-design rollup — placeholder until O-07 derives counts from the
-          unified roster. The run spans all designs, so "which design" becomes
-          a per-row attribute the Roster Manager fills in later. */}
-      <div className="mt-4 rounded-md border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        Collected counts will appear here once your team starts submitting.
-      </div>
-    </section>
+        {/* Per-design rollup — placeholder until O-07 derives counts from the
+            unified roster. The run spans all designs, so "which design" becomes
+            a per-row attribute the Roster Manager fills in later. */}
+        <div className="rounded-md border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Collected counts will appear here once your team starts submitting.
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -252,18 +275,19 @@ function CollectSection({
   hasDesigns: boolean;
 }) {
   return (
-    <section
-      aria-labelledby="collect-heading"
-      className="mt-10 rounded-lg border border-border bg-card p-6 shadow-sm"
-    >
-      <h2 id="collect-heading" className="text-base font-semibold text-foreground">
-        Collect from your team
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Gather sizes, names, and numbers with one shareable link.
-      </p>
-
-      <div className="mt-6">
+    <Card aria-labelledby="collect-heading" className="mt-10 py-6">
+      <CardHeader className="gap-1.5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
+          Collect
+        </p>
+        <CardTitle id="collect-heading" className="text-base">
+          Collect from your team
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Gather sizes, names, and numbers with one shareable link.
+        </p>
+      </CardHeader>
+      <CardContent>
         {run === undefined ? (
           <Skeleton className="h-10 w-48" />
         ) : run !== null ? (
@@ -287,8 +311,8 @@ function CollectSection({
             sizes from your team.
           </div>
         )}
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -303,15 +327,16 @@ function RunStatus({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <span
-          className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
+        <Badge
+          className={cn(
+            "border-transparent",
             closed
               ? "bg-muted text-muted-foreground"
-              : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200"
-          }`}
+              : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
+          )}
         >
           {closed ? "Collection closed" : "Collecting"}
-        </span>
+        </Badge>
         <span className="text-sm text-muted-foreground">
           {closed ? "Closed " : "Closes "}
           {formatDate(run.deadline)}
@@ -338,16 +363,21 @@ function RunStatus({
   );
 }
 
-function Spec({ label, value }: { label: string; value?: string }) {
+// A silhouette spec as a chip: "Label · Value". An undecided spec stays a
+// muted outline chip so the cut still reads as a set of slots, not a gap.
+function SpecChip({ label, value }: { label: string; value?: string }) {
+  if (!value) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        {label} · Not set
+      </Badge>
+    );
+  }
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="mt-0.5 text-sm text-foreground/90">
-        {value || <span className="text-muted-foreground">Not set</span>}
-      </dd>
-    </div>
+    <Badge variant="secondary">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
+    </Badge>
   );
 }
 
@@ -369,15 +399,15 @@ function StageChip({
 }) {
   const palette: Record<ChipTone, string> = {
     pending: "bg-muted text-muted-foreground",
-    "in-progress": "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
-    complete: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
+    "in-progress":
+      "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
+    complete:
+      "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
   };
   return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-sm font-medium ${palette[tone]}`}
-    >
+    <Badge className={cn("border-transparent", palette[tone])}>
       {stage ?? "Pending"}
-    </span>
+    </Badge>
   );
 }
 

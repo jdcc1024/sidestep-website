@@ -21,7 +21,15 @@ import {
   type OrderMilestone,
 } from "@/lib/order";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -310,7 +318,11 @@ export function OrderForm({ order }: { order?: EditableOrder } = {}) {
             You can update specs and link more designs later from the order
             page.
           </p>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-teal-600 font-semibold text-white hover:bg-teal-700"
+          >
             {isSubmitting
               ? "Saving…"
               : isEdit
@@ -334,11 +346,40 @@ const STATUS_CAPTION: Record<OrderMilestone["status"], string> = {
 };
 
 function OrderProgress({ milestones }: { milestones: OrderMilestone[] }) {
+  const completeCount = milestones.filter((m) => m.status === "complete").length;
+  const total = milestones.length;
+  const pct = total === 0 ? 0 : Math.round((completeCount / total) * 100);
+
   return (
-    <section
+    <Card
       aria-label="Order progress"
-      className="rounded-lg border border-border bg-muted/30 p-4"
+      className="gap-4 bg-card/80 px-5 py-5 ring-foreground/[0.07]"
     >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
+          Order readiness
+        </p>
+        <Badge
+          variant="secondary"
+          className="font-mono text-[0.7rem] tabular-nums"
+        >
+          {completeCount} of {total} ready
+        </Badge>
+      </div>
+
+      {/* "X of N" meter — the mock's progress-bar treatment. The milestone
+          list below stays the source of per-step status. */}
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+        role="presentation"
+      >
+        <div
+          aria-hidden
+          className="h-full rounded-full bg-teal-600 transition-[width] duration-500 dark:bg-teal-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
       <ol className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-2">
         {milestones.map((m, i) => (
           <li
@@ -350,11 +391,9 @@ function OrderProgress({ milestones }: { milestones: OrderMilestone[] }) {
               <p
                 className={cn(
                   "text-sm font-medium",
-                  m.status === "complete"
-                    ? "text-foreground"
-                    : m.status === "blocked"
-                      ? "text-muted-foreground"
-                      : "text-foreground",
+                  m.status === "blocked"
+                    ? "text-muted-foreground"
+                    : "text-foreground",
                 )}
               >
                 {m.label}
@@ -381,7 +420,7 @@ function OrderProgress({ milestones }: { milestones: OrderMilestone[] }) {
           </li>
         ))}
       </ol>
-    </section>
+    </Card>
   );
 }
 
@@ -459,11 +498,14 @@ function DesignChecklist({
                 <span className="block truncate text-sm font-medium text-foreground">
                   {design.title}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <Badge
+                  variant={fileCount === 0 ? "outline" : "secondary"}
+                  className="mt-1"
+                >
                   {fileCount === 0
                     ? "No files yet"
                     : `${fileCount} file${fileCount === 1 ? "" : "s"}`}
-                </span>
+                </Badge>
               </span>
             </label>
           </li>
@@ -506,15 +548,17 @@ function FieldSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="grid gap-6 md:grid-cols-[200px_1fr]">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+    <Card className="gap-5 py-6">
+      <CardHeader className="gap-1.5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
           Step {eyebrow}
         </p>
-        <h2 className="mt-2 text-lg font-semibold text-foreground">{title}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-      </header>
-      <div className="space-y-5">{children}</div>
-    </section>
+        <CardTitle className="text-lg font-semibold text-foreground">
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">{children}</CardContent>
+    </Card>
   );
 }
