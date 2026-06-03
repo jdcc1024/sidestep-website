@@ -51,9 +51,66 @@ export const create = mutation({
   },
 });
 
+// Edit a seeded slot's name/number (R-03). Same ownership gate as create,
+// reached through the entry's run. The design and source don't change
+// here — a captain renames a player, they don't move them to another
+// design (remove + re-add for that).
+export const update = mutation({
+  args: {
+    rosterEntryId: v.id("rosterEntries"),
+    name: v.string(),
+    number: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const entry = await ctx.db.get(args.rosterEntryId);
+    if (!entry) throw new ConvexError("Player slot not found.");
+    const run = await ctx.db.get(entry.runId);
+    if (!run) throw new ConvexError("Jersey run not found.");
+    await requireOrderOwnership(ctx, run.orderId);
+
+    const nameCheck = checkRosterName(args.name);
+    if (!nameCheck.ok) throw new ConvexError(nameCheck.error);
+    const numberCheck = checkRosterNumber(args.number);
+    if (!numberCheck.ok) throw new ConvexError(numberCheck.error);
+
+    await ctx.db.patch(args.rosterEntryId, {
+      name: nameCheck.value,
+      number: numberCheck.value,
+    });
+    return args.rosterEntryId;
+  },
+});
+
+// Remove a seeded slot (R-03). Blocked once the slot is filled — an order
+// entry points at it, and deleting the slot would orphan a real jersey
+// someone ordered. The captain removes the orders first (or, post-R-05,
+// removes the design). Safe to seed-then-prune an empty roster freely.
+export const remove = mutation({
+  args: { rosterEntryId: v.id("rosterEntries") },
+  handler: async (ctx, { rosterEntryId }) => {
+    const entry = await ctx.db.get(rosterEntryId);
+    if (!entry) throw new ConvexError("Player slot not found.");
+    const run = await ctx.db.get(entry.runId);
+    if (!run) throw new ConvexError("Jersey run not found.");
+    await requireOrderOwnership(ctx, run.orderId);
+
+    const attached = await ctx.db
+      .query("orderEntries")
+      .withIndex("by_rosterEntry", (q) => q.eq("rosterEntryId", rosterEntryId))
+      .first();
+    if (attached)
+      throw new ConvexError(
+        "This slot has orders on it — remove those first.",
+      );
+
+    await ctx.db.delete(rosterEntryId);
+    return rosterEntryId;
+  },
+});
+
 // Every roster entry on a run, for the captain dashboard / order page
-// (R-03, R-04 consume this). Captain or admin only. Returns [] for a
-// missing run so a deleted run renders empty rather than throwing.
+// (R-04 consumes this). Captain or admin only. Returns [] for a missing
+// run so a deleted run renders empty rather than throwing.
 export const listByRun = query({
   args: { runId: v.id("jerseyRuns") },
   handler: async (ctx, { runId }) => {
@@ -68,5 +125,65 @@ export const listByRun = query({
       .query("rosterEntries")
       .withIndex("by_run", (q) => q.eq("runId", runId))
       .collect();
+  },
+});
+
+// The captain's seeding view (R-03): the run's roster grouped by design,
+// each slot annotated with whether it's been filled. "Not yet filled" is
+// purely derived — a slot with zero order entries — so there's no status
+// field to keep in sync. Only walks the order's current designs; entries
+// on a since-removed design are R-05's concern. Captain or admin only.
+export const listForRun = query({
+  args: { runId: v.id("jerseyRuns") },
+  handler: async (ctx, { runId }) => {
+    const run = await ctx.db.get(runId);
+    if (!run) return null;
+
+    const user = await requireCurrentUser(ctx);
+    if (run.captainId !== user._id && !user.isAdmin)
+      throw new ConvexError("You don't have access to this jersey run.");
+
+    const order = await ctx.db.get(run.orderId);
+    if (!order) return null;
+
+    const entries = await ctx.db
+      .query("rosterEntries")
+      .withIndex("by_run", (q) => q.eq("runId", runId))
+      .collect();
+
+    // A slot is "filled" once any order entry references it. One scan of
+    // the run's order entries builds the set of filled slot ids.
+    const orderEntries = await ctx.db
+      .query("orderEntries")
+      .withIndex("by_run", (q) => q.eq("runId", runId))
+      .collect();
+    const filledSlotIds = new Set(
+      orderEntries
+        .map((e) => e.rosterEntryId)
+        .filter((id): id is NonNullable<typeof id> => id != null),
+    );
+
+    const designs = await Promise.all(
+      order.designIds.map(async (designId) => {
+        const design = await ctx.db.get(designId);
+        const designEntries = entries
+          .filter((e) => e.designId === designId)
+          .sort((a, b) => a.createdAt - b.createdAt)
+          .map((e) => ({
+            _id: e._id,
+            name: e.name,
+            number: e.number,
+            source: e.source,
+            filled: filledSlotIds.has(e._id),
+          }));
+        return {
+          designId,
+          title: design?.title ?? "Untitled design",
+          entries: designEntries,
+        };
+      }),
+    );
+
+    return { runId, designs };
   },
 });

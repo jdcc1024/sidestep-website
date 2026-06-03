@@ -39,6 +39,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RosterManager } from "@/components/portal/RosterManager";
 
 // Colocated zod schema. Constants reused from lib/jerseyRun.ts so the
 // client and server cap values the same way (the Convex mutation enforces
@@ -558,12 +559,19 @@ function JerseyRunSummary({
         />
       </dl>
 
+      <Separator />
+
+      {/* Per-design roster seeding (R-03), the new model's source of truth.
+          The legacy run-level fixedRoster below is shown read-only until the
+          public form migrates onto roster entries in R-02. */}
+      <RosterManager runId={run._id} />
+
       {run.namesMode === "fixed" &&
         run.fixedRoster &&
         run.fixedRoster.length > 0 && (
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Roster
+              Fixed roster (legacy)
             </p>
             <ul className="mt-2 space-y-1 text-sm text-foreground">
               {run.fixedRoster.map((entry, i) => (

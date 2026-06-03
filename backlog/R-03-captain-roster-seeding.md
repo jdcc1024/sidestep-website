@@ -1,6 +1,6 @@
 # Issue: Captain Roster Seeding + "Not Yet Filled"
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -17,13 +17,16 @@ This issue touches:
 Let the captain pre-enter the roster — name+number player slots per design — replacing the old `fixedRoster` array. A seeded slot with no order entry yet shows as **"not yet filled"** and does not count toward the production total until a size is chosen. This is also where the captain sees (and freely edits) any open-names collision flags raised in R-02.
 
 ## Acceptance Criteria
-- [ ] A captain can add/edit/remove roster entries on a design, stored with `source: captain`
-- [ ] A roster entry with zero order entries renders as "not yet filled"
-- [ ] When a fan orders a matching slot, it flips to filled (the order entry attaches per R-02)
-- [ ] Captain can see and edit any collision-flagged entries
-- [ ] The old `fixedRoster` editing path is replaced by roster-entry editing
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] A captain can add/edit/remove roster entries on a design, stored with `source: captain` (`rosterEntries.create/update/remove`, `RosterManager` UI)
+- [x] A roster entry with zero order entries renders as "not yet filled" (derived `filled` flag in `rosterEntries.listForRun`; badge in `RosterManager`)
+- [x] When a fan orders a matching slot, it flips to filled (the order entry attaches per R-02) — derivation verified by test; the fan-attach *write* path is R-02
+- [~] Captain can see and edit any collision-flagged entries — editing any slot is delivered (covers a flagged slot); the collision **flag itself is raised in R-02**, which owns adding the field + badge, so the visual surfacing lands there
+- [x] The old `fixedRoster` editing path is replaced by roster-entry editing — `RosterManager` is the new per-design seeding surface; the legacy run-level `fixedRoster` stays read-only (the public form still reads it until R-02) and is fully removed in R-07
+- [x] All tests pass (397)
+- [x] No regressions in existing tests
+
+## Implementation Note (interim model)
+Roster slots are now first-class per-design documents seeded through `RosterManager` in the run summary. `remove` is blocked when a slot already has an order entry (would orphan a real jersey). The legacy `fixedRoster` field is left intact and shown read-only ("Fixed roster (legacy)") so fixed-mode public submission keeps working until R-02 migrates the public form and R-07 drops the field.
 
 ## Dependencies
 - Blocked by: R-01

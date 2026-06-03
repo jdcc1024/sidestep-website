@@ -197,3 +197,193 @@ describe("rosterEntries.listByRun", () => {
     expect(entries).toEqual([]);
   });
 });
+
+describe("rosterEntries.update", () => {
+  it("edits the name and number of a slot", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    const id = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzy",
+      number: "9",
+    });
+
+    await asCaptain.mutation(api.rosterEntries.update, {
+      rosterEntryId: id,
+      name: "Gretzky",
+      number: "99",
+    });
+
+    const entry = await t.run((ctx) => ctx.db.get(id));
+    expect(entry?.name).toBe("Gretzky");
+    expect(entry?.number).toBe("99");
+  });
+
+  it("clears the number when edited to blank", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    const id = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Bo",
+      number: "5",
+    });
+
+    await asCaptain.mutation(api.rosterEntries.update, {
+      rosterEntryId: id,
+      name: "Bo",
+      number: "",
+    });
+
+    const entry = await t.run((ctx) => ctx.db.get(id));
+    expect(entry?.number).toBeUndefined();
+  });
+
+  it("rejects an edit from someone who doesn't own the order", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    const id = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+    });
+    await t.run((ctx) =>
+      ctx.db.insert("users", {
+        clerkId: "stranger_clerk",
+        email: "stranger@example.com",
+        name: "Stranger",
+        isAdmin: false,
+        createdAt: Date.now(),
+      }),
+    );
+    const stranger = t.withIdentity({
+      subject: "stranger_clerk",
+      email: "stranger@example.com",
+      name: "Stranger",
+    });
+
+    await expect(
+      stranger.mutation(api.rosterEntries.update, {
+        rosterEntryId: id,
+        name: "Hacked",
+      }),
+    ).rejects.toThrow();
+  });
+});
+
+describe("rosterEntries.remove", () => {
+  it("removes an unfilled slot", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    const id = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Spare",
+    });
+
+    await asCaptain.mutation(api.rosterEntries.remove, { rosterEntryId: id });
+
+    const entry = await t.run((ctx) => ctx.db.get(id));
+    expect(entry).toBeNull();
+  });
+
+  it("refuses to remove a slot that has orders on it", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    const id = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+    });
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      rosterEntryId: id,
+      size: "M",
+      qty: 1,
+      source: "fan",
+      submitterName: "Fan",
+      submitterEmail: "fan@example.com",
+    });
+
+    await expect(
+      asCaptain.mutation(api.rosterEntries.remove, { rosterEntryId: id }),
+    ).rejects.toThrow(/orders on it/);
+  });
+});
+
+describe("rosterEntries.listForRun", () => {
+  it("groups slots by design and marks a seeded slot not yet filled", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+    });
+
+    const result = await asCaptain.query(api.rosterEntries.listForRun, {
+      runId,
+    });
+    expect(result?.designs).toHaveLength(1);
+    expect(result?.designs[0].designId).toBe(designId);
+    expect(result?.designs[0].entries).toHaveLength(1);
+    expect(result?.designs[0].entries[0].filled).toBe(false);
+  });
+
+  it("marks a slot filled once an order entry references it", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    const slotId = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+    });
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      rosterEntryId: slotId,
+      size: "L",
+      qty: 1,
+      source: "fan",
+      submitterName: "Fan",
+      submitterEmail: "fan@example.com",
+    });
+
+    const result = await asCaptain.query(api.rosterEntries.listForRun, {
+      runId,
+    });
+    expect(result?.designs[0].entries[0].filled).toBe(true);
+  });
+
+  it("does not let a blank/bulk order entry fill an unrelated slot", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+    });
+    // A blank/bulk line on the same design — no rosterEntryId — must not
+    // flip the seeded slot to filled.
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      size: "L",
+      qty: 3,
+      source: "captain",
+      submitterName: "Cap",
+      submitterEmail: "captain@example.com",
+    });
+
+    const result = await asCaptain.query(api.rosterEntries.listForRun, {
+      runId,
+    });
+    expect(result?.designs[0].entries[0].filled).toBe(false);
+  });
+});
