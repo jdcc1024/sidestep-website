@@ -1,0 +1,199 @@
+// @vitest-environment edge-runtime
+/// <reference types="vite/client" />
+import { describe, expect, it } from "vitest";
+import { convexTest } from "convex-test";
+import schema from "./schema";
+import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+
+const modules = import.meta.glob("./**/*.*s");
+const ONE_DAY = 24 * 60 * 60 * 1000;
+
+// Seeds a captain, a design they own, an order linking it, and a run on
+// the order — the full chain a roster entry needs. Returns the ids plus
+// an identity handle for acting as the captain.
+async function seedRun(
+  t: ReturnType<typeof convexTest>,
+  subject = "captain_clerk",
+  opts: { isAdmin?: boolean } = {},
+) {
+  const now = Date.now();
+  const { userId, designId, orderId, runId } = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", {
+      clerkId: subject,
+      email: "captain@example.com",
+      name: "Cap",
+      isAdmin: opts.isAdmin ?? false,
+      createdAt: now,
+    });
+    const designId = await ctx.db.insert("designs", {
+      ownerId: userId,
+      title: "Home",
+      brief: "home kit",
+      fileIds: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    const orderId = await ctx.db.insert("orders", {
+      captainId: userId,
+      teamName: "Falcons",
+      sport: "Soccer",
+      estimatedQuantity: 12,
+      hasOwnDesign: false,
+      designIds: [designId],
+      internalStages: [{ name: "Inquiry", completedAt: now }],
+      createdAt: now,
+      updatedAt: now,
+    });
+    const runId = await ctx.db.insert("jerseyRuns", {
+      orderId,
+      captainId: userId,
+      sizeOptions: ["S", "M", "L"],
+      namesMode: "open",
+      customQuestions: [],
+      deadline: now + 7 * ONE_DAY,
+      status: "open",
+      createdAt: now,
+    });
+    return { userId, designId, orderId, runId };
+  });
+  return {
+    userId,
+    designId,
+    orderId,
+    runId,
+    asCaptain: t.withIdentity({
+      subject,
+      email: "captain@example.com",
+      name: "Cap",
+    }),
+  };
+}
+
+describe("rosterEntries.create", () => {
+  it("creates a captain-seeded slot defaulting to source captain", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+
+    const id = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+    });
+
+    const entry = await t.run((ctx) => ctx.db.get(id));
+    expect(entry?.name).toBe("Gretzky");
+    expect(entry?.number).toBe("99");
+    expect(entry?.source).toBe("captain");
+    expect(entry?.orderId).toBeTruthy();
+  });
+
+  it("omits the number when blank", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+
+    const id = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Bo",
+      number: "",
+    });
+
+    const entry = await t.run((ctx) => ctx.db.get(id));
+    expect(entry?.number).toBeUndefined();
+  });
+
+  it("rejects a blank name", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+
+    await expect(
+      asCaptain.mutation(api.rosterEntries.create, {
+        runId,
+        designId,
+        name: "   ",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a design not on the order", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, asCaptain, userId } = await seedRun(t);
+    const strayDesignId = await t.run((ctx) =>
+      ctx.db.insert("designs", {
+        ownerId: userId,
+        title: "Stray",
+        brief: "x",
+        fileIds: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }),
+    );
+
+    await expect(
+      asCaptain.mutation(api.rosterEntries.create, {
+        runId,
+        designId: strayDesignId,
+        name: "Ghost",
+      }),
+    ).rejects.toThrow(/isn't part of this order/);
+  });
+
+  it("rejects a caller who doesn't own the order", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId } = await seedRun(t);
+    const stranger = t.withIdentity({
+      subject: "stranger_clerk",
+      email: "stranger@example.com",
+      name: "Stranger",
+    });
+    await t.run((ctx) =>
+      ctx.db.insert("users", {
+        clerkId: "stranger_clerk",
+        email: "stranger@example.com",
+        name: "Stranger",
+        isAdmin: false,
+        createdAt: Date.now(),
+      }),
+    );
+
+    await expect(
+      stranger.mutation(api.rosterEntries.create, {
+        runId,
+        designId,
+        name: "Nope",
+      }),
+    ).rejects.toThrow();
+  });
+});
+
+describe("rosterEntries.listByRun", () => {
+  it("returns the run's entries for the captain", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+    });
+
+    const entries = await asCaptain.query(api.rosterEntries.listByRun, {
+      runId,
+    });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].name).toBe("Gretzky");
+  });
+
+  it("returns [] for a missing run", async () => {
+    const t = convexTest(schema, modules);
+    const { asCaptain, runId } = await seedRun(t);
+    // Delete the run, then query the now-dangling id.
+    await t.run((ctx) => ctx.db.delete(runId as Id<"jerseyRuns">));
+    const entries = await asCaptain.query(api.rosterEntries.listByRun, {
+      runId,
+    });
+    expect(entries).toEqual([]);
+  });
+});

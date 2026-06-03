@@ -16,7 +16,9 @@ import type * as designs from "../designs.js";
 import type * as intakes from "../intakes.js";
 import type * as jerseyRunActions from "../jerseyRunActions.js";
 import type * as jerseyRuns from "../jerseyRuns.js";
+import type * as orderEntries from "../orderEntries.js";
 import type * as orders from "../orders.js";
+import type * as rosterEntries from "../rosterEntries.js";
 import type * as users from "../users.js";
 
 import type {
@@ -34,7 +36,9 @@ declare const fullApi: ApiFromModules<{
   intakes: typeof intakes;
   jerseyRunActions: typeof jerseyRunActions;
   jerseyRuns: typeof jerseyRuns;
+  orderEntries: typeof orderEntries;
   orders: typeof orders;
+  rosterEntries: typeof rosterEntries;
   users: typeof users;
 }>;
 

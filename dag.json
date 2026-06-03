@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-06-02T08:55:25.666Z",
+  "lastUpdated": "2026-06-03T07:18:09.138Z",
   "phases": [
     {
       "id": "phase-1",
@@ -1202,10 +1202,10 @@
       "phase": "phase-1",
       "type": "infrastructure",
       "description": "Add rosterEntries (name+number player slot on a design) and orderEntries (one jersey: size+qty+submitter+source) as additive schema, plus lib rules/form modules and a one-run-per-order guard. Extends jerseyRuns.status with 'locked'. Load-bearing foundation; old tables stay until R-07.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-r01",
+      "startedAt": "2026-06-03T07:12:15.073Z",
+      "completedAt": "2026-06-03T07:18:09.137Z",
       "issueFile": "backlog/R-01-roster-order-entry-data-model.md",
       "prdRef": "docs/prd/roster-manager-and-lock.md#6-implementation-decisions",
       "acceptanceCriteria": [
@@ -1222,7 +1222,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Switch the public run form onto the new model: a fan sees all the order's designs and adds multiple jerseys in one submission, grouped by name/email. Orders attach to existing matching roster slots; open-mode exact matches raise a collision flag.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1240,7 +1240,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Let the captain pre-enter name+number roster slots per design (replacing fixedRoster). A slot with zero order entries renders 'not yet filled' and is excluded from the total until a fan order fills it. Captain can see/edit collision flags.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1937,30 +1937,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 0
+    },
+    {
+      "id": "opus-r01",
+      "name": "Opus 4.8 (R-01 Roster Model)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-23T22:13:43.545Z",
-      "event": "task_started",
-      "nodeId": "S-04",
-      "agent": "agent-claude-opus47-s04",
-      "message": "Claude Opus 4.7 (S-04 Showcase) picked up: /dev/components Showcase Page"
-    },
-    {
-      "timestamp": "2026-05-24T04:26:03.869Z",
-      "event": "task_completed",
-      "nodeId": "S-04",
-      "agent": "agent-claude-opus47-s04",
-      "message": "Completed: /dev/components Showcase Page"
-    },
-    {
-      "timestamp": "2026-05-24T04:36:27.592Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "s-03-agent",
-      "message": "S-03 Agent joined the workforce"
-    },
     {
       "timestamp": "2026-05-24T04:36:27.663Z",
       "event": "task_started",
@@ -2639,6 +2625,27 @@
       "nodeId": "R-07",
       "agent": null,
       "message": "New task added: Migrate Remaining Surfaces + Retire Old Tables"
+    },
+    {
+      "timestamp": "2026-06-03T07:12:14.996Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-r01",
+      "message": "Opus 4.8 (R-01 Roster Model) joined the workforce"
+    },
+    {
+      "timestamp": "2026-06-03T07:12:15.074Z",
+      "event": "task_started",
+      "nodeId": "R-01",
+      "agent": "opus-r01",
+      "message": "Opus 4.8 (R-01 Roster Model) picked up: Roster & Order Entry Data Model"
+    },
+    {
+      "timestamp": "2026-06-03T07:18:09.138Z",
+      "event": "task_completed",
+      "nodeId": "R-01",
+      "agent": "opus-r01",
+      "message": "Completed: Roster & Order Entry Data Model"
     }
   ]
 }

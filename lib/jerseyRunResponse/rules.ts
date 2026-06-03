@@ -23,7 +23,7 @@ export type JerseyRunForResponse = {
   customQuestions: { id: string; label: string }[];
   fixedRoster: { name: string; number?: string }[] | undefined;
   deadline: number;
-  status: "open" | "closed";
+  status: "open" | "closed" | "locked";
 };
 
 // Discriminated result for a single field check. `ok: true` carries the
@@ -39,7 +39,10 @@ export function isJerseyRunClosed(
   run: Pick<JerseyRunForResponse, "status" | "deadline">,
   now: number = Date.now(),
 ): boolean {
-  if (run.status === "closed") return true;
+  // A locked run is also closed to new submissions — it's the confirmed
+  // production basis (R-06). Nothing flips a run to `locked` until R-06,
+  // so this is forward-looking but harmless today.
+  if (run.status === "closed" || run.status === "locked") return true;
   return run.deadline < now;
 }
 

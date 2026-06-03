@@ -66,11 +66,57 @@ export default defineSchema({
       }),
     ),
     deadline: v.number(),
-    status: v.union(v.literal("open"), v.literal("closed")),
+    // `locked` (added in R-01) freezes the run as the confirmed production
+    // basis — the value is here now so the schema accepts it; the lock
+    // behaviour (manual + lazy auto-lock, freeze guards) is wired in R-06.
+    status: v.union(
+      v.literal("open"),
+      v.literal("closed"),
+      v.literal("locked"),
+    ),
     createdAt: v.number(),
   })
     .index("by_order", ["orderId"])
     .index("by_captain", ["captainId"]),
+
+  // The unified roster model (R-01). A `rosterEntry` is a name+number
+  // "player slot" on a design — `Home / #99 Gretzky`. A captain can seed
+  // one (source: captain), or a fan order creates/attaches to one
+  // (source: fan, in R-02). A roster entry with zero order entries is
+  // "not yet filled" — that state is derived, not stored. Carries both
+  // `runId` and `orderId` (the run is 1:1 with the order) so readers can
+  // load by either without a hop through the run.
+  rosterEntries: defineTable({
+    runId: v.id("jerseyRuns"),
+    orderId: v.id("orders"),
+    designId: v.id("designs"),
+    name: v.string(),
+    number: v.optional(v.string()),
+    source: v.union(v.literal("captain"), v.literal("fan")),
+    createdAt: v.number(),
+  })
+    .index("by_run", ["runId"])
+    .index("by_design", ["designId"]),
+
+  // One jersey to produce (R-01): `{size, qty, submitter, source}`.
+  // `rosterEntryId` is optional — a blank/bulk line (a spare jersey) has
+  // no player slot. `designId` is denormalized from the roster entry so
+  // blank lines still group by design and per-design counts (R-04) are a
+  // simple group-by on the by_run index. The production total is
+  // Σ qty over these rows.
+  orderEntries: defineTable({
+    runId: v.id("jerseyRuns"),
+    designId: v.id("designs"),
+    rosterEntryId: v.optional(v.id("rosterEntries")),
+    size: v.string(),
+    qty: v.number(),
+    source: v.union(v.literal("captain"), v.literal("fan")),
+    submitterName: v.string(),
+    submitterEmail: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_run", ["runId"])
+    .index("by_rosterEntry", ["rosterEntryId"]),
 
   jerseyRunResponses: defineTable({
     jerseyRunId: v.id("jerseyRuns"),

@@ -1,6 +1,6 @@
 # Issue: Roster & Order Entry Data Model
 
-## Status: pending
+## Status: done
 
 ## Phase: 1
 
@@ -17,14 +17,14 @@ This issue touches:
 Establish the unified roster data model as **additive** schema: a `rosterEntries` table (the name+number "player slot" on a design) and an `orderEntries` table (one jersey to make: size + qty + submitter + source). This is the load-bearing foundation every downstream slice reads/writes; the old `jerseyRunResponses` table and `jerseyRuns.fixedRoster` field are left in place and retired later in R-07 so the app keeps compiling between slices.
 
 ## Acceptance Criteria
-- [ ] `rosterEntries` exists: `{ runId, orderId, designId, name, number, source: captain|fan, createdAt }`, indexed by run and by design
-- [ ] `orderEntries` exists: `{ runId, designId, rosterEntryId (optional — blanks have none), size, qty, source, submitterName, submitterEmail, createdAt }`, indexed by run and by rosterEntry
-- [ ] `jerseyRuns.status` union extended to `open | closed | locked` (value added now, behaviour wired in R-06)
-- [ ] `lib/rosterEntry` + `lib/orderEntry` rules/form modules validate + shape payloads, mirroring `lib/jerseyRunResponse`
-- [ ] A run-creation guard rejects creating a second run for an order already having one (one-run-per-order)
-- [ ] `convex dev` starts clean; schema smoke + lib unit tests pass
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] `rosterEntries` exists: `{ runId, orderId, designId, name, number, source: captain|fan, createdAt }`, indexed by run and by design
+- [x] `orderEntries` exists: `{ runId, designId, rosterEntryId (optional — blanks have none), size, qty, source, submitterName, submitterEmail, createdAt }`, indexed by run and by rosterEntry
+- [x] `jerseyRuns.status` union extended to `open | closed | locked` (value added now, behaviour wired in R-06)
+- [x] `lib/rosterEntry` + `lib/orderEntry` rules/form modules validate + shape payloads, mirroring `lib/jerseyRunResponse`
+- [x] A run-creation guard rejects creating a second run for an order already having one (one-run-per-order) — pre-existing in `jerseyRuns.create`, covered by `jerseyRuns.test.ts`
+- [x] `convex dev` starts clean; schema smoke + lib unit tests pass
+- [x] All tests pass (389)
+- [x] No regressions in existing tests
 
 ## Dependencies
 - Blocked by: none (builds on the existing run infra; O-05 already shipped lazy run handoff)

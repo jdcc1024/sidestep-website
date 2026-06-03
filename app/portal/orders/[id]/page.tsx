@@ -271,7 +271,10 @@ function CollectSection({
   hasDesigns,
 }: {
   orderId: Id<"orders">;
-  run: { _id: Id<"jerseyRuns">; deadline: number; status: "open" | "closed" } | null | undefined;
+  run:
+    | { _id: Id<"jerseyRuns">; deadline: number; status: "open" | "closed" | "locked" }
+    | null
+    | undefined;
   hasDesigns: boolean;
 }) {
   return (
@@ -321,7 +324,7 @@ function RunStatus({
   run,
 }: {
   orderId: Id<"orders">;
-  run: { deadline: number; status: "open" | "closed" };
+  run: { deadline: number; status: "open" | "closed" | "locked" };
 }) {
   const closed = run.status === "closed";
   return (

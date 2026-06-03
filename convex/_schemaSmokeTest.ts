@@ -62,6 +62,28 @@ export const run = internalMutation({
       submittedAt: now,
     });
 
+    const rosterEntryId = await ctx.db.insert("rosterEntries", {
+      runId,
+      orderId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+      source: "captain",
+      createdAt: now,
+    });
+
+    const orderEntryId = await ctx.db.insert("orderEntries", {
+      runId,
+      designId,
+      rosterEntryId,
+      size: "L",
+      qty: 2,
+      source: "fan",
+      submitterName: "Fan One",
+      submitterEmail: "fan@example.com",
+      createdAt: now,
+    });
+
     const intakeId = await ctx.db.insert("intakes", {
       name: "Lead Person",
       teamName: "Lead Team",
@@ -77,6 +99,8 @@ export const run = internalMutation({
       order: await ctx.db.get(orderId),
       run: await ctx.db.get(runId),
       response: await ctx.db.get(responseId),
+      rosterEntry: await ctx.db.get(rosterEntryId),
+      orderEntry: await ctx.db.get(orderEntryId),
       intake: await ctx.db.get(intakeId),
     };
 
@@ -90,6 +114,8 @@ export const run = internalMutation({
       throw new Error("smoke test: customAnswers record lost in round-trip");
     }
 
+    await ctx.db.delete(orderEntryId);
+    await ctx.db.delete(rosterEntryId);
     await ctx.db.delete(responseId);
     await ctx.db.delete(runId);
     await ctx.db.delete(orderId);
@@ -97,6 +123,6 @@ export const run = internalMutation({
     await ctx.db.delete(intakeId);
     await ctx.db.delete(userId);
 
-    return { ok: true, tablesChecked: 6 };
+    return { ok: true, tablesChecked: 8 };
   },
 });

@@ -249,7 +249,11 @@ function ResponseTable({
   );
 }
 
-function RunStatusBadge({ status }: { status: "open" | "closed" }) {
+function RunStatusBadge({
+  status,
+}: {
+  status: "open" | "closed" | "locked";
+}) {
   if (status === "open") {
     return (
       <Badge
