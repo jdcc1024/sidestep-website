@@ -103,7 +103,10 @@ export default defineSchema({
   // no player slot. `designId` is denormalized from the roster entry so
   // blank lines still group by design and per-design counts (R-04) are a
   // simple group-by on the by_run index. The production total is
-  // Σ qty over these rows.
+  // Σ qty over these rows. `customAnswers` carries the run's custom-question
+  // answers (R-02): they describe the submitter, not the jersey, so every
+  // line from one submission shares the same record — denormalized onto
+  // each entry rather than split into a separate table.
   orderEntries: defineTable({
     runId: v.id("jerseyRuns"),
     designId: v.id("designs"),
@@ -113,6 +116,7 @@ export default defineSchema({
     source: v.union(v.literal("captain"), v.literal("fan")),
     submitterName: v.string(),
     submitterEmail: v.string(),
+    customAnswers: v.optional(v.record(v.string(), v.string())),
     createdAt: v.number(),
   })
     .index("by_run", ["runId"])

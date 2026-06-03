@@ -226,3 +226,77 @@ describe("jerseyRuns.closeRunByAdmin", () => {
     ).rejects.toThrow(/Admin access required/);
   });
 });
+
+describe("jerseyRuns.getPublic", () => {
+  it("returns the order's designs with seeded roster slots for the form", async () => {
+    const t = convexTest(schema, modules);
+    const now = Date.now();
+    const { runId, homeId, awayId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", {
+        clerkId: "cap",
+        email: "cap@example.com",
+        name: "Cap",
+        isAdmin: false,
+        createdAt: now,
+      });
+      const homeId = await ctx.db.insert("designs", {
+        ownerId: userId,
+        title: "Home",
+        brief: "h",
+        fileIds: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+      const awayId = await ctx.db.insert("designs", {
+        ownerId: userId,
+        title: "Away",
+        brief: "a",
+        fileIds: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+      const orderId = await ctx.db.insert("orders", {
+        captainId: userId,
+        teamName: "Wildcats",
+        sport: "Hockey",
+        estimatedQuantity: 10,
+        hasOwnDesign: false,
+        designIds: [homeId, awayId],
+        internalStages: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+      const runId = await ctx.db.insert("jerseyRuns", {
+        orderId,
+        captainId: userId,
+        sizeOptions: ["M", "L"],
+        namesMode: "fixed",
+        customQuestions: [],
+        deadline: now + 7 * ONE_DAY,
+        status: "open",
+        createdAt: now,
+      });
+      await ctx.db.insert("rosterEntries", {
+        runId,
+        orderId,
+        designId: homeId,
+        name: "Gretzky",
+        number: "99",
+        source: "captain",
+        createdAt: now,
+      });
+      return { runId, homeId, awayId };
+    });
+
+    const data = await t.query(api.jerseyRuns.getPublic, { jerseyRunId: runId });
+    expect(data).not.toBeNull();
+    expect(data!.teamName).toBe("Wildcats");
+    expect(data!.designs.map((d) => d.title)).toEqual(["Home", "Away"]);
+    const home = data!.designs.find((d) => d._id === homeId);
+    expect(home!.roster).toEqual([
+      { _id: expect.anything(), name: "Gretzky", number: "99" },
+    ]);
+    const away = data!.designs.find((d) => d._id === awayId);
+    expect(away!.roster).toHaveLength(0);
+  });
+});

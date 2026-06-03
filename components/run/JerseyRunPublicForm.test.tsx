@@ -1,259 +1,216 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Id } from "@/convex/_generated/dataModel";
 
-// useQuery returns a usable open-mode run so JerseyRunPublicForm renders the
-// form view (rather than skeleton/not-found/closed). useMutation returns a
-// stub so submit attempts don't blow up if they slip past validation.
-const submitResponse = vi.fn(async () => {});
+// submitOrder is the new fan submission mutation (R-02). Typed via the
+// generic (not a named impl param) so `.mock.calls` carries the args shape
+// without tripping no-unused-vars. beforeEach wires the resolved value.
+type SubmitArgs = {
+  jerseyRunId: string;
+  submitterName: string;
+  submitterEmail: string;
+  customAnswers: Record<string, string>;
+  lines: unknown[];
+};
+const submitOrder = vi.fn<(args: SubmitArgs) => Promise<unknown>>();
 
-// The component now calls useQuery twice (getPublic for the run + 3-08's
-// listMyResponsesForRun for the signed-in panel). Dispatch by function
-// name so each call gets the right payload — without this branch the
-// panel query would receive the run object and crash trying to .map() it.
-const listMyResponsesForRunMock = vi.fn(
-  (): Array<Record<string, unknown>> => [],
-);
+// getPublic's payload is configurable per test (open vs fixed, one vs many
+// designs) via this mutable holder, which beforeEach resets to the default
+// single-design open-mode run.
+const HOME = "design_home" as Id<"designs">;
+const AWAY = "design_away" as Id<"designs">;
 
-vi.mock("convex/react", async () => {
-  const { getFunctionName } = await vi.importActual<
-    typeof import("convex/server")
-  >("convex/server");
-  return {
-    useQuery: (ref: unknown) => {
-      const name = getFunctionName(ref as Parameters<typeof getFunctionName>[0]);
-      if (name.endsWith(":listMyResponsesForRun")) {
-        return listMyResponsesForRunMock();
-      }
-      return {
-        teamName: "Vancouver Ravens",
-        captainName: "Sam Captain",
-        run: {
-          namesMode: "open" as const,
-          sizeOptions: ["S", "M", "L"],
-          customQuestions: [],
-          fixedRoster: undefined,
-          // Deadline far in the future so the run isn't treated as closed.
-          deadline: Date.now() + 1000 * 60 * 60 * 24 * 365,
-          status: "open" as const,
-        },
-      };
-    },
-    useMutation: () => submitResponse,
+type PublicData = {
+  teamName: string;
+  captainName: string;
+  run: {
+    namesMode: "open" | "fixed";
+    sizeOptions: string[];
+    customQuestions: { id: string; label: string }[];
+    deadline: number;
+    status: "open" | "closed" | "locked";
   };
-});
+  designs: {
+    _id: Id<"designs">;
+    title: string;
+    roster: { _id: Id<"rosterEntries">; name: string; number?: string }[];
+  }[];
+};
+
+const FAR_FUTURE = Date.now() + 1000 * 60 * 60 * 24 * 365;
+
+function singleDesignOpen(): PublicData {
+  return {
+    teamName: "Vancouver Ravens",
+    captainName: "Sam Captain",
+    run: {
+      namesMode: "open",
+      sizeOptions: ["S", "M", "L"],
+      customQuestions: [],
+      deadline: FAR_FUTURE,
+      status: "open",
+    },
+    designs: [{ _id: HOME, title: "Home", roster: [] }],
+  };
+}
+
+let publicData: PublicData = singleDesignOpen();
+
+vi.mock("convex/react", () => ({
+  useQuery: () => publicData,
+  useMutation: () => submitOrder,
+}));
 
 import { JerseyRunPublicForm } from "./JerseyRunPublicForm";
 
 const fakeRunId = "jersey_run_test_id" as Id<"jerseyRuns">;
 
-async function fillCompleteForm(
-  user: ReturnType<typeof userEvent.setup>,
-  overrides: {
-    respondentName?: string;
-    respondentEmail?: string;
-    size?: string;
-    // null means "skip this field" (leave blank); undefined means "use default".
-    jerseyName?: string | null;
-    jerseyNumber?: string | null;
-  } = {},
-) {
-  const respondentName = overrides.respondentName ?? "Pat Parent";
-  const respondentEmail = overrides.respondentEmail ?? "pat@example.com";
-  const size = overrides.size ?? "M";
-  const jerseyName =
-    overrides.jerseyName === undefined ? "Alex" : overrides.jerseyName;
-  const jerseyNumber =
-    overrides.jerseyNumber === undefined ? "7" : overrides.jerseyNumber;
-
-  await user.type(screen.getByLabelText(/your name/i), respondentName);
-  await user.type(screen.getByLabelText(/your email/i), respondentEmail);
-  await user.click(screen.getByRole("radio", { name: size }));
-  if (jerseyName !== null) {
-    await user.type(screen.getByLabelText(/name on jersey/i), jerseyName);
-  }
-  if (jerseyNumber !== null) {
-    await user.type(screen.getByLabelText(/^number$/i), jerseyNumber);
-  }
-}
-
 describe("JerseyRunPublicForm", () => {
   beforeEach(() => {
-    submitResponse.mockReset();
-    submitResponse.mockImplementation(async () => {});
-    // Default to empty (no prior responses) so the panel stays hidden unless
-    // a specific test seeds it. Mirrors the signed-out / first-timer case.
-    listMyResponsesForRunMock.mockReset();
-    listMyResponsesForRunMock.mockReturnValue([]);
+    submitOrder.mockReset();
+    submitOrder.mockResolvedValue({
+      submitterEmail: "pat@example.com",
+      created: 1,
+      collisions: 0,
+      entries: [],
+    });
+    publicData = singleDesignOpen();
   });
 
-  it("surfaces RHF + zod validation errors when the user submits an empty form", async () => {
+  it("surfaces validation errors when submitting an empty form", async () => {
     const user = userEvent.setup();
     render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
 
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
-    expect(
-      await screen.findByText(/tell us your name/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/tell us your name/i)).toBeInTheDocument();
     expect(screen.getByText(/we need an email/i)).toBeInTheDocument();
     expect(screen.getByText(/pick a size/i)).toBeInTheDocument();
-    expect(submitResponse).not.toHaveBeenCalled();
+    expect(submitOrder).not.toHaveBeenCalled();
   });
 
-  describe("Submit and add another", () => {
-    it("submits and resets per-jersey fields while preserving respondent name and email", async () => {
-      const user = userEvent.setup();
-      render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
+  it("submits a single jersey as one order-entry line", async () => {
+    const user = userEvent.setup();
+    render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
 
-      await fillCompleteForm(user);
-      await user.click(
-        screen.getByRole("button", { name: /submit and add another/i }),
-      );
+    await user.type(screen.getByLabelText(/your name/i), "Pat Parent");
+    await user.type(screen.getByLabelText(/your email/i), "pat@example.com");
+    await user.type(screen.getByLabelText(/name on jersey/i), "Alex");
+    await user.type(screen.getByLabelText(/^number$/i), "7");
+    await user.click(screen.getByRole("radio", { name: "M" }));
 
-      await waitFor(() => {
-        expect(submitResponse).toHaveBeenCalledTimes(1);
-      });
-      expect(submitResponse).toHaveBeenCalledWith(
-        expect.objectContaining({
-          jerseyRunId: fakeRunId,
-          respondentName: "Pat Parent",
-          respondentEmail: "pat@example.com",
-          size: "M",
-          jerseyName: "Alex",
-          jerseyNumber: "7",
-        }),
-      );
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
-      // Form must remain on screen — NOT the "You're in!" success state.
-      expect(screen.queryByText(/you're in/i)).not.toBeInTheDocument();
-
-      // Respondent identity sticks across consecutive entries.
-      expect(screen.getByLabelText(/your name/i)).toHaveValue("Pat Parent");
-      expect(screen.getByLabelText(/your email/i)).toHaveValue(
-        "pat@example.com",
-      );
-
-      // Per-jersey fields wiped, ready for the next entry.
-      await waitFor(() => {
-        expect(screen.getByLabelText(/name on jersey/i)).toHaveValue("");
-      });
-      expect(screen.getByLabelText(/^number$/i)).toHaveValue("");
-      expect(screen.getByRole("radio", { name: "M" })).not.toBeChecked();
-
-      // Both submit actions usable again.
-      expect(
-        screen.getByRole("button", { name: /^submit$/i }),
-      ).toBeEnabled();
-      expect(
-        screen.getByRole("button", { name: /submit and add another/i }),
-      ).toBeEnabled();
+    await waitFor(() => {
+      expect(submitOrder).toHaveBeenCalledTimes(1);
     });
-
-    it("routes a blank-jersey submission through the warning dialog before firing the mutation", async () => {
-      const user = userEvent.setup();
-      render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
-
-      await fillCompleteForm(user, { jerseyName: null, jerseyNumber: null });
-      await user.click(
-        screen.getByRole("button", { name: /submit and add another/i }),
-      );
-
-      // Dialog gates the submission — mutation hasn't fired yet.
-      expect(
-        await screen.findByText(/leave the jersey blank/i),
-      ).toBeInTheDocument();
-      expect(submitResponse).not.toHaveBeenCalled();
-
-      await user.click(screen.getByRole("button", { name: /yes, submit/i }));
-
-      await waitFor(() => {
-        expect(submitResponse).toHaveBeenCalledTimes(1);
-      });
-      // Add-another branch fires: stays on form, identity preserved.
-      expect(screen.queryByText(/you're in/i)).not.toBeInTheDocument();
-      expect(screen.getByLabelText(/your name/i)).toHaveValue("Pat Parent");
+    expect(submitOrder).toHaveBeenCalledWith({
+      jerseyRunId: fakeRunId,
+      submitterName: "Pat Parent",
+      submitterEmail: "pat@example.com",
+      customAnswers: {},
+      lines: [
+        { designId: HOME, name: "Alex", number: "7", size: "M", qty: 1 },
+      ],
     });
+    expect(await screen.findByText(/you're in/i)).toBeInTheDocument();
+  });
 
-    it("ignores a rapid second click while a submission is in flight", async () => {
-      const user = userEvent.setup();
-      let resolveSubmit: () => void = () => {};
-      submitResponse.mockImplementationOnce(
-        () =>
-          new Promise<void>((resolve) => {
-            resolveSubmit = resolve;
-          }),
-      );
+  it("adds a second jersey line and submits both", async () => {
+    const user = userEvent.setup();
+    render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
 
-      render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
-      await fillCompleteForm(user);
+    await user.type(screen.getByLabelText(/your name/i), "Pat Parent");
+    await user.type(screen.getByLabelText(/your email/i), "pat@example.com");
 
-      const addAnother = screen.getByRole("button", {
-        name: /submit and add another/i,
-      });
-      await user.click(addAnother);
+    // First jersey.
+    const firstCard = screen.getByRole("group", { name: /jersey 1/i });
+    await user.type(within(firstCard).getByLabelText(/name on jersey/i), "Alex");
+    await user.click(within(firstCard).getByRole("radio", { name: "M" }));
 
-      // Submission in flight — button disabled, second click is a no-op.
-      await waitFor(() => {
-        expect(addAnother).toBeDisabled();
-      });
-      await user.click(addAnother);
+    // Add a second line.
+    await user.click(
+      screen.getByRole("button", { name: /add another jersey/i }),
+    );
+    const secondCard = screen.getByRole("group", { name: /jersey 2/i });
+    await user.type(
+      within(secondCard).getByLabelText(/name on jersey/i),
+      "Jamie",
+    );
+    await user.click(within(secondCard).getByRole("radio", { name: "L" }));
 
-      resolveSubmit();
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
-      await waitFor(() => {
-        expect(submitResponse).toHaveBeenCalledTimes(1);
-      });
+    await waitFor(() => {
+      expect(submitOrder).toHaveBeenCalledTimes(1);
+    });
+    const arg = submitOrder.mock.calls[0][0] as { lines: unknown[] };
+    expect(arg.lines).toEqual([
+      { designId: HOME, name: "Alex", number: undefined, size: "M", qty: 1 },
+      { designId: HOME, name: "Jamie", number: undefined, size: "L", qty: 1 },
+    ]);
+  });
+
+  it("routes a blank jersey through the confirm dialog before submitting", async () => {
+    const user = userEvent.setup();
+    render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
+
+    await user.type(screen.getByLabelText(/your name/i), "Pat Parent");
+    await user.type(screen.getByLabelText(/your email/i), "pat@example.com");
+    await user.click(screen.getByRole("radio", { name: "M" }));
+    // Leave name + number blank.
+
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+
+    expect(
+      await screen.findByText(/leave a jersey blank/i),
+    ).toBeInTheDocument();
+    expect(submitOrder).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: /yes, submit/i }));
+    await waitFor(() => {
+      expect(submitOrder).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe("Your responses to this run panel (3-08)", () => {
-    it("stays hidden when the signed-in visitor has no prior responses", () => {
-      // Default mock returns [] — first-timer and anonymous look identical.
-      render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
-      expect(
-        screen.queryByRole("heading", { name: /your responses to this run/i }),
-      ).not.toBeInTheDocument();
-    });
+  it("shows a design picker only when the order has multiple designs", async () => {
+    publicData = {
+      ...singleDesignOpen(),
+      designs: [
+        { _id: HOME, title: "Home", roster: [] },
+        { _id: AWAY, title: "Away", roster: [] },
+      ],
+    };
+    render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
 
-    it("renders one card per prior response with size, name, and number", () => {
-      listMyResponsesForRunMock.mockReturnValue([
+    expect(screen.getByText(/your jerseys & designs/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: /design/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers the captain's seeded names in a fixed-mode run", async () => {
+    publicData = {
+      ...singleDesignOpen(),
+      run: { ...singleDesignOpen().run, namesMode: "fixed" },
+      designs: [
         {
-          _id: "resp_1",
-          jerseyRunId: fakeRunId,
-          respondentName: "Pat Parent",
-          respondentEmail: "pat@example.com",
-          size: "M",
-          jerseyName: "Alex",
-          jerseyNumber: "7",
-          customAnswers: {},
-          submittedAt: Date.now() - 60_000,
+          _id: HOME,
+          title: "Home",
+          roster: [
+            { _id: "slot_1" as Id<"rosterEntries">, name: "Gretzky", number: "99" },
+          ],
         },
-        {
-          _id: "resp_2",
-          jerseyRunId: fakeRunId,
-          respondentName: "Pat Parent",
-          respondentEmail: "pat@example.com",
-          size: "S",
-          jerseyName: "Jamie",
-          jerseyNumber: "3",
-          customAnswers: {},
-          submittedAt: Date.now() - 120_000,
-        },
-      ]);
+      ],
+    };
+    render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
 
-      render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
-
-      expect(
-        screen.getByRole("heading", { name: /your responses to this run/i }),
-      ).toBeInTheDocument();
-      expect(screen.getByText(/2 submissions from you/i)).toBeInTheDocument();
-      expect(screen.getByText(/Alex #7/)).toBeInTheDocument();
-      expect(screen.getByText(/Jamie #3/)).toBeInTheDocument();
-      expect(screen.getByText(/Size M/)).toBeInTheDocument();
-      expect(screen.getByText(/Size S/)).toBeInTheDocument();
-    });
+    // Free-text name input is gone; a name picker takes its place.
+    expect(screen.queryByLabelText(/name on jersey/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: /pick your name/i }),
+    ).toBeInTheDocument();
   });
 });

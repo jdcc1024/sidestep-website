@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-06-03T07:25:46.470Z",
+  "lastUpdated": "2026-06-03T07:55:01.889Z",
   "phases": [
     {
       "id": "phase-1",
@@ -1222,10 +1222,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Switch the public run form onto the new model: a fan sees all the order's designs and adds multiple jerseys in one submission, grouped by name/email. Orders attach to existing matching roster slots; open-mode exact matches raise a collision flag.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-r02",
+      "startedAt": "2026-06-03T07:42:18.213Z",
+      "completedAt": "2026-06-03T07:55:01.888Z",
       "issueFile": "backlog/R-02-public-form-fan-orders-across-all-designs.md",
       "prdRef": "docs/prd/roster-manager-and-lock.md#4-user-stories",
       "acceptanceCriteria": [
@@ -1258,7 +1258,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Query the live production count the order page reads: total = sum of order-entry qty, plus per-design subtotals. Not-yet-filled slots contribute zero; blank/bulk lines count by qty; removed-design entries excluded.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1944,30 +1944,16 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 2
+    },
+    {
+      "id": "opus-r02",
+      "name": "Opus (R-02)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-24T05:03:22.256Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "agent-claude-opus47-s5",
-      "message": "S-05 Agent joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-24T05:03:25.826Z",
-      "event": "task_started",
-      "nodeId": "S-05",
-      "agent": "agent-claude-opus47-s5",
-      "message": "S-05 Agent picked up: Portal Pilot — PortalShell and OrderTimeline on shadcn"
-    },
-    {
-      "timestamp": "2026-05-24T05:12:24.125Z",
-      "event": "task_completed",
-      "nodeId": "S-05",
-      "agent": "agent-claude-opus47-s5",
-      "message": "Completed: Portal Pilot — PortalShell and OrderTimeline on shadcn"
-    },
     {
       "timestamp": "2026-05-24T05:16:16.186Z",
       "event": "nodes_added",
@@ -2646,6 +2632,27 @@
       "nodeId": "R-03",
       "agent": "opus-r01",
       "message": "Completed: Captain Roster Seeding + Not Yet Filled"
+    },
+    {
+      "timestamp": "2026-06-03T07:42:18.136Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-r02",
+      "message": "Opus (R-02) joined the workforce"
+    },
+    {
+      "timestamp": "2026-06-03T07:42:18.214Z",
+      "event": "task_started",
+      "nodeId": "R-02",
+      "agent": "opus-r02",
+      "message": "Opus (R-02) picked up: Public Form — Fan Orders Across All Designs"
+    },
+    {
+      "timestamp": "2026-06-03T07:55:01.889Z",
+      "event": "task_completed",
+      "nodeId": "R-02",
+      "agent": "opus-r02",
+      "message": "Completed: Public Form — Fan Orders Across All Designs"
     }
   ]
 }

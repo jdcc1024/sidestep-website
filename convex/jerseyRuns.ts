@@ -54,10 +54,14 @@ export const getByOrder = query({
   },
 });
 
-// Public — used by the fan submission form (issue 2-09) and the captain's
-// run detail view. Returns the run plus the captain's display name and
-// the order's team name so the public page can render a friendly header
-// without exposing captain email or other PII.
+// Public — used by the fan submission form (R-02) and the captain's run
+// detail view. Returns the run plus the captain's display name and the
+// order's team name so the public page can render a friendly header
+// without exposing captain email or other PII. Also returns the order's
+// designs, each with its seeded roster slots, so the form can show a
+// per-design picker (collapsing to one implicit choice for a single-
+// design order) and, in fixed mode, let the fan pick a pre-seeded name.
+// Only slot name/number are exposed — never submitter emails or other PII.
 export const getPublic = query({
   args: { jerseyRunId: v.id("jerseyRuns") },
   handler: async (ctx, { jerseyRunId }) => {
@@ -67,10 +71,31 @@ export const getPublic = query({
     const order = await ctx.db.get(run.orderId);
     const captain = await ctx.db.get(run.captainId);
 
+    const rosterEntries = await ctx.db
+      .query("rosterEntries")
+      .withIndex("by_run", (q) => q.eq("runId", jerseyRunId))
+      .collect();
+
+    const designs = await Promise.all(
+      (order?.designIds ?? []).map(async (designId) => {
+        const design = await ctx.db.get(designId);
+        const roster = rosterEntries
+          .filter((e) => e.designId === designId)
+          .sort((a, b) => a.createdAt - b.createdAt)
+          .map((e) => ({ _id: e._id, name: e.name, number: e.number }));
+        return {
+          _id: designId,
+          title: design?.title ?? "Untitled design",
+          roster,
+        };
+      }),
+    );
+
     return {
       run,
       teamName: order?.teamName ?? "",
       captainName: captain?.name ?? "",
+      designs,
     };
   },
 });

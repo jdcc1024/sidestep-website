@@ -152,16 +152,27 @@ export const listForRun = query({
       .collect();
 
     // A slot is "filled" once any order entry references it. One scan of
-    // the run's order entries builds the set of filled slot ids.
+    // the run's order entries builds the set of filled slot ids, and — for
+    // open-names runs — the set of distinct submitter emails per slot, so
+    // a slot two different fans both claimed reads as a collision (R-02).
     const orderEntries = await ctx.db
       .query("orderEntries")
       .withIndex("by_run", (q) => q.eq("runId", runId))
       .collect();
-    const filledSlotIds = new Set(
-      orderEntries
-        .map((e) => e.rosterEntryId)
-        .filter((id): id is NonNullable<typeof id> => id != null),
-    );
+    const filledSlotIds = new Set<string>();
+    const emailsBySlot = new Map<string, Set<string>>();
+    for (const e of orderEntries) {
+      if (!e.rosterEntryId) continue;
+      filledSlotIds.add(e.rosterEntryId);
+      const set = emailsBySlot.get(e.rosterEntryId) ?? new Set<string>();
+      set.add(e.submitterEmail);
+      emailsBySlot.set(e.rosterEntryId, set);
+    }
+    // Collision is shown only (PRD §6) — the captain edits freely; there's
+    // no resolve workflow. Fixed-mode runs share seeded slots by design,
+    // so a shared slot there is expected, not a collision.
+    const isCollision = (slotId: string) =>
+      run.namesMode === "open" && (emailsBySlot.get(slotId)?.size ?? 0) > 1;
 
     const designs = await Promise.all(
       order.designIds.map(async (designId) => {
@@ -175,6 +186,7 @@ export const listForRun = query({
             number: e.number,
             source: e.source,
             filled: filledSlotIds.has(e._id),
+            collision: isCollision(e._id),
           }));
         return {
           designId,

@@ -1,6 +1,6 @@
 # Issue: Public Form — Fan Orders Across All Designs
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -8,23 +8,28 @@
 
 ## Vertical Slice
 This issue touches:
-- [ ] Database: none (uses R-01 tables)
-- [x] API: submission mutation writes 1..many order entries across the order's designs; groups by submitter email/name; attaches to existing slot; open-mode collision flag
-- [x] Frontend: `JerseyRunPublicForm` shows all the order's designs and lets a fan add multiple jerseys (design · name · number · size · qty)
-- [x] Tests: multi-row submission, grouping, attach-to-existing-slot, collision flag
+- [x] Database: one additive field — `orderEntries.customAnswers` (optional). Scope call: the issue planned "none", but the human chose to preserve the run's custom questions (which the R-01 model had no home for) rather than drop them. No other schema change.
+- [x] API: `orderEntries.submitOrder` (public) writes 1..many order entries across the order's designs; groups by normalized submitter email; attaches to a matching slot (or mints one); open-mode collision flag; `jerseyRuns.getPublic` now returns the order's designs + seeded roster slots
+- [x] Frontend: `JerseyRunPublicForm` shows all the order's designs and lets a fan add multiple jerseys (design · name · number · size · qty); single-design order collapses the picker; fixed-mode runs show a constrained name picker from seeded slots
+- [x] Tests: multi-row submission, grouping, attach-to-existing-slot, collision flag, blank/bulk line, custom answers, closed/deadline guards, getPublic shape, form behaviour
 
 ## Description
 Switch the public run form from one-row-per-response onto the new model: a fan sees **all** of the order's designs and can add **multiple order entries across them** in one submission (the Wildcats case — a Home and two Away jerseys). All of one fan's entries group back to them by submitter name/email. A fan ordering a name+number that matches an existing roster entry **attaches** to that slot; in open-names mode an exact match also **raises a collision flag** for the captain to review.
 
 ## Acceptance Criteria
-- [ ] The form lists every design linked to the order; a single-design order collapses the picker to one implicit choice
-- [ ] A fan can add N jerseys in one submission, each `{design, name, number, size, qty}`, producing N order entries
-- [ ] All entries from one submission share the submitter; a later submission with the same name/email joins the same group
-- [ ] An order matching an existing `design + name + number` attaches a new order entry to that roster entry (no duplicate slot)
-- [ ] In `namesMode: open`, an exact match still attaches **and** records a collision flag visible to the captain
-- [ ] Submission now writes `orderEntries`/`rosterEntries`, not `jerseyRunResponses`
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] The form lists every design linked to the order; a single-design order collapses the picker to one implicit choice
+- [x] A fan can add N jerseys in one submission, each `{design, name, number, size, qty}`, producing N order entries
+- [x] All entries from one submission share the submitter; a later submission with the same name/email joins the same group
+- [x] An order matching an existing `design + name + number` attaches a new order entry to that roster entry (no duplicate slot)
+- [x] In `namesMode: open`, an exact match still attaches **and** records a collision flag visible to the captain (derived in `rosterEntries.listForRun` — open mode + ≥2 distinct submitters on a slot)
+- [x] Submission now writes `orderEntries`/`rosterEntries`, not `jerseyRunResponses`
+- [x] All tests pass (411)
+- [x] No regressions in existing tests
+
+## Implementation Outcome
+- Collision flag carries **no schema field** — it's derived (PRD §6 "shown only"): `submitOrder` returns a `collisions` count, and `rosterEntries.listForRun` annotates each slot with `collision`.
+- The 3-08 "Your responses to this run" panel was **removed** from the public form (it read the now-empty legacy `jerseyRunResponses`); R-07 rebuilds logged-in response views on the new model.
+- `jerseyRuns.submitResponse` and the legacy table remain in place (admin/captain surfaces still read them) until R-07 retires them.
 
 ## Dependencies
 - Blocked by: R-01
