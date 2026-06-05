@@ -191,8 +191,8 @@ describe("JerseyRunPublicForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("offers the captain's seeded names in a fixed-mode run", async () => {
-    publicData = {
+  function fixedSingleDesign(): PublicData {
+    return {
       ...singleDesignOpen(),
       run: { ...singleDesignOpen().run, namesMode: "fixed" },
       designs: [
@@ -205,12 +205,86 @@ describe("JerseyRunPublicForm", () => {
         },
       ],
     };
+  }
+
+  it("lets a fan tap sizes per roster slot and submits one line per size", async () => {
+    publicData = fixedSingleDesign();
+    const user = userEvent.setup();
     render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
 
-    // Free-text name input is gone; a name picker takes its place.
+    // No free-text name field and no name dropdown — a roster grid instead.
     expect(screen.queryByLabelText(/name on jersey/i)).not.toBeInTheDocument();
     expect(
-      screen.getByRole("combobox", { name: /pick your name/i }),
+      screen.queryByRole("combobox", { name: /pick your name/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Gretzky")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/your name/i), "Pat Parent");
+    await user.type(screen.getByLabelText(/your email/i), "pat@example.com");
+
+    // Tap M twice (qty 2) and L once for the same slot.
+    await user.click(
+      screen.getByRole("button", { name: /add one M for Gretzky/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /add one M for Gretzky/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /add one L for Gretzky/i }),
+    );
+
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+
+    await waitFor(() => {
+      expect(submitOrder).toHaveBeenCalledTimes(1);
+    });
+    expect(submitOrder).toHaveBeenCalledWith({
+      jerseyRunId: fakeRunId,
+      submitterName: "Pat Parent",
+      submitterEmail: "pat@example.com",
+      customAnswers: {},
+      lines: [
+        { designId: HOME, rosterEntryId: "slot_1", size: "M", qty: 2 },
+        { designId: HOME, rosterEntryId: "slot_1", size: "L", qty: 1 },
+      ],
+    });
+  });
+
+  it("decrements a slot's size and hides the minus at zero", async () => {
+    publicData = fixedSingleDesign();
+    const user = userEvent.setup();
+    render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
+
+    // No "−" until the size has a count.
+    expect(
+      screen.queryByRole("button", { name: /remove one M for Gretzky/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /add one M for Gretzky/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /remove one M for Gretzky/i }),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /remove one M for Gretzky/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("blocks a fixed-mode submit with nothing selected", async () => {
+    publicData = fixedSingleDesign();
+    const user = userEvent.setup();
+    render(<JerseyRunPublicForm jerseyRunId={fakeRunId} />);
+
+    await user.type(screen.getByLabelText(/your name/i), "Pat Parent");
+    await user.type(screen.getByLabelText(/your email/i), "pat@example.com");
+
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+
+    expect(
+      await screen.findByText(/add at least one jersey/i),
     ).toBeInTheDocument();
+    expect(submitOrder).not.toHaveBeenCalled();
   });
 });

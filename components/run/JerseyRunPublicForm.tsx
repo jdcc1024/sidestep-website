@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import type { Control, UseFormReturn } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import type { Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CheckIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { CheckIcon, MinusIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -21,6 +21,8 @@ import {
 } from "@/lib/rosterEntry";
 import { ANSWER_MAX_LENGTH, isJerseyRunClosed } from "@/lib/jerseyRunResponse";
 import { sortSizes } from "@/lib/jerseyRun";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -284,14 +286,51 @@ function OrderForm({
       submitterName: "",
       submitterEmail: "",
       customAnswers: emptyCustomAnswers,
-      lines: [emptyLine(designs)],
+      // Fixed mode builds its lines from the roster grid (starts empty);
+      // open mode seeds one blank line for the fan to fill in.
+      lines: run.namesMode === "fixed" ? [] : [emptyLine(designs)],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "lines",
   });
+
+  // Fixed mode reads live line quantities to render its per-slot counters
+  // and the header tally. Each (roster slot × size) the fan picks is one
+  // line; clicking a size bumps that line's qty, decrementing trims it.
+  const watchedLines =
+    useWatch({ control: form.control, name: "lines" }) ?? [];
+
+  function addSize(
+    designId: string,
+    rosterEntryId: string,
+    size: string,
+  ) {
+    const lines = form.getValues("lines");
+    const idx = lines.findIndex(
+      (l) => l.rosterEntryId === rosterEntryId && l.size === size,
+    );
+    if (idx === -1) {
+      append({ designId, name: "", number: "", rosterEntryId, size, qty: "1" });
+    } else {
+      const cur = Number.parseInt(lines[idx].qty, 10) || 0;
+      if (cur < MAX_QTY) update(idx, { ...lines[idx], qty: String(cur + 1) });
+    }
+    if (form.formState.errors.lines) form.clearErrors("lines");
+  }
+
+  function removeSize(rosterEntryId: string, size: string) {
+    const lines = form.getValues("lines");
+    const idx = lines.findIndex(
+      (l) => l.rosterEntryId === rosterEntryId && l.size === size,
+    );
+    if (idx === -1) return;
+    const cur = Number.parseInt(lines[idx].qty, 10) || 0;
+    if (cur <= 1) remove(idx);
+    else update(idx, { ...lines[idx], qty: String(cur - 1) });
+  }
 
   async function actuallySubmit(values: FormValues) {
     setSubmitError(null);
@@ -357,6 +396,16 @@ function OrderForm({
   const linesError = form.formState.errors.lines?.message;
   const singleDesign = designs.length === 1;
 
+  // Open mode counts line cards; fixed mode counts total jerseys (Σ qty
+  // across the slots the fan has picked) since one slot can take several.
+  const jerseyCount =
+    run.namesMode === "fixed"
+      ? watchedLines.reduce(
+          (sum, l) => sum + (Number.parseInt(l.qty, 10) || 0),
+          0,
+        )
+      : fields.length;
+
   return (
     <>
       <Header teamName={teamName} captainName={captainName} run={run} />
@@ -415,38 +464,50 @@ function OrderForm({
                 {singleDesign ? "Your jerseys" : "Your jerseys & designs"}
               </h2>
               <span className="text-sm text-muted-foreground">
-                {fields.length} {fields.length === 1 ? "jersey" : "jerseys"}
+                {jerseyCount} {jerseyCount === 1 ? "jersey" : "jerseys"}
               </span>
             </div>
 
-            {fields.map((fieldItem, index) => (
-              <JerseyLine
-                key={fieldItem.id}
-                form={form}
-                control={form.control}
-                index={index}
+            {run.namesMode === "fixed" ? (
+              <RosterGrid
                 run={run}
                 designs={designs}
                 singleDesign={singleDesign}
-                removable={fields.length > 1}
-                onRemove={() => remove(index)}
+                lines={watchedLines}
+                onAdd={addSize}
+                onRemove={removeSize}
               />
-            ))}
+            ) : (
+              <>
+                {fields.map((fieldItem, index) => (
+                  <JerseyLine
+                    key={fieldItem.id}
+                    control={form.control}
+                    index={index}
+                    designs={designs}
+                    run={run}
+                    singleDesign={singleDesign}
+                    removable={fields.length > 1}
+                    onRemove={() => remove(index)}
+                  />
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => append(emptyLine(designs))}
+                >
+                  <PlusIcon aria-hidden className="h-4 w-4" />
+                  Add another jersey
+                </Button>
+              </>
+            )}
 
             {linesError && (
               <p role="alert" className="text-sm text-destructive">
                 {String(linesError)}
               </p>
             )}
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => append(emptyLine(designs))}
-            >
-              <PlusIcon aria-hidden className="h-4 w-4" />
-              Add another jersey
-            </Button>
           </div>
 
           {run.customQuestions.length > 0 && (
@@ -516,11 +577,10 @@ function OrderForm({
   );
 }
 
-// One jersey line: design (when the order has more than one), the
-// name/number or seeded-name picker, size, and quantity. Watches its own
-// designId so the fixed-mode picker can scope to the chosen design's slots.
+// One open-mode jersey line: design (when the order has more than one),
+// free-text name/number, size, and quantity. Fixed-mode runs render the
+// roster grid (below) instead of these cards.
 function JerseyLine({
-  form,
   control,
   index,
   run,
@@ -529,7 +589,6 @@ function JerseyLine({
   removable,
   onRemove,
 }: {
-  form: UseFormReturn<FormValues>;
   control: Control<FormValues>;
   index: number;
   run: PublicRun;
@@ -538,8 +597,6 @@ function JerseyLine({
   removable: boolean;
   onRemove: () => void;
 }) {
-  const selectedDesignId = form.watch(`lines.${index}.designId`);
-  const selectedDesign = designs.find((d) => d._id === selectedDesignId);
   const sizes = useMemo(() => sortSizes(run.sizeOptions), [run.sizeOptions]);
 
   return (
@@ -577,11 +634,7 @@ function JerseyLine({
               </FormLabel>
               <Select
                 value={field.value}
-                onValueChange={(value) => {
-                  field.onChange(value);
-                  // Switching design invalidates a fixed-mode name pick.
-                  form.setValue(`lines.${index}.rosterEntryId`, "");
-                }}
+                onValueChange={(value) => field.onChange(value)}
               >
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -602,83 +655,40 @@ function JerseyLine({
         />
       )}
 
-      {run.namesMode === "fixed" ? (
+      <div className="grid gap-5 sm:grid-cols-[1fr_140px]">
         <FormField
           control={control}
-          name={`lines.${index}.rosterEntryId`}
+          name={`lines.${index}.name`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                Pick your name
-                <RequiredMark />
-              </FormLabel>
-              <FormDescription>
-                Your captain set the roster in advance.
-              </FormDescription>
-              <Select
-                value={field.value}
-                onValueChange={(value) => field.onChange(value)}
-                disabled={!selectedDesign || selectedDesign.roster.length === 0}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select your name…" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {(selectedDesign?.roster ?? []).map((slot) => (
-                    <SelectItem key={slot._id} value={slot._id}>
-                      {slot.name}
-                      {slot.number ? ` · #${slot.number}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedDesign && selectedDesign.roster.length === 0 && (
-                <FormDescription>
-                  No names available for this design yet.
-                </FormDescription>
-              )}
+              <FormLabel>Name on jersey</FormLabel>
+              <FormDescription>Leave blank for no name.</FormDescription>
+              <FormControl>
+                <Input maxLength={ROSTER_NAME_MAX_LENGTH} {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-[1fr_140px]">
-          <FormField
-            control={control}
-            name={`lines.${index}.name`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name on jersey</FormLabel>
-                <FormDescription>Leave blank for no name.</FormDescription>
-                <FormControl>
-                  <Input maxLength={ROSTER_NAME_MAX_LENGTH} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`lines.${index}.number`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Number</FormLabel>
-                <FormDescription>Leave blank for none.</FormDescription>
-                <FormControl>
-                  <Input
-                    inputMode="numeric"
-                    maxLength={ROSTER_NUMBER_MAX_LENGTH}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      )}
+        <FormField
+          control={control}
+          name={`lines.${index}.number`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Number</FormLabel>
+              <FormDescription>Leave blank for none.</FormDescription>
+              <FormControl>
+                <Input
+                  inputMode="numeric"
+                  maxLength={ROSTER_NUMBER_MAX_LENGTH}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
       <FormField
         control={control}
@@ -722,6 +732,168 @@ function JerseyLine({
         )}
       />
     </fieldset>
+  );
+}
+
+// Fixed-mode order editor: the captain's roster, one row per slot, with a
+// tappable counter per size. There's no free-text entry — every jersey is
+// tied to a pre-seeded name. Each (slot × size) the fan picks maps to one
+// line in the shared `lines` model, so submit reuses the open-mode path.
+function RosterGrid({
+  run,
+  designs,
+  singleDesign,
+  lines,
+  onAdd,
+  onRemove,
+}: {
+  run: PublicRun;
+  designs: PublicDesign[];
+  singleDesign: boolean;
+  lines: LineValues[];
+  onAdd: (designId: string, rosterEntryId: string, size: string) => void;
+  onRemove: (rosterEntryId: string, size: string) => void;
+}) {
+  const sizes = useMemo(() => sortSizes(run.sizeOptions), [run.sizeOptions]);
+
+  const qtyFor = (rosterEntryId: string, size: string) => {
+    const line = lines.find(
+      (l) => l.rosterEntryId === rosterEntryId && l.size === size,
+    );
+    if (!line) return 0;
+    const n = Number.parseInt(line.qty, 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const anyRoster = designs.some((d) => d.roster.length > 0);
+  if (!anyRoster) {
+    return (
+      <p className="rounded-md border border-dashed border-border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+        Your captain hasn&apos;t added any names yet. Check back once the roster
+        is set.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {designs.map((design) => (
+        <fieldset
+          key={design._id}
+          aria-label={design.title}
+          className="space-y-4 rounded-xl border border-border bg-muted/30 p-5"
+        >
+          {!singleDesign && (
+            <legend className="text-sm font-semibold text-foreground">
+              {design.title}
+            </legend>
+          )}
+
+          {design.roster.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No names for this design yet.
+            </p>
+          ) : (
+            <ul className="space-y-4">
+              {design.roster.map((slot) => (
+                <li
+                  key={slot._id}
+                  className="flex flex-col gap-3 border-b border-border/60 pb-4 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="flex flex-wrap items-baseline gap-2 text-sm">
+                    <span className="font-medium text-foreground">
+                      {slot.name}
+                    </span>
+                    {slot.number ? (
+                      <span className="text-muted-foreground">
+                        #{slot.number}
+                      </span>
+                    ) : null}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {sizes.map((size) => (
+                      <SizeCounter
+                        key={size}
+                        size={size}
+                        playerName={slot.name}
+                        qty={qtyFor(slot._id, size)}
+                        onAdd={() => onAdd(design._id, slot._id, size)}
+                        onRemove={() => onRemove(slot._id, size)}
+                      />
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </fieldset>
+      ))}
+    </div>
+  );
+}
+
+// One size control for a roster slot, with a fixed footprint so a click
+// never reflows the row. Three constant-width zones: a decrement slot (a
+// "−" once the count is above zero), the size label (tap to add), and a
+// count badge. The minus and count only render when active, but their
+// slots are always reserved — so the pill is the same width empty or full.
+function SizeCounter({
+  size,
+  playerName,
+  qty,
+  onAdd,
+  onRemove,
+}: {
+  size: string;
+  playerName: string;
+  qty: number;
+  onAdd: () => void;
+  onRemove: () => void;
+}) {
+  const active = qty > 0;
+  return (
+    <div
+      className={cn(
+        "flex h-9 min-w-[4.5rem] items-center rounded-md border text-sm font-medium transition",
+        active
+          ? "border-primary bg-primary/10"
+          : "border-input bg-background hover:border-ring",
+      )}
+    >
+      <span className="flex w-7 shrink-0 items-center justify-center">
+        {active && (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Remove one ${size} for ${playerName}`}
+            className="text-muted-foreground transition hover:text-foreground"
+          >
+            <MinusIcon aria-hidden className="h-4 w-4" />
+          </button>
+        )}
+      </span>
+      <button
+        type="button"
+        onClick={onAdd}
+        aria-label={`Add one ${size} for ${playerName}`}
+        className={cn(
+          "flex-1 px-1 text-center transition",
+          active ? "text-primary" : "text-foreground",
+        )}
+      >
+        {size}
+      </button>
+      <span className="flex w-7 shrink-0 items-center justify-center">
+        {active && (
+          <Badge
+            variant="secondary"
+            className="h-5 min-w-5 justify-center rounded-full bg-primary px-1 text-xs tabular-nums text-primary-foreground"
+          >
+            {qty}
+          </Badge>
+        )}
+      </span>
+    </div>
   );
 }
 
