@@ -1,6 +1,6 @@
 # Issue: Relabel / Remove Design on the Roster
 
-## Status: pending
+## Status: done
 
 ## Phase: 2
 
@@ -17,13 +17,36 @@ This issue touches:
 Make edit-after-collection safe. **Relabelling** a design (renaming it) carries its roster + order entries over untouched, since they point by `designId`. **Removing** a design from an order doesn't delete data: its entries stay visible, are flagged "removed", and **drop out of the production count**, while the action surfaces a warning that **names the affected submitters**.
 
 ## Acceptance Criteria
-- [ ] Relabelling a design preserves all its roster + order entries and their counts
-- [ ] Removing a design returns the list of affected submitters (non-destructive)
-- [ ] Removed-design entries stay visible with a clear "removed" indicator rather than disappearing
-- [ ] Removed-design order entries are excluded from the derived total (R-04)
-- [ ] The remove action is a resolvable soft warning, never a silent hard stop
-- [ ] All tests pass
-- [ ] No regressions in existing tests
+- [x] Relabelling a design preserves all its roster + order entries and their counts
+- [x] Removing a design returns the list of affected submitters (non-destructive)
+- [x] Removed-design entries stay visible with a clear "removed" indicator rather than disappearing
+- [x] Removed-design order entries are excluded from the derived total (R-04)
+- [x] The remove action is a resolvable soft warning, never a silent hard stop
+- [x] All tests pass
+- [x] No regressions in existing tests
+
+## Implementation
+Two read queries in `convex/orderEntries.ts`, mirroring R-04's query-only
+shape (the order-page warning/indicator rendering is order-page issue O-08,
+which consumes these):
+
+- `affectedByDesignRemoval({ runId, designId })` — the pre-removal preview:
+  who ordered the design and how many jerseys would drop from the count.
+  Design-agnostic (works whether the design is still linked or already
+  removed) since it reads order entries by `designId`. Powers the soft,
+  resolvable warning — it's a query, so removal itself (dropping the id from
+  `order.designIds` via `orders.updateOrder`) is never blocked.
+- `removedDesigns({ runId })` — every design that still has order entries but
+  is no longer in `order.designIds`, each with affected submitters and
+  dropped-jersey count, so removed entries stay visible flagged "removed".
+
+Both reuse a `summarizeDesignSubmitters` helper (Σ qty grouped by normalized
+email, sorted by name). "Removed" is the **derived state** decided in R-04 (a
+design no longer in `order.designIds`) — no schema change, no per-entry flag,
+no data deleted; the rows simply fall out of `countsByRun` while staying
+readable here. **Relabel** is a no-op on entry data (entries key off
+`designId`), verified by a test that renames a design and confirms entries +
+counts carry over untouched.
 
 ## Dependencies
 - Blocked by: R-02, R-04

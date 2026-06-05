@@ -356,3 +356,209 @@ describe("orderEntries.countsByRun", () => {
     ).rejects.toThrow(/access/);
   });
 });
+
+// R-05 relabel: a design's roster + order entries reference it by id, so
+// renaming the design (a "relabel") must carry every entry over untouched
+// and leave the count whole — renaming is not data loss.
+describe("R-05 relabel", () => {
+  it("renaming a design carries its entries and count over untouched", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+
+    const slot = await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Gretzky",
+      number: "99",
+    });
+    const entryId = await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      rosterEntryId: slot,
+      size: "M",
+      qty: 3,
+      ...submitter,
+    });
+
+    const before = await asCaptain.query(api.orderEntries.countsByRun, { runId });
+    expect(before.total).toBe(3);
+
+    // Relabel: rename the design. Entries key off designId, so this touches
+    // none of them — only the displayed title changes.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(designId, { title: "Home (2026 kit)" });
+    });
+
+    const after = await asCaptain.query(api.orderEntries.countsByRun, { runId });
+    expect(after.total).toBe(3);
+    expect(after.byDesign).toEqual([
+      { designId, title: "Home (2026 kit)", total: 3 },
+    ]);
+
+    // The entry itself is the same row, still pointing at the same slot.
+    const entry = await t.run((ctx) => ctx.db.get(entryId));
+    expect(entry?.designId).toBe(designId);
+    expect(entry?.rosterEntryId).toBe(slot);
+    expect(entry?.qty).toBe(3);
+  });
+});
+
+describe("orderEntries.affectedByDesignRemoval", () => {
+  it("names the distinct submitters and sums the jerseys ordered on a design", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+
+    // Two fans order the Home design; one of them twice.
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      size: "M",
+      qty: 2,
+      submitterName: "Ann",
+      submitterEmail: "ann@example.com",
+    });
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      size: "L",
+      qty: 1,
+      submitterName: "Ann",
+      submitterEmail: "ann@example.com",
+    });
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      size: "S",
+      qty: 4,
+      submitterName: "Bob",
+      submitterEmail: "bob@example.com",
+    });
+
+    const affected = await asCaptain.query(
+      api.orderEntries.affectedByDesignRemoval,
+      { runId, designId },
+    );
+
+    expect(affected.designId).toBe(designId);
+    expect(affected.title).toBe("Home");
+    expect(affected.entryCount).toBe(3);
+    expect(affected.total).toBe(7); // 2 + 1 + 4
+    expect(affected.submitters).toEqual([
+      { name: "Ann", email: "ann@example.com", qty: 3 },
+      { name: "Bob", email: "bob@example.com", qty: 4 },
+    ]);
+  });
+
+  it("names nobody when the design has no order entries", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, asCaptain } = await seedRun(t);
+    // A seeded slot but no order entry — nobody has actually ordered.
+    await asCaptain.mutation(api.rosterEntries.create, {
+      runId,
+      designId,
+      name: "Lemieux",
+      number: "66",
+    });
+
+    const affected = await asCaptain.query(
+      api.orderEntries.affectedByDesignRemoval,
+      { runId, designId },
+    );
+    expect(affected.total).toBe(0);
+    expect(affected.submitters).toEqual([]);
+  });
+
+  it("rejects a non-captain non-admin", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId } = await seedRun(t);
+    const asStranger = t.withIdentity({
+      subject: "stranger_clerk",
+      email: "stranger@example.com",
+      name: "Nobody",
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.insert("users", {
+        clerkId: "stranger_clerk",
+        email: "stranger@example.com",
+        name: "Nobody",
+        isAdmin: false,
+        createdAt: Date.now(),
+      });
+    });
+    await expect(
+      asStranger.query(api.orderEntries.affectedByDesignRemoval, {
+        runId,
+        designId,
+      }),
+    ).rejects.toThrow(/access/);
+  });
+});
+
+describe("orderEntries.removedDesigns", () => {
+  it("surfaces removed designs with their entries, dropped from the count but still visible", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, designId, orderId, userId, asCaptain } = await seedRun(t);
+    const awayId = await addAwayDesign(t, userId, orderId);
+
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId,
+      size: "M",
+      qty: 2,
+      ...submitter,
+    });
+    await asCaptain.mutation(api.orderEntries.create, {
+      runId,
+      designId: awayId,
+      size: "L",
+      qty: 4,
+      submitterName: "Bob",
+      submitterEmail: "bob@example.com",
+    });
+
+    // No removed designs while both are still linked.
+    const beforeRemoval = await asCaptain.query(
+      api.orderEntries.removedDesigns,
+      { runId },
+    );
+    expect(beforeRemoval).toEqual([]);
+
+    // Remove Away from the order — non-destructively (drop the id only).
+    await t.run(async (ctx) => {
+      await ctx.db.patch(orderId, { designIds: [designId] });
+    });
+
+    const removed = await asCaptain.query(api.orderEntries.removedDesigns, {
+      runId,
+    });
+    expect(removed).toHaveLength(1);
+    expect(removed[0]).toEqual({
+      designId: awayId,
+      title: "Away",
+      entryCount: 1,
+      total: 4,
+      submitters: [{ name: "Bob", email: "bob@example.com", qty: 4 }],
+    });
+
+    // The removed jerseys fall out of the derived total but the rows survive.
+    const counts = await asCaptain.query(api.orderEntries.countsByRun, { runId });
+    expect(counts.total).toBe(2);
+    const survivingEntries = await asCaptain.query(
+      api.orderEntries.listByRun,
+      { runId },
+    );
+    expect(survivingEntries).toHaveLength(2); // nothing deleted
+  });
+
+  it("returns [] for a missing run", async () => {
+    const t = convexTest(schema, modules);
+    const { runId, asCaptain } = await seedRun(t);
+    await t.run(async (ctx) => {
+      await ctx.db.delete(runId);
+    });
+    const removed = await asCaptain.query(api.orderEntries.removedDesigns, {
+      runId,
+    });
+    expect(removed).toEqual([]);
+  });
+});

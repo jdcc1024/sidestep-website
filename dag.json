@@ -1,6 +1,6 @@
 {
   "project": "Sidestep Website",
-  "lastUpdated": "2026-06-03T07:55:01.889Z",
+  "lastUpdated": "2026-06-05T15:37:01.417Z",
   "phases": [
     {
       "id": "phase-1",
@@ -1148,7 +1148,7 @@
       "phase": "phase-3",
       "type": "improvement",
       "description": "Replace the static estimate with a live total derived from the unified roster: order total and per-design counts are summed from roster rows. BLOCKED on the external Roster Manager slice (unified rosterEntries table).",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1166,7 +1166,7 @@
       "phase": "phase-3",
       "type": "feature",
       "description": "When a captain relabels or removes a linked design that already has submissions, warn rather than silently orphan: relabel carries submissions to the new label; remove keeps rows and flags them with a removed indicator naming affected submitters. BLOCKED on the external Roster Manager slice (rosterEntries with designId).",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1258,10 +1258,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Query the live production count the order page reads: total = sum of order-entry qty, plus per-design subtotals. Not-yet-filled slots contribute zero; blank/bulk lines count by qty; removed-design entries excluded.",
-      "status": "pending",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "agent-claude-opus48-r4",
+      "startedAt": "2026-06-05T02:27:12.867Z",
+      "completedAt": "2026-06-05T15:32:13.631Z",
       "issueFile": "backlog/R-04-derived-counts-query.md",
       "prdRef": "docs/prd/roster-manager-and-lock.md#6-implementation-decisions",
       "acceptanceCriteria": [
@@ -1276,10 +1276,10 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "Edit-after-collection safety: relabel carries a design's entries over untouched; remove keeps entries visible, flags them 'removed', drops them from the count, and surfaces a warning naming affected submitters. Non-destructive.",
-      "status": "blocked",
-      "agent": null,
-      "startedAt": null,
-      "completedAt": null,
+      "status": "completed",
+      "agent": "opus-r05",
+      "startedAt": "2026-06-05T15:35:02.029Z",
+      "completedAt": "2026-06-05T15:37:01.417Z",
       "issueFile": "backlog/R-05-relabel-remove-design-on-the-roster.md",
       "prdRef": "docs/prd/roster-manager-and-lock.md#6-implementation-decisions",
       "acceptanceCriteria": [
@@ -1294,7 +1294,7 @@
       "phase": "phase-2",
       "type": "feature",
       "description": "The lock that freezes the production basis. Captain/admin can lock manually; a run auto-locks lazily when its deadline passes. Admin can always unlock, captain only pre-deadline. Locked runs reject roster/order/design mutations and freeze a count snapshot.",
-      "status": "blocked",
+      "status": "pending",
       "agent": null,
       "startedAt": null,
       "completedAt": null,
@@ -1951,51 +1951,23 @@
       "status": "idle",
       "currentTask": null,
       "tasksCompleted": 1
+    },
+    {
+      "id": "agent-claude-opus48-r4",
+      "name": "Claude Opus 4.8 (R-04)",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "opus-r05",
+      "name": "Claude Opus R-05",
+      "status": "idle",
+      "currentTask": null,
+      "tasksCompleted": 1
     }
   ],
   "log": [
-    {
-      "timestamp": "2026-05-24T05:16:16.186Z",
-      "event": "nodes_added",
-      "nodeId": "S-14",
-      "agent": null,
-      "message": "New task added: Portal Page Dark-Mode Sweep"
-    },
-    {
-      "timestamp": "2026-05-24T05:24:57.080Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "claude-s06",
-      "message": "Claude (S-06) joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-24T05:24:57.162Z",
-      "event": "task_started",
-      "nodeId": "S-06",
-      "agent": "claude-s06",
-      "message": "Claude (S-06) picked up: JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form)"
-    },
-    {
-      "timestamp": "2026-05-24T07:24:14.919Z",
-      "event": "task_completed",
-      "nodeId": "S-06",
-      "agent": "claude-s06",
-      "message": "Completed: JerseyRunSetup → RHF + zod + shadcn Form (Pilot Form)"
-    },
-    {
-      "timestamp": "2026-05-24T07:39:48.368Z",
-      "event": "agent_joined",
-      "nodeId": null,
-      "agent": "claude-s08",
-      "message": "Claude (Opus 4.7) — S-08 joined the workforce"
-    },
-    {
-      "timestamp": "2026-05-24T07:39:48.455Z",
-      "event": "task_started",
-      "nodeId": "S-08",
-      "agent": "claude-s08",
-      "message": "Claude (Opus 4.7) — S-08 picked up: OrderForm → RHF + zod + shadcn Form"
-    },
     {
       "timestamp": "2026-05-24T08:38:45.740Z",
       "event": "task_completed",
@@ -2653,6 +2625,48 @@
       "nodeId": "R-02",
       "agent": "opus-r02",
       "message": "Completed: Public Form — Fan Orders Across All Designs"
+    },
+    {
+      "timestamp": "2026-06-05T02:27:12.795Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "agent-claude-opus48-r4",
+      "message": "Claude Opus 4.8 (R-04) joined the workforce"
+    },
+    {
+      "timestamp": "2026-06-05T02:27:12.868Z",
+      "event": "task_started",
+      "nodeId": "R-04",
+      "agent": "agent-claude-opus48-r4",
+      "message": "Claude Opus 4.8 (R-04) picked up: Derived Counts Query"
+    },
+    {
+      "timestamp": "2026-06-05T15:32:13.632Z",
+      "event": "task_completed",
+      "nodeId": "R-04",
+      "agent": "agent-claude-opus48-r4",
+      "message": "Completed: Derived Counts Query"
+    },
+    {
+      "timestamp": "2026-06-05T15:35:01.965Z",
+      "event": "agent_joined",
+      "nodeId": null,
+      "agent": "opus-r05",
+      "message": "Claude Opus R-05 joined the workforce"
+    },
+    {
+      "timestamp": "2026-06-05T15:35:02.029Z",
+      "event": "task_started",
+      "nodeId": "R-05",
+      "agent": "opus-r05",
+      "message": "Claude Opus R-05 picked up: Relabel / Remove Design on the Roster"
+    },
+    {
+      "timestamp": "2026-06-05T15:37:01.417Z",
+      "event": "task_completed",
+      "nodeId": "R-05",
+      "agent": "opus-r05",
+      "message": "Completed: Relabel / Remove Design on the Roster"
     }
   ]
 }

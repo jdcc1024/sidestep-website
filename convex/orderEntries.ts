@@ -153,6 +153,132 @@ export const countsByRun = query({
   },
 });
 
+// The submitters who ordered a given design on a run, summed by qty and
+// grouped by normalized email — the "affected people" naming both the
+// remove-warning (R-05) and the persistent removed-design indicator read.
+// A submitter is one person who placed one or more order entries on the
+// design; `qty` is their Σ across those entries. Sorted by display name so
+// the warning reads in a stable order. Roster slots with no order entries
+// have no submitter, so a not-yet-filled design names nobody.
+type DesignSubmitter = { name: string; email: string; qty: number };
+
+function summarizeDesignSubmitters(
+  entries: Array<{ submitterName: string; submitterEmail: string; qty: number }>,
+): { entryCount: number; total: number; submitters: DesignSubmitter[] } {
+  const byEmail = new Map<string, DesignSubmitter>();
+  let total = 0;
+  for (const e of entries) {
+    total += e.qty;
+    const existing = byEmail.get(e.submitterEmail);
+    if (existing) existing.qty += e.qty;
+    else
+      byEmail.set(e.submitterEmail, {
+        name: e.submitterName,
+        email: e.submitterEmail,
+        qty: e.qty,
+      });
+  }
+  const submitters = [...byEmail.values()].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  return { entryCount: entries.length, total, submitters };
+}
+
+// Preview the fallout of removing one design from the order (R-05). Given
+// a run + design, returns who ordered that design and how many jerseys
+// would drop from the count — the soft, resolvable warning the order page
+// (O-08) shows before the captain saves the removal. Non-destructive and
+// design-agnostic: it works whether the design is still linked (the
+// pre-removal preview) or already removed, since it only reads order
+// entries by `designId`. Empty (no submitters, total 0) when nothing was
+// ordered on the design — there's nobody to orphan. Captain or admin only;
+// a stable empty shape for a missing run/order so the consumer never
+// null-checks.
+export const affectedByDesignRemoval = query({
+  args: { runId: v.id("jerseyRuns"), designId: v.id("designs") },
+  handler: async (ctx, { runId, designId }) => {
+    const empty: {
+      designId: Id<"designs">;
+      title: string;
+      entryCount: number;
+      total: number;
+      submitters: DesignSubmitter[];
+    } = { designId, title: "Untitled design", entryCount: 0, total: 0, submitters: [] };
+
+    const run = await ctx.db.get(runId);
+    if (!run) return empty;
+
+    const user = await requireCurrentUser(ctx);
+    if (run.captainId !== user._id && !user.isAdmin)
+      throw new ConvexError("You don't have access to this jersey run.");
+
+    const design = await ctx.db.get(designId);
+    const title = design?.title ?? "Untitled design";
+
+    const entries = (
+      await ctx.db
+        .query("orderEntries")
+        .withIndex("by_run", (q) => q.eq("runId", runId))
+        .collect()
+    ).filter((e) => e.designId === designId);
+
+    return { designId, title, ...summarizeDesignSubmitters(entries) };
+  },
+});
+
+// Every design that still has order entries on the run but is no longer in
+// the order's design list (R-05) — the "removed" designs, kept visible
+// rather than deleted. "Removed" is the derived state (a design no longer
+// in `order.designIds`), so no data is destroyed and no per-entry flag is
+// stored: dropping the design from the order is the whole action, and these
+// rows simply fall out of `countsByRun` while staying readable here. Each
+// removed design carries its affected submitters and dropped-jersey count
+// so the order page can render a clear "removed" section naming who's
+// affected. Sorted by title for a stable order. Captain or admin only;
+// [] for a missing run/order.
+export const removedDesigns = query({
+  args: { runId: v.id("jerseyRuns") },
+  handler: async (ctx, { runId }) => {
+    const run = await ctx.db.get(runId);
+    if (!run) return [];
+
+    const user = await requireCurrentUser(ctx);
+    if (run.captainId !== user._id && !user.isAdmin)
+      throw new ConvexError("You don't have access to this jersey run.");
+
+    const order = await ctx.db.get(run.orderId);
+    if (!order) return [];
+    const linked = new Set<string>(order.designIds);
+
+    const entries = await ctx.db
+      .query("orderEntries")
+      .withIndex("by_run", (q) => q.eq("runId", runId))
+      .collect();
+
+    // Bucket the run's order entries by design, keeping only designs the
+    // order no longer links — those are the removed ones.
+    const entriesByDesign = new Map<string, typeof entries>();
+    for (const e of entries) {
+      if (linked.has(e.designId)) continue;
+      const bucket = entriesByDesign.get(e.designId) ?? [];
+      bucket.push(e);
+      entriesByDesign.set(e.designId, bucket);
+    }
+
+    const removed = await Promise.all(
+      [...entriesByDesign.entries()].map(async ([designId, designEntries]) => {
+        const design = await ctx.db.get(designId as Id<"designs">);
+        return {
+          designId: designId as Id<"designs">,
+          title: design?.title ?? "Untitled design",
+          ...summarizeDesignSubmitters(designEntries),
+        };
+      }),
+    );
+    return removed.sort((a, b) => a.title.localeCompare(b.title));
+  },
+});
+
 // Public — no auth. The fan submission path (R-02), replacing the legacy
 // jerseyRuns.submitResponse. One submission carries the fan's identity
 // plus 1..N jersey lines spanning the order's designs. Each line becomes
