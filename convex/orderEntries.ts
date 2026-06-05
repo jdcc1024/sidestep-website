@@ -97,6 +97,62 @@ export const listByRun = query({
   },
 });
 
+// Derived production counts for a run (R-04) — the live total the order
+// page (O-07) reads, plus the same Σ qty grouped by design. The total is
+// scoped to the order's *current* designs: an entry on a since-removed
+// design (no longer in `order.designIds`) drops out of both the per-design
+// breakdown and the grand total, so `total` always reconciles with the sum
+// of `byDesign`. Not-yet-filled roster slots have no order entries and so
+// contribute 0; blank/bulk lines (no slot) count by their qty like any
+// other. `byDesign` lists every linked design in order — a design with no
+// entries shows total 0. Captain or admin only; a stable empty shape for a
+// missing run/order so the consumer never null-checks.
+export const countsByRun = query({
+  args: { runId: v.id("jerseyRuns") },
+  handler: async (ctx, { runId }) => {
+    const empty: {
+      total: number;
+      byDesign: Array<{ designId: Id<"designs">; title: string; total: number }>;
+    } = { total: 0, byDesign: [] };
+
+    const run = await ctx.db.get(runId);
+    if (!run) return empty;
+
+    const user = await requireCurrentUser(ctx);
+    if (run.captainId !== user._id && !user.isAdmin)
+      throw new ConvexError("You don't have access to this jersey run.");
+
+    const order = await ctx.db.get(run.orderId);
+    if (!order) return empty;
+
+    const entries = await ctx.db
+      .query("orderEntries")
+      .withIndex("by_run", (q) => q.eq("runId", runId))
+      .collect();
+
+    // One pass tallies Σ qty per design id across every entry on the run.
+    const qtyByDesign = new Map<string, number>();
+    for (const e of entries)
+      qtyByDesign.set(e.designId, (qtyByDesign.get(e.designId) ?? 0) + e.qty);
+
+    // Project onto the order's current designs only — this is what excludes
+    // removed-design entries (their qty is in the map but never read).
+    const byDesign = await Promise.all(
+      order.designIds.map(async (designId) => {
+        const design = await ctx.db.get(designId);
+        return {
+          designId,
+          title: design?.title ?? "Untitled design",
+          total: qtyByDesign.get(designId) ?? 0,
+        };
+      }),
+    );
+    const total = byDesign.reduce((sum, d) => sum + d.total, 0);
+
+    return { total, byDesign };
+  },
+});
+
 // Public — no auth. The fan submission path (R-02), replacing the legacy
 // jerseyRuns.submitResponse. One submission carries the fan's identity
 // plus 1..N jersey lines spanning the order's designs. Each line becomes
