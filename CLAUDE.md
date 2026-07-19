@@ -257,6 +257,16 @@ node scripts/dag-update.js add-edge <fromId> <toId>
 
 Always include `--desc`, `--prd`, and `--criteria` when adding nodes — the human uses these in the detail panel to understand each task at a glance.
 
+### When a task needs a HUMAN decision (product/UX taste, scope, pricing, copy):
+
+```bash
+node scripts/dag-update.js needs-human <nodeId> <agentId> "<one-line question>"
+```
+
+Also append the full question (context, options, your recommendation) to `backlog/QUESTIONS.md` using the template there. The node turns purple in the viewer and is skipped by agents until the human answers and runs `node scripts/dag-update.js answer <nodeId>`. When you pick up a previously-parked task, read its Answered entry in QUESTIONS.md first.
+
+Only park questions a human must answer. Technical choices (library, refactor shape, test strategy) are yours — decide, note it in the session report, move on.
+
 ### When joining as a new agent:
 
 ```bash
@@ -267,7 +277,7 @@ node scripts/dag-update.js agent-join <agentId> "<Your Name>"
 
 - Always call `agent-join` at the start of a new session before picking up work
 - Always call `start` BEFORE beginning implementation of a task
-- Always call `complete` AFTER all tests pass and code is committed
+- Always call `complete` AFTER all tests pass and code is committed. `complete` is gated: it requires a `.verify-receipt.json` from `node scripts/verify.mjs` (typecheck + lint + tests) that matches the current file state. Any file change after verify invalidates the receipt — re-run verify. `SKIP_VERIFY=1` is a human-only escape hatch; its use is logged and flagged in review.
 - If you discover new tasks during implementation, `add-node` them to the DAG
 - The human watches this in real-time — keep it accurate
 
@@ -284,8 +294,24 @@ Use these skills by invoking them in conversation:
 | `/create-prd`           | Generate a structured PRD from grilling session output |
 | `/create-issues`        | Break a PRD into vertical-slice backlog issues         |
 | `/review`               | Fresh-context code review of recent changes            |
+| `/review-batch`         | Catch human review up to master, chunk by chunk        |
 | `/improve-architecture` | Identify modules that need deeper structure            |
 
+
+---
+
+## Autonomous Loop (Ralph)
+
+The project can build itself via `node scripts/ralph-loop.mjs`: each iteration spawns a fresh `claude -p` session (fresh context = smart zone) that completes exactly ONE eligible DAG task per `scripts/ralph-prompt.md`, then exits. The loop stops when no eligible tasks remain, on 2 stalled iterations, at `--max-iterations`, or when a `STOP` file exists in the repo root.
+
+Division of labor:
+
+- **The loop builds.** TDD, screenshots for UI work (`node scripts/snap.mjs <nodeId> <routes...>` → `docs/review/<nodeId>/` at 375/768/1280, light+dark), verify (`node scripts/verify.mjs` — mandatory, gates `complete`), commit, update DAG, append to `docs/review/session-reports.md`.
+- **The human decides and critiques.** Product/UX questions land in `backlog/QUESTIONS.md` (see needs-human above); code review happens in batches via `/review-batch` against the `last-human-review` branch, using the screenshots and session reports as the UX review surface. Never push or advance `last-human-review` autonomously.
+
+One-time human setup for authenticated screenshots: `node scripts/snap.mjs --login` (saves a Clerk session to `.auth/state.json`, gitignored).
+
+If you are running as a loop iteration, `scripts/ralph-prompt.md` is your contract — one task, then exit.
 
 ---
 

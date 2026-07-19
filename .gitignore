@@ -40,3 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# autonomous loop artifacts (local-only; humans review these, git doesn't track them)
+.verify-receipt.json
+.auth/
+docs/review/loop-runs/
+docs/review/**/*.png
+STOP
+bash.exe.stackdump

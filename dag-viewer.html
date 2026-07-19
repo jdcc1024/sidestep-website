@@ -95,6 +95,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0B1121; colo
 .detail-status-pill.in-progress { background: rgba(245,158,11,0.15); color: #F59E0B; }
 .detail-status-pill.pending { background: rgba(107,114,128,0.15); color: #9CA3AF; }
 .detail-status-pill.blocked { background: rgba(239,68,68,0.15); color: #EF4444; }
+.detail-status-pill.needs-human { background: rgba(167,139,250,0.15); color: #A78BFA; }
 .detail-type-pill { padding: 4px 10px; border-radius: 4px; font-size: 11px; background: #374151; color: #D1D5DB; text-transform: uppercase; letter-spacing: 0.5px; }
 .detail-agent-pill { padding: 4px 10px; border-radius: 4px; font-size: 11px; background: rgba(59,130,246,0.15); color: #60A5FA; }
 .detail-phase-pill { padding: 4px 10px; border-radius: 4px; font-size: 11px; background: rgba(167,139,250,0.15); color: #C4B5FD; }
@@ -236,6 +237,7 @@ const NODE_C = {
   'in-progress': { bg:'#1F1810', border:'#F59E0B', accent:'#F59E0B' },
   'pending':     { bg:'#1F2937', border:'#374151', accent:'#6B7280' },
   'blocked':     { bg:'#2A1418', border:'#7F1D1D', accent:'#EF4444' },
+  'needs-human': { bg:'#221436', border:'#6D28D9', accent:'#A78BFA' },
 };
 const EDGE_C = {
   completed: { color:'#22C55E', alpha:0.45, dash:[],    lw:2   },
@@ -634,7 +636,7 @@ function drawEdges(data) {
 
 function drawNode(data, node, p, hovered) {
   const x = p.x, y = p.y, w = p.w, h = p.h;
-  const c = NODE_C[node.status] || NODE_C.pending;
+  const c = node.needsHuman ? NODE_C['needs-human'] : (NODE_C[node.status] || NODE_C.pending);
 
   ctx.save();
 
@@ -910,11 +912,16 @@ function openDetail(nodeId) {
   let html = '';
 
   html += `<div class="detail-status-bar">
-    <span class="detail-status-pill ${node.status}">${node.status.replace('-',' ')}</span>
+    <span class="detail-status-pill ${node.needsHuman ? 'needs-human' : node.status}">${node.needsHuman ? 'needs human' : node.status.replace('-',' ')}</span>
     <span class="detail-type-pill">${node.type}</span>
     ${node.phase ? `<span class="detail-phase-pill">${getPhaseName(data,node.phase)}</span>` : ''}
     ${node.agent ? `<span class="detail-agent-pill">${getAgentName(data,node.agent)}</span>` : ''}
   </div>`;
+
+  if (node.needsHuman) html += `<div class="detail-section">
+    <div class="detail-section-title">Waiting on you</div>
+    <div class="detail-description">${node.humanQuestion || 'See backlog/QUESTIONS.md'}<br><br>
+    Answer in backlog/QUESTIONS.md, then run:<br><code>node scripts/dag-update.js answer ${node.id}</code></div></div>`;
 
   if (node.description) html += `<div class="detail-section">
     <div class="detail-section-title">Description</div>

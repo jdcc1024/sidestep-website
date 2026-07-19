@@ -51,6 +51,37 @@ function readDAG() {
   }
 }
 
+function workingTreeHash() {
+  // Hash of the full working tree (tracked changes + untracked non-ignored files).
+  // Must match scripts/verify.mjs treeHash() exactly.
+  const { execSync } = require('child_process');
+  const os = require('os');
+  const idx = path.join(os.tmpdir(), `verify-idx-${process.pid}-${Date.now()}`);
+  const env = { ...process.env, GIT_INDEX_FILE: idx };
+  const cwd = path.resolve(__dirname, '..');
+  try {
+    execSync('git add -A', { cwd, env, stdio: 'pipe' });
+    return execSync('git write-tree', { cwd, env, encoding: 'utf-8' }).trim();
+  } finally {
+    fs.rmSync(idx, { force: true });
+  }
+}
+
+function checkVerifyReceipt() {
+  // Returns null if OK, or an error message. SKIP_VERIFY=1 is a human-only escape hatch.
+  const receiptPath = path.resolve(__dirname, '..', '.verify-receipt.json');
+  let receipt;
+  try {
+    receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf-8'));
+  } catch {
+    return 'No verify receipt found. Run: node scripts/verify.mjs (all checks must pass) and try again.';
+  }
+  if (receipt.tree !== workingTreeHash()) {
+    return 'Files changed since the last passing verify. Re-run: node scripts/verify.mjs and try again.';
+  }
+  return null;
+}
+
 function writeDAG(data) {
   data.lastUpdated = new Date().toISOString();
   fs.writeFileSync(DAG_FILE, JSON.stringify(data, null, 2));
@@ -72,6 +103,7 @@ function updateBlockedStatus(data) {
   // Auto-detect blocked nodes: pending nodes whose dependencies aren't all completed
   data.nodes.forEach(node => {
     if (node.status !== 'pending' && node.status !== 'blocked') return;
+    if (node.needsHuman) return; // parked for a human decision — stays blocked until 'answer'
 
     const incomingEdges = data.edges.filter(e => e.to === node.id);
     if (incomingEdges.length === 0) {
@@ -131,6 +163,14 @@ switch (command) {
     const node = dag.nodes.find(n => n.id === nodeId);
     if (!node) { console.error(`Node ${nodeId} not found`); process.exit(1); }
 
+    if (process.env.SKIP_VERIFY === '1') {
+      addLog(dag, 'verify_skipped', nodeId, agentId, `WARNING: ${node.title} completed WITHOUT verification (SKIP_VERIFY=1)`);
+      console.warn('WARNING: completing without verification — this is logged and will be flagged in review.');
+    } else {
+      const err = checkVerifyReceipt();
+      if (err) { console.error(`REFUSED to complete ${nodeId}: ${err}`); process.exit(1); }
+    }
+
     node.status = 'completed';
     node.completedAt = new Date().toISOString();
 
@@ -168,6 +208,47 @@ switch (command) {
     addLog(dag, 'task_failed', nodeId, agentId, `Failed: ${node.title} — ${reason}`);
     writeDAG(dag);
     console.log(`Failed: ${node.title} — ${reason}`);
+    break;
+  }
+
+  case 'needs-human': {
+    const [nodeId, agentId, ...questionParts] = args;
+    if (!nodeId || !agentId) { console.error('Usage: needs-human <nodeId> <agentId> "<question>"'); process.exit(1); }
+
+    const question = questionParts.join(' ') || 'See backlog/QUESTIONS.md';
+    const node = dag.nodes.find(n => n.id === nodeId);
+    if (!node) { console.error(`Node ${nodeId} not found`); process.exit(1); }
+
+    node.status = 'blocked';
+    node.needsHuman = true;
+    node.humanQuestion = question;
+    node.agent = null;
+
+    const agent = dag.agents.find(a => a.id === agentId);
+    if (agent) { agent.currentTask = null; agent.status = 'idle'; }
+
+    addLog(dag, 'needs_human', nodeId, agentId, `Needs human: ${node.title} — ${question}`);
+    writeDAG(dag);
+    console.log(`Parked for human decision: ${node.title}\n  Q: ${question}\n  (answer in backlog/QUESTIONS.md, then run: node scripts/dag-update.js answer ${nodeId})`);
+    break;
+  }
+
+  case 'answer': {
+    const [nodeId] = args;
+    if (!nodeId) { console.error('Usage: answer <nodeId>'); process.exit(1); }
+
+    const node = dag.nodes.find(n => n.id === nodeId);
+    if (!node) { console.error(`Node ${nodeId} not found`); process.exit(1); }
+    if (!node.needsHuman) { console.error(`Node ${nodeId} is not waiting on a human`); process.exit(1); }
+
+    delete node.needsHuman;
+    delete node.humanQuestion;
+    node.status = 'pending';
+
+    addLog(dag, 'question_answered', nodeId, 'human', `Question answered, task unparked: ${node.title}`);
+    updateBlockedStatus(dag);
+    writeDAG(dag);
+    console.log(`Unparked: ${node.title} (make sure the answer is recorded in backlog/QUESTIONS.md)`);
     break;
   }
 
@@ -285,6 +366,11 @@ switch (command) {
     console.log(`    In Progress: ${counts['in-progress']}`);
     console.log(`    Pending:     ${counts.pending}`);
     console.log(`    Blocked:     ${counts.blocked}`);
+    const needsHuman = dag.nodes.filter(n => n.needsHuman);
+    if (needsHuman.length) {
+      console.log(`\n  Needs human (backlog/QUESTIONS.md):`);
+      needsHuman.forEach(n => console.log(`    ${n.id} — ${n.humanQuestion || n.title}`));
+    }
     console.log(`\n  Agents: ${dag.agents.length} registered`);
     dag.agents.forEach(a => {
       console.log(`    ${a.name} — ${a.status}${a.currentTask ? ` (working on #${a.currentTask})` : ''}`);
@@ -301,6 +387,8 @@ Commands:
   start <nodeId> <agentId> [agentName]    Mark task in-progress
   complete <nodeId> <agentId>             Mark task completed
   fail <nodeId> <agentId> [reason]        Mark task failed/blocked
+  needs-human <nodeId> <agentId> "<q>"    Park task pending a human decision
+  answer <nodeId>                         Unpark after answering in QUESTIONS.md
   add-node <id> <title> <phase> <type>    Add new task
   add-edge <fromId> <toId>                Add dependency
   agent-join <agentId> <agentName>        Register agent

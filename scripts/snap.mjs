@@ -1,0 +1,144 @@
+#!/usr/bin/env node
+/**
+ * snap — screenshot review artifacts for UI work.
+ *
+ * Captures every given route at 375 / 768 / 1280 wide, in light and dark
+ * color schemes, into docs/review/<issueId>/ so a human can critique UX
+ * without running the app. Screenshots are gitignored (local review artifacts).
+ *
+ * Usage:
+ *   node scripts/snap.mjs <issueId> <route> [route...]
+ *     e.g. node scripts/snap.mjs O-09 /portal/orders/new /portal
+ *
+ *   node scripts/snap.mjs --login
+ *     One-time setup for authenticated pages (/portal, /admin): opens a headed
+ *     browser, you sign in with your Clerk dev user, press Enter in the
+ *     terminal, and the session is saved to .auth/state.json (gitignored).
+ *     All later runs reuse it automatically.
+ *
+ * Env:
+ *   SNAP_BASE  base URL (default http://localhost:8080, per `npm run dev`)
+ *
+ * Requires: npm i -D playwright && npx playwright install chromium
+ * Note: dark mode is emulated via prefers-color-scheme, which next-themes
+ * respects when the toggle is on "system" (the default for a fresh profile).
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const BASE = process.env.SNAP_BASE || 'http://localhost:8080';
+const AUTH_STATE = path.join(ROOT, '.auth', 'state.json');
+const VIEWPORTS = [
+  { width: 375, height: 812 },
+  { width: 768, height: 1024 },
+  { width: 1280, height: 800 },
+];
+const SCHEMES = ['light', 'dark'];
+
+let chromium;
+try {
+  ({ chromium } = await import('playwright'));
+} catch {
+  console.error('Playwright is not installed. Run:\n  npm i -D playwright && npx playwright install chromium');
+  process.exit(1);
+}
+
+async function serverUp() {
+  try {
+    const res = await fetch(BASE, { signal: AbortSignal.timeout(3000) });
+    return res.status < 500;
+  } catch { return false; }
+}
+
+async function ensureServer() {
+  if (await serverUp()) return null;
+  console.log(`[snap] No server at ${BASE} — starting \`npm run dev\`...`);
+  const child = spawn('npm', ['run', 'dev'], { cwd: ROOT, shell: true, stdio: 'pipe', detached: false });
+  const deadline = Date.now() + 90_000;
+  while (Date.now() < deadline) {
+    if (await serverUp()) { console.log('[snap] Dev server is up.'); return child; }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  child.kill();
+  console.error('[snap] Dev server did not come up within 90s.');
+  process.exit(1);
+}
+
+async function login() {
+  fs.mkdirSync(path.dirname(AUTH_STATE), { recursive: true });
+  const server = await ensureServer();
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await context.newPage();
+  await page.goto(BASE);
+  console.log('\n[snap] Sign in in the browser window, then press Enter here to save the session...');
+  await new Promise(resolve => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question('', () => { rl.close(); resolve(); });
+  });
+  await context.storageState({ path: AUTH_STATE });
+  await browser.close();
+  server?.kill();
+  console.log(`[snap] Session saved to ${path.relative(ROOT, AUTH_STATE)} — authenticated snaps will now work.`);
+}
+
+async function snap(issueId, routes) {
+  const outDir = path.join(ROOT, 'docs', 'review', issueId);
+  fs.mkdirSync(outDir, { recursive: true });
+  const server = await ensureServer();
+  const hasAuth = fs.existsSync(AUTH_STATE);
+  if (!hasAuth && routes.some(r => r.startsWith('/portal') || r.startsWith('/admin'))) {
+    console.warn('[snap] WARNING: no .auth/state.json — authed routes will show the sign-in page. Run `node scripts/snap.mjs --login` once (human task).');
+  }
+
+  const browser = await chromium.launch();
+  const shots = [];
+  try {
+    for (const scheme of SCHEMES) {
+      for (const vp of VIEWPORTS) {
+        const context = await browser.newContext({
+          viewport: vp,
+          colorScheme: scheme,
+          ...(hasAuth ? { storageState: AUTH_STATE } : {}),
+        });
+        const page = await context.newPage();
+        for (const route of routes) {
+          const slug = route.replace(/^\//, '').replace(/[^a-zA-Z0-9]+/g, '-') || 'home';
+          const file = path.join(outDir, `${slug}-w${vp.width}-${scheme}.png`);
+          try {
+            await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 30_000 });
+            await page.waitForTimeout(500); // settle animations/fonts
+            await page.screenshot({ path: file, fullPage: true });
+            shots.push(path.relative(ROOT, file));
+            console.log(`[snap] ${route} @ ${vp.width}px ${scheme} → ${path.relative(ROOT, file)}`);
+          } catch (e) {
+            console.error(`[snap] FAILED ${route} @ ${vp.width}px ${scheme}: ${e.message.split('\n')[0]}`);
+          }
+        }
+        await context.close();
+      }
+    }
+  } finally {
+    await browser.close();
+    server?.kill();
+  }
+
+  console.log(`\n[snap] ${shots.length}/${routes.length * VIEWPORTS.length * SCHEMES.length} screenshots in ${path.relative(ROOT, outDir)}`);
+  if (shots.length < routes.length * VIEWPORTS.length * SCHEMES.length) process.exit(1);
+}
+
+// --- main ---
+const args = process.argv.slice(2);
+if (args[0] === '--login') {
+  await login();
+} else if (args.length >= 2) {
+  await snap(args[0], args.slice(1));
+} else {
+  console.log('Usage:\n  node scripts/snap.mjs <issueId> <route> [route...]\n  node scripts/snap.mjs --login');
+  process.exit(1);
+}
